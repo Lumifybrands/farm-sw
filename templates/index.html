@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bismi Farms - Poultry Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <h1>Bismi Farms</h1>
+            <h2>Poultry Management System</h2>
+            <div class="login-form">
+                <button id="loginBtn" class="login-btn">Login</button>
+                <form id="loginFields" class="hidden" action="{{ url_for('login') }}" method="POST">
+                    <div class="form-group">
+                        <input type="text" name="username" id="username" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" id="password" placeholder="Password" required>
+                    </div>
+                    <div class="form-group remember-me">
+                        <label>
+                            <input type="checkbox" name="remember" id="remember"> Remember me
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
