@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bismi Farms{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fas fa-kiwi-bird"></i>
+                <span>Bismi Farms</span>
+            </div>
+            <div class="nav-links">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a href="{{ url_for('farms') }}" class="nav-link">
+                        <i class="fas fa-warehouse"></i> Farms
+                    </a>
+                    <a href="{{ url_for('batches') }}" class="nav-link">
+                        <i class="fas fa-layer-group"></i> Batches
+                    </a>
+                    <a href="{{ url_for('feeds') }}" class="nav-link">
+                        <i class="fas fa-wheat-awn"></i> Feeds
+                    </a>
+                {% endif %}
+            </div>
+            {% if session.get('user_id') %}
+            <div class="user-info">
+                <span>{{ session.get('username') }} ({{ session.get('user_type') }})</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="logout-text">Logout</span>
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if session.get('user_id') %}
+        <div class="dashboard-container">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Main Menu</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>
+                            <a href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li {% if request.endpoint.startswith('batch') %}class="active"{% endif %}>
+                            <a href="{{ url_for('batches') }}">
+                                <i class="fas fa-layer-group"></i>
+                                Batch
+                            </a>
+                        </li>
+                        <li {% if request.endpoint.startswith('farm') %}class="active"{% endif %}>
+                            <a href="{{ url_for('farms') }}">
+                                <i class="fas fa-warehouse"></i>
+                                Farm
+                            </a>
+                        </li>
+                        <li {% if request.endpoint.startswith('feed') %}class="active"{% endif %}>
+                            <a href="{{ url_for('feeds') }}">
+                                <i class="fas fa-seedling"></i>
+                                Feed
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#health">
+                                <i class="fas fa-heartbeat"></i>
+                                Health
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#medicines">
+                                <i class="fas fa-pills"></i>
+                                Medicines
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#farm-manager">
+                                <i class="fas fa-user-tie"></i>
+                                Farm Manager
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Reports</h3>
+                    <ul class="sidebar-menu">
+                        <li>
+                            <a href="#batch-report">
+                                <i class="fas fa-file-alt"></i>
+                                Batch Report
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#farm-report">
+                                <i class="fas fa-chart-bar"></i>
+                                Farm Report
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Settings</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'settings' %}class="active"{% endif %}>
+                            <a href="{{ url_for('settings') }}">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="dashboard-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+        {% else %}
+            {% block full_content %}{% endblock %}
+        {% endif %}
+    </div>
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Mobile Navigation Toggle
+        document.getElementById('mobileNavToggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.sidebar');
+            const mobileNavToggle = document.getElementById('mobileNavToggle');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(event.target) && 
+                !mobileNavToggle.contains(event.target) && 
+                sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const sidebar = document.querySelector('.sidebar');
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('active');
+            }
+        });
+    </script>
+    {% endblock %}
+</body>
+</html> 

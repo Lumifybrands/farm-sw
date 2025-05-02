@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Farm - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Edit Farm</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Farms</span> / <span>Edit Farm</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('edit_farm', farm_id=farm.id) }}" method="POST" class="farm-form">
+        <div class="form-group">
+            <label for="name">Farm Name</label>
+            <input type="text" id="name" name="name" value="{{ farm.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="total_capacity">Total Capacity</label>
+            <input type="number" id="total_capacity" name="total_capacity" value="{{ farm.total_capacity }}" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="num_sheds">Number of Sheds</label>
+            <input type="number" id="num_sheds" name="num_sheds" value="{{ farm.num_sheds }}" min="1" required onchange="updateShedCapacityFields()">
+        </div>
+
+        <div id="shed_capacities_container">
+            <!-- Shed capacity fields will be dynamically added here -->
+        </div>
+
+        <div class="form-group">
+            <label for="owner_name">Owner Name</label>
+            <input type="text" id="owner_name" name="owner_name" value="{{ farm.owner_name }}" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('farms') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Update Farm</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function updateShedCapacityFields() {
+    const numSheds = parseInt(document.getElementById('num_sheds').value) || 0;
+    const container = document.getElementById('shed_capacities_container');
+    container.innerHTML = '';
+
+    const shedCapacities = {{ farm.get_shed_capacities() | tojson }};
+
+    for (let i = 1; i <= numSheds; i++) {
+        const formGroup = document.createElement('div');
+        formGroup.className = 'form-group';
+        const capacity = shedCapacities[i - 1] || 0;
+        formGroup.innerHTML = `
+            <label for="shed_capacity_${i}">Shed ${i} Capacity</label>
+            <input type="number" id="shed_capacity_${i}" name="shed_capacity_${i}" value="${capacity}" min="0" required>
+        `;
+        container.appendChild(formGroup);
+    }
+}
+
+// Initialize shed capacity fields on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateShedCapacityFields();
+});
+</script>
+{% endblock %} 

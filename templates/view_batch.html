@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}View Batch - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Batch Details</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>View Batch</span>
+    </div>
+</div>
+
+<div class="farm-details">
+    <div class="detail-group">
+        <label><i class="fas fa-info-circle"></i> Basic Information</label>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Farm Name</label>
+                <span>{{ batch.farm.name }}</span>
+            </div>
+            <div class="info-item">
+                <label>Batch Number</label>
+                <span>{{ batch.batch_number }}</span>
+            </div>
+            <div class="info-item">
+                <label>Total Birds</label>
+                <span>{{ batch.total_birds }}</span>
+            </div>
+            <div class="info-item">
+                <label>Available Birds</label>
+                <span>{{ batch.available_birds }}</span>
+            </div>
+            <div class="info-item">
+                <label>Age</label>
+                <span>{{ batch.get_age_days() }} days</span>
+            </div>
+            <div class="info-item">
+                <label>Created On</label>
+                <span>{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-warehouse"></i> Shed Distribution</label>
+        <div class="shed-capacities">
+            {% for shed_birds in batch.get_shed_birds() %}
+            <div class="shed-capacity">
+                <div class="shed-info">
+                    <span class="shed-number">Shed {{ loop.index }}</span>
+                    <span class="capacity-value">{{ shed_birds }} birds</span>
+                </div>
+                <div class="capacity-bar">
+                    <div class="capacity-fill" style="width: {{ (shed_birds / batch.farm.get_shed_capacities()[loop.index0] * 100)|round }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{{ url_for('edit_batch', batch_id=batch.id) }}" class="edit-btn">
+            <i class="fas fa-edit"></i> Edit Batch
+        </a>
+        <button onclick="deleteBatch({{ batch.id }})" class="delete-btn">
+            <i class="fas fa-trash"></i> Delete Batch
+        </button>
+        <a href="{{ url_for('batches') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Batches
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function deleteBatch(batchId) {
+    if (confirm('Are you sure you want to delete this batch?')) {
+        fetch(`/batches/${batchId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = "{{ url_for('batches') }}";
+            } else {
+                alert('Error deleting batch: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the batch');
+        });
+    }
+}
+</script>
+{% endblock %} 

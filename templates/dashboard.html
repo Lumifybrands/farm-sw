@@ -1,76 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bismi Farms Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-</head>
-<body>
-    <nav class="dashboard-nav">
-        <div class="nav-brand">Bismi Farms</div>
-        <ul class="nav-links">
-            <li><a href="#" id="overviewLink" class="active">Overview</a></li>
-            <li><a href="#" id="inventoryLink">Inventory</a></li>
-            <li><a href="#" id="salesLink">Sales</a></li>
-            <li><a href="#" id="reportsLink">Reports</a></li>
-            {% if current_user.user_type == 'admin' %}
-            <li><a href="#" id="usersLink">Users</a></li>
-            {% endif %}
-        </ul>
-        <div class="nav-user">
-            <span>{{ current_user.username }}</span>
-            <a href="/logout" class="logout-btn">Logout</a>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <main class="dashboard-content">
-        <div id="overview" class="dashboard-section active">
-            <h2>Overview</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total Birds</h3>
-                    <p class="stat-number">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Today's Eggs</h3>
-                    <p class="stat-number">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Today's Sales</h3>
-                    <p class="stat-number">₹0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Feed Stock</h3>
-                    <p class="stat-number">0 kg</p>
-                </div>
-            </div>
-        </div>
+{% block title %}Dashboard - Bismi Farms{% endblock %}
 
-        <div id="inventory" class="dashboard-section">
-            <h2>Inventory Management</h2>
-            <!-- Inventory content will be loaded dynamically -->
-        </div>
+{% block content %}
+<div class="content-header">
+    <h1>Dashboard</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Dashboard</span>
+    </div>
+</div>
 
-        <div id="sales" class="dashboard-section">
-            <h2>Sales Records</h2>
-            <!-- Sales content will be loaded dynamically -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <i class="fas fa-kiwi-bird"></i>
+        <div class="stat-info">
+            <h3>Total Birds</h3>
+            <p>0</p>
         </div>
-
-        <div id="reports" class="dashboard-section">
-            <h2>Reports</h2>
-            <!-- Reports content will be loaded dynamically -->
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-layer-group"></i>
+        <div class="stat-info">
+            <h3>Active Batches</h3>
+            <p>0</p>
         </div>
-
-        {% if current_user.user_type == 'admin' %}
-        <div id="users" class="dashboard-section">
-            <h2>User Management</h2>
-            <!-- User management content will be loaded dynamically -->
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-warehouse"></i>
+        <div class="stat-info">
+            <h3>Farms</h3>
+            <p>0</p>
         </div>
-        {% endif %}
-    </main>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-heartbeat"></i>
+        <div class="stat-info">
+            <h3>Health Status</h3>
+            <p>Good</p>
+        </div>
+    </div>
+</div>
 
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-</body>
-</html>
+<div class="dashboard-welcome">
+    <h2>Welcome, {{ username }}!</h2>
+    <p>This is your {{ user_type }} dashboard. Here you can manage your poultry farm operations.</p>
+</div>
+{% endblock %} 

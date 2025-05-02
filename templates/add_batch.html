@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Add Batch - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Batch</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Add Batch</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form">
+        <div class="form-group">
+            <label for="farm_id">Select Farm</label>
+            <select id="farm_id" name="farm_id" required onchange="updateShedFields()">
+                <option value="">Select a farm</option>
+                {% for farm in farms %}
+                <option value="{{ farm.id }}" data-sheds="{{ farm.num_sheds }}" data-capacities="{{ farm.shed_capacities }}">
+                    {{ farm.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="batch_number">Batch Number</label>
+            <input type="text" id="batch_number" name="batch_number" required>
+        </div>
+
+        <div id="shed_birds_container">
+            <!-- Shed bird count fields will be dynamically added here -->
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Add Batch</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function updateShedFields() {
+    const farmSelect = document.getElementById('farm_id');
+    const selectedOption = farmSelect.options[farmSelect.selectedIndex];
+    const container = document.getElementById('shed_birds_container');
+    container.innerHTML = '';
+
+    if (selectedOption.value) {
+        const numSheds = parseInt(selectedOption.dataset.sheds);
+        const capacities = JSON.parse(selectedOption.dataset.capacities);
+
+        for (let i = 1; i <= numSheds; i++) {
+            const formGroup = document.createElement('div');
+            formGroup.className = 'form-group';
+            formGroup.innerHTML = `
+                <label for="shed_birds_${i}">Shed ${i} Birds (Max: ${capacities[i-1]})</label>
+                <input type="number" id="shed_birds_${i}" name="shed_birds_${i}" 
+                       min="0" max="${capacities[i-1]}" required
+                       onchange="validateShedCapacity(this, ${capacities[i-1]})">
+            `;
+            container.appendChild(formGroup);
+        }
+    }
+}
+
+function validateShedCapacity(input, maxCapacity) {
+    const value = parseInt(input.value);
+    if (value > maxCapacity) {
+        alert(`Number of birds cannot exceed shed capacity of ${maxCapacity}`);
+        input.value = maxCapacity;
+    }
+}
+
+// Initialize shed fields if farm is pre-selected
+document.addEventListener('DOMContentLoaded', function() {
+    const farmSelect = document.getElementById('farm_id');
+    if (farmSelect.value) {
+        updateShedFields();
+    }
+});
+</script>
+{% endblock %} 

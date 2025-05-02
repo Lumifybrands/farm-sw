@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}View Feed - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Feed Details</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Feeds</span> / <span>View Feed</span>
+    </div>
+</div>
+
+<div class="farm-details">
+    <div class="detail-group">
+        <label><i class="fas fa-info-circle"></i> Basic Information</label>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Brand</label>
+                <span>{{ feed.brand }}</span>
+            </div>
+            <div class="info-item">
+                <label>Category</label>
+                <span>{{ feed.category }}</span>
+            </div>
+            <div class="info-item">
+                <label>Weight</label>
+                <span>{{ "%.2f"|format(feed.weight) }} kg</span>
+            </div>
+            <div class="info-item">
+                <label>Price</label>
+                <span>₹{{ "%.2f"|format(feed.price) }} per kg</span>
+            </div>
+            <div class="info-item">
+                <label>Stock Quantity</label>
+                <span>{{ "%.2f"|format(feed.stock_quantity) }} kg</span>
+            </div>
+            <div class="info-item">
+                <label>Total Value</label>
+                <span>₹{{ "%.2f"|format(feed.price * feed.stock_quantity) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-history"></i> Additional Information</label>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Created On</label>
+                <span>{{ feed.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="info-item">
+                <label>Last Updated</label>
+                <span>{{ feed.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="edit-btn">
+            <i class="fas fa-edit"></i> Edit Feed
+        </a>
+        <button onclick="deleteFeed({{ feed.id }})" class="delete-btn">
+            <i class="fas fa-trash"></i> Delete Feed
+        </button>
+        <a href="{{ url_for('feeds') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Feeds
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function deleteFeed(feedId) {
+    if (confirm('Are you sure you want to delete this feed?')) {
+        fetch(`/feeds/${feedId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = "{{ url_for('feeds') }}";
+            } else {
+                alert('Error deleting feed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the feed');
+        });
+    }
+}
+</script>
+{% endblock %} 

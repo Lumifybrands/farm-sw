@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Feeds - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Feed Management</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Feeds</span>
+    </div>
+</div>
+
+<div class="feeds-container">
+    <div class="feeds-header">
+        <div class="search-bar">
+            <input type="text" id="feedSearch" placeholder="Search feeds..." onkeyup="searchFeeds()">
+            <i class="fas fa-search"></i>
+        </div>
+        <a href="{{ url_for('add_feed') }}" class="add-feed-btn">
+            <i class="fas fa-plus"></i> Add Feed
+        </a>
+    </div>
+
+    <div class="feeds-table-container">
+        <table class="feeds-table">
+            <thead>
+                <tr>
+                    <th>Brand</th>
+                    <th>Category</th>
+                    <th>Weight (kg)</th>
+                    <th>Price (₹/kg)</th>
+                    <th>Stock (kg)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for feed in feeds %}
+                <tr>
+                    <td>{{ feed.brand }}</td>
+                    <td>{{ feed.category }}</td>
+                    <td>{{ "%.2f"|format(feed.weight) }}</td>
+                    <td>₹{{ "%.2f"|format(feed.price) }}</td>
+                    <td>{{ "%.2f"|format(feed.stock_quantity) }}</td>
+                    <td class="action-buttons">
+                        <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function searchFeeds() {
+    const input = document.getElementById('feedSearch');
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector('.feeds-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        let found = false;
+
+        for (let j = 0; j < cells.length - 1; j++) {  // Exclude actions column
+            const cell = cells[j];
+            if (cell.textContent.toLowerCase().indexOf(filter) > -1) {
+                found = true;
+                break;
+            }
+        }
+
+        row.style.display = found ? '' : 'none';
+    }
+}
+
+function deleteFeed(feedId) {
+    if (confirm('Are you sure you want to delete this feed?')) {
+        fetch(`/feeds/${feedId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error deleting feed: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the feed');
+        });
+    }
+}
+</script>
+{% endblock %} 

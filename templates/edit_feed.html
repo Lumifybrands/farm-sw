@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Feed - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Edit Feed</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Feeds</span> / <span>Edit Feed</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('edit_feed', feed_id=feed.id) }}" method="POST" class="feed-form">
+        <div class="form-group">
+            <label for="brand">Brand Name</label>
+            <input type="text" id="brand" name="brand" value="{{ feed.brand }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="">Select Category</option>
+                <option value="pre-starter" {% if feed.category == 'pre-starter' %}selected{% endif %}>Pre-Starter</option>
+                <option value="starter" {% if feed.category == 'starter' %}selected{% endif %}>Starter</option>
+                <option value="finisher" {% if feed.category == 'finisher' %}selected{% endif %}>Finisher</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">Weight (kg)</label>
+            <input type="number" id="weight" name="weight" step="0.01" min="0" value="{{ feed.weight }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price per kg (₹)</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" value="{{ feed.price }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="stock_quantity">Stock Quantity (kg)</label>
+            <input type="number" id="stock_quantity" name="stock_quantity" step="0.01" min="0" value="{{ feed.stock_quantity }}" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('feeds') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Update Feed</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

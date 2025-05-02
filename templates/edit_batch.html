@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Batch - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Edit Batch</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Edit Batch</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('edit_batch', batch_id=batch.id) }}" method="POST" class="batch-form">
+        <div class="form-group">
+            <label for="farm_id">Farm</label>
+            <input type="text" id="farm_id" value="{{ batch.farm.name }}" disabled>
+            <input type="hidden" name="farm_id" value="{{ batch.farm.id }}">
+        </div>
+
+        <div class="form-group">
+            <label for="batch_number">Batch Number</label>
+            <input type="text" id="batch_number" name="batch_number" value="{{ batch.batch_number }}" required>
+        </div>
+
+        <div id="shed_birds_container">
+            {% for shed_birds in batch.get_shed_birds() %}
+            <div class="form-group">
+                <label for="shed_birds_{{ loop.index }}">Shed {{ loop.index }} Birds (Max: {{ batch.farm.get_shed_capacities()[loop.index0] }})</label>
+                <input type="number" id="shed_birds_{{ loop.index }}" name="shed_birds_{{ loop.index }}" 
+                       value="{{ shed_birds }}"
+                       min="0" max="{{ batch.farm.get_shed_capacities()[loop.index0] }}" required
+                       onchange="validateShedCapacity(this, {{ batch.farm.get_shed_capacities()[loop.index0] }})">
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Update Batch</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function validateShedCapacity(input, maxCapacity) {
+    const value = parseInt(input.value);
+    if (value > maxCapacity) {
+        alert(`Number of birds cannot exceed shed capacity of ${maxCapacity}`);
+        input.value = maxCapacity;
+    }
+}
+</script>
+{% endblock %} 
