@@ -1,0 +1,504 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Manager Dashboard - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Manager Dashboard</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Manager Dashboard</span>
+    </div>
+</div>
+
+<div class="dashboard-welcome">
+    <div class="welcome-content">
+        <div class="welcome-text">
+            <h2>Welcome back, {{ session.username }}!</h2>
+            <p>Here's your poultry farm overview for today</p>
+        </div>
+        <div class="welcome-date">
+            <div class="date-box">
+                <span class="date">{{ now.strftime('%d') }}</span>
+                <span class="month">{{ now.strftime('%b') }}</span>
+                <span class="year">{{ now.strftime('%Y') }}</span>
+            </div>
+            <span class="time">{{ now.strftime('%I:%M %p') }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Quick Stats -->
+    <div class="stats-section">
+        <div class="section-header">
+            <h3><i class="fas fa-chart-line"></i> Quick Statistics</h3>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-kiwi-bird"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Total Birds</h4>
+                    <p class="stat-number">{{ total_birds }}</p>
+                    <span class="stat-label">Active birds in farm</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Active Batches</h4>
+                    <p class="stat-number">{{ active_batches }}</p>
+                    <span class="stat-label">Currently running</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-syringe"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Pending Vaccinations</h4>
+                    <p class="stat-number">{{ pending_vaccinations }}</p>
+                    <span class="stat-label">Need attention</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div class="stat-info">
+                    <h4>Pending Medicines</h4>
+                    <p class="stat-number">{{ pending_medicines }}</p>
+                    <span class="stat-label">To be administered</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="activities-section">
+        <div class="section-header">
+            <h3><i class="fas fa-history"></i> Recent Activities</h3>
+            <!-- <a href="#" class="view-all">View All <i class="fas fa-arrow-right"></i></a> -->
+        </div>
+        <div class="activities-list">
+            {% for activity in recent_activities %}
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas {{ activity.icon }}"></i>
+                </div>
+                <div class="activity-details">
+                    <div class="activity-header">
+                        <h4>{{ activity.title }}</h4>
+                        <span class="activity-time">{{ activity.time }}</span>
+                    </div>
+                    <p>{{ activity.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions-section">
+        <div class="section-header">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        </div>
+        <div class="quick-actions">
+            <a href="{{ url_for('manager_batches') }}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-kiwi-bird"></i>
+                </div>
+                <div class="action-content">
+                    <h4>View Batches</h4>
+                    <p>Manage your active batches</p>
+                </div>
+                <div class="action-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+            <a href="{{ url_for('manager_medicines') }}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Medicine Schedule</h4>
+                    <p>Check medicine administration</p>
+                </div>
+                <div class="action-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+            <a href="{{ url_for('manager_vaccines') }}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-syringe"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Vaccination Schedule</h4>
+                    <p>Monitor vaccination status</p>
+                </div>
+                <div class="action-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+            <a href="{{ url_for('manager_reports') }}" class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="action-content">
+                    <h4>View Reports</h4>
+                    <p>Access detailed analytics</p>
+                </div>
+                <div class="action-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    
+</div>
+
+{% block styles %}
+<style>
+    .content-header {
+        margin-bottom: 2rem;
+    }
+
+    .content-header h1 {
+        font-size: 1.75rem;
+        color: var(--text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .breadcrumb {
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .breadcrumb span:last-child {
+        color: var(--primary-color);
+    }
+
+    /* Welcome Section */
+    .dashboard-welcome {
+        background: linear-gradient(135deg, var(--primary-color), #1557b0);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .welcome-text h2 {
+        font-size: 1.75rem;
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-text p {
+        opacity: 0.9;
+        margin: 0;
+        color: #ffffff9d;
+        font-size: 1.1rem;
+    }
+
+    .welcome-date {
+        text-align: center;
+    }
+
+    .date-box {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+    }
+
+    .date {
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+    }
+
+    .month, .year {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .time {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+        display: grid;
+        gap: 2rem;
+    }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h3 {
+        font-size: 1.2rem;
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-header h3 i {
+        color: var(--primary-color);
+    }
+
+    .view-all {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        background: var(--background-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-color);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.warning {
+        background: var(--warning-color);
+    }
+
+    .stat-info h4 {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .stat-number {
+        color: var(--text-color);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0.25rem 0;
+    }
+
+    .stat-label {
+        color: var(--text-light);
+        font-size: 0.8rem;
+    }
+
+    /* Quick Actions */
+    .actions-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+
+    .action-card {
+        background: var(--background-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-decoration: none;
+        color: var(--text-color);
+        transition: all 0.2s;
+    }
+
+    .action-card:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+
+    .action-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .action-content {
+        flex: 1;
+    }
+
+    .action-content h4 {
+        margin: 0 0 0.25rem;
+        font-size: 1rem;
+    }
+
+    .action-content p {
+        margin: 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .action-arrow {
+        color: var(--primary-color);
+        opacity: 0;
+        transition: all 0.2s;
+    }
+
+    .action-card:hover .action-arrow {
+        opacity: 1;
+        transform: translateX(5px);
+    }
+
+    /* Activities Section */
+    .activities-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .activities-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        background: var(--background-light);
+        transition: transform 0.2s;
+    }
+
+    .activity-item:hover {
+        transform: translateX(5px);
+    }
+
+    .activity-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--secondary-color);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-color);
+    }
+
+    .activity-details {
+        flex: 1;
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.25rem;
+    }
+
+    .activity-header h4 {
+        color: var(--text-color);
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .activity-time {
+        color: var(--text-light);
+        font-size: 0.8rem;
+    }
+
+    .activity-details p {
+        color: var(--text-light);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .welcome-content {
+            flex-direction: column;
+            text-align: center;
+            gap: 1.5rem;
+        }
+
+        .stats-grid,
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .activity-item {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .activity-icon {
+            margin-bottom: 0.5rem;
+        }
+
+        .activity-header {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+{% endblock %} 

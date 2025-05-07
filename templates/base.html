@@ -7,6 +7,214 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Additional styles for base template */
+        .sidebar {
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            height: calc(100vh - 60px);
+            position: fixed;
+            top: 60px;
+            left: 0;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 999;
+            width: 280px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .sidebar-section h3 {
+            color: #1a73e8;
+            padding: 0.75rem 1rem;
+            margin: 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+            position: relative;
+        }
+
+        .sidebar-menu > li > a {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #000000cc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu > li > a:hover {
+            background-color: rgba(26, 115, 232, 0.08);
+            color: #1557b0;
+        }
+
+        .sidebar-menu > li.active > a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-menu > li > a i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .sidebar-menu > li.active > a i {
+            opacity: 1;
+        }
+
+        /* Submenu styles */
+        .has-submenu {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .submenu-icon {
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+            opacity: 0.7;
+        }
+
+        .sidebar-menu li.active .submenu-icon {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+
+        .submenu {
+            display: none;
+            padding: 0.25rem 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .sidebar-menu li.active .submenu {
+            display: block;
+        }
+
+        .submenu li {
+            margin: 0.25rem 0;
+            position: relative;
+        }
+
+        .submenu a {
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            font-size: 0.95em;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #000000cc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .submenu a:hover {
+            background-color: rgba(26, 115, 232, 0.08);
+            color: #1557b0;
+        }
+
+        .submenu li.active a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .submenu a i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .submenu li.active a i {
+            opacity: 1;
+        }
+
+        /* Update the health section active state */
+        .sidebar-menu li[class*="health"] > a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-menu li[class*="health"] > a i {
+            opacity: 1;
+        }
+
+        .sidebar-menu li[class*="health"] .submenu {
+            display: block;
+        }
+
+        .mobile-nav-toggle {
+            color: #1a73e8;
+        }
+        
+        .mobile-nav-toggle:hover {
+            color: #1557b0;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .mobile-nav-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .user-info span:not(.logout-text) {
+                display: none;
+            }
+
+            .user-info {
+                display: flex;
+                gap: 0;
+            }
+
+            .logout-btn {
+                padding: 0.5rem;
+            }
+
+            /* Keep logo text visible but adjust size */
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .logo i {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -62,7 +270,7 @@
                                 Batch
                             </a>
                         </li>
-                        <li {% if request.endpoint.startswith('farm') %}class="active"{% endif %}>
+                        <li {% if request.endpoint.startswith('farms') %}class="active"{% endif %}>
                             <a href="{{ url_for('farms') }}">
                                 <i class="fas fa-warehouse"></i>
                                 Farm
@@ -74,22 +282,37 @@
                                 Feed
                             </a>
                         </li>
-                        <li>
-                            <a href="#health">
+                        <li {% if request.endpoint.startswith('health_material') or request.endpoint.startswith('medicine') or request.endpoint.startswith('vaccine') %}class="active"{% endif %}>
+                            <a href="#health" class="has-submenu">
                                 <i class="fas fa-heartbeat"></i>
-                                Health
+                                <span>Health</span>
+                                <i class="fas fa-chevron-down submenu-icon"></i>
                             </a>
+                            <ul class="submenu">
+                                <li {% if request.endpoint.startswith('health_material') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('health_materials') }}">
+                                        <i class="fas fa-medkit"></i>
+                                        <span>Health Materials</span>
+                                    </a>
+                                </li>
+                                <li {% if request.endpoint.startswith('medicine') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('medicines') }}">
+                                        <i class="fas fa-pills"></i>
+                                        <span>Medicines</span>
+                                    </a>
+                                </li>
+                                <li {% if request.endpoint.startswith('vaccine') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('vaccines') }}">
+                                        <i class="fas fa-syringe"></i>
+                                        <span>Vaccines</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li>
-                            <a href="#medicines">
-                                <i class="fas fa-pills"></i>
-                                Medicines
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#farm-manager">
+                        <li {% if request.endpoint.startswith('farm_manager') %}class="active"{% endif %}>
+                            <a href="{{ url_for('farm_manager') }}">
                                 <i class="fas fa-user-tie"></i>
-                                Farm Manager
+                                <span>Farm Manager</span>
                             </a>
                         </li>
                     </ul>
@@ -162,6 +385,42 @@
             const sidebar = document.querySelector('.sidebar');
             if (window.innerWidth > 768) {
                 sidebar.classList.remove('active');
+            }
+        });
+
+        // Submenu toggle functionality
+        document.querySelectorAll('.has-submenu').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const parent = this.parentElement;
+                const submenu = parent.querySelector('.submenu');
+                const icon = this.querySelector('.submenu-icon');
+                
+                // Toggle active class on parent
+                parent.classList.toggle('active');
+                
+                // Toggle submenu display
+                if (submenu.style.display === 'block') {
+                    submenu.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    submenu.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // Initialize submenu state based on active items
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeSubmenu = document.querySelector('.submenu li.active');
+            if (activeSubmenu) {
+                const parent = activeSubmenu.closest('li');
+                const submenu = parent.querySelector('.submenu');
+                const icon = parent.querySelector('.submenu-icon');
+                
+                parent.classList.add('active');
+                submenu.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
             }
         });
     </script>

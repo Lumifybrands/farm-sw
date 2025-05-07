@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Health Material - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="section-container">
+    <div class="content-header">
+        <h1>Edit Health Material</h1>
+        <div class="breadcrumb">
+            <a href="{{ url_for('health_materials') }}">Health Materials</a> / Edit
+        </div>
+    </div>
+
+    <div class="form-container">
+        <form method="POST" class="data-form">
+            <div class="form-group">
+                <label for="name">Material Name</label>
+                <input type="text" id="name" name="name" value="{{ health_material.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Select Category</option>
+                    <option value="Disinfectant" {% if health_material.category == 'Disinfectant' %}selected{% endif %}>Disinfectant</option>
+                    <option value="Sanitizer" {% if health_material.category == 'Sanitizer' %}selected{% endif %}>Sanitizer</option>
+                    <option value="Cleaning" {% if health_material.category == 'Cleaning' %}selected{% endif %}>Cleaning</option>
+                    <option value="Other" {% if health_material.category == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity_per_unit">Quantity per Unit</label>
+                <div class="input-group">
+                    <input type="number" id="quantity_per_unit" name="quantity_per_unit" value="{{ health_material.quantity_per_unit }}" step="0.01" required>
+                    <select id="unit_type" name="unit_type" required>
+                        <option value="ml" {% if health_material.unit_type == 'ml' %}selected{% endif %}>ml</option>
+                        <option value="l" {% if health_material.unit_type == 'l' %}selected{% endif %}>l</option>
+                        <option value="kg" {% if health_material.unit_type == 'kg' %}selected{% endif %}>kg</option>
+                        <option value="g" {% if health_material.unit_type == 'g' %}selected{% endif %}>g</option>
+                        <option value="pcs" {% if health_material.unit_type == 'pcs' %}selected{% endif %}>pcs</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price per Unit (₹)</label>
+                <input type="number" id="price" name="price" value="{{ health_material.price }}" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="4">{{ health_material.notes }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('health_materials') }}" class="cancel-btn">
+                    Cancel
+                </a>
+                <button type="submit" class="submit-btn">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Add any JavaScript functionality here if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation or other functionality
+    });
+</script>
+{% endblock %} 

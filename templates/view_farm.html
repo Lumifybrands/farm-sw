@@ -44,8 +44,23 @@
     </div>
 
     <div class="detail-group">
+        <label><i class="fas fa-ruler-combined"></i> Total Area</label>
+        <span>{{ farm.total_area }} square meters</span>
+    </div>
+
+    <div class="detail-group">
         <label><i class="fas fa-user"></i> Owner Name</label>
         <span>{{ farm.owner_name }}</span>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-phone"></i> Contact Number</label>
+        <span>{{ farm.contact_number }}</span>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-star"></i> Farm Condition</label>
+        <span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span>
     </div>
 
     <div class="detail-group">
@@ -70,6 +85,30 @@
         </a>
     </div>
 </div>
+
+<style>
+.condition-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.condition-average {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.condition-medium {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.condition-good {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}

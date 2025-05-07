@@ -14,29 +14,72 @@
     <div class="detail-group">
         <label><i class="fas fa-info-circle"></i> Basic Information</label>
         <div class="info-grid">
-            <div class="info-item">
-                <label>Farm Name</label>
-                <span>{{ batch.farm.name }}</span>
+            <div class="info-box">
+                <div class="info-label">Batch Number</div>
+                <div class="info-value">{{ batch.batch_number }}</div>
             </div>
-            <div class="info-item">
-                <label>Batch Number</label>
-                <span>{{ batch.batch_number }}</span>
+            <div class="info-box">
+                <div class="info-label">Farm Name</div>
+                <div class="info-value">{{ batch.farm.name }}</div>
             </div>
-            <div class="info-item">
-                <label>Total Birds</label>
-                <span>{{ batch.total_birds }}</span>
+            <div class="info-box">
+                <div class="info-label">Manager</div>
+                <div class="info-value">
+                    {% if batch.manager %}
+                        {{ batch.manager.employee.name if batch.manager.employee else batch.manager.username }}
+                        <span class="badge {% if batch.manager.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            {{ 'Senior Manager' if batch.manager.user_type == 'senior_manager' else 'Assistant Manager' }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">No manager assigned</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="info-item">
-                <label>Available Birds</label>
-                <span>{{ batch.available_birds }}</span>
+            <div class="info-box">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+                </div>
             </div>
-            <div class="info-item">
-                <label>Age</label>
-                <span>{{ batch.get_age_days() }} days</span>
+            <div class="info-box">
+                <div class="info-label">Brand</div>
+                <div class="info-value">{{ batch.brand if batch.brand else 'Not specified' }}</div>
             </div>
-            <div class="info-item">
-                <label>Created On</label>
-                <span>{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            <div class="info-box">
+                <div class="info-label">Total Birds</div>
+                <div class="info-value">{{ batch.total_birds }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Cost per Chicken</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.cost_per_chicken) }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Total Cost</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.cost_per_chicken * batch.total_birds) }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Available Birds</div>
+                <div class="info-value">{{ batch.available_birds }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Age</div>
+                <div class="info-value">{{ batch.get_age_days() }} days</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Mortality</div>
+                <div class="info-value">{{ batch.total_mortality }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Feed Used</div>
+                <div class="info-value">{{ "%.2f"|format(batch.feed_usage) }} packets</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Current Feed Stock</div>
+                <div class="info-value">{{ "%.2f"|format(batch.feed_stock) }} packets</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Created On</div>
+                <div class="info-value">{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
             </div>
         </div>
     </div>
@@ -58,16 +101,169 @@
         </div>
     </div>
 
+    <div class="detail-group">
+        <label><i class="fas fa-chart-line"></i> Daily Updates</label>
+        <div class="update-selector">
+            <input type="date" id="updateDate" onchange="loadUpdate()">
+            <button onclick="loadLatestUpdate()" class="latest-btn">
+                <i class="fas fa-sync"></i> Latest Update
+            </button>
+        </div>
+        <div id="updateDetails" class="update-details">
+            {% if batch.updates %}
+                {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                <div class="update-header">
+                    <div class="update-date">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ last_update.date.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <div class="update-actions">
+                        <a href="{{ url_for('edit_batch_update', batch_id=batch.id, date=last_update.date.strftime('%Y-%m-%d')) }}" class="edit-update-btn">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button onclick="deleteBatchUpdate('{{ last_update.date.strftime('%Y-%m-%d') }}')" class="delete-update-btn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="update-content">
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Basic Information
+                        </div>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Mortality Count</label>
+                                <span>{{ last_update.mortality_count }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Feed Used</label>
+                                <span>{{ "%.2f"|format(last_update.feed_used) }} packets</span>
+                            </div>
+                            <div class="info-item" style="display: none;">
+                                <label>Feed Allocated</label>
+                                <span>
+                                    {% set total_allocation = 0 %}
+                                    {% for feed in last_update.feeds %}
+                                        {% set total_allocation = total_allocation + last_update.get_feed_quantity(feed.id) %}
+                                    {% endfor %}
+                                    {{ "%.2f"|format(total_allocation) }} packets
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <label>Average Weight</label>
+                                <span>{{ "%.2f"|format(last_update.avg_weight) }} kg</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if last_update.feeds %}
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="fas fa-drumstick-bite"></i>
+                            Feeds Allocated
+                        </div>
+                        <div class="allocated-items">
+                            {% for feed in last_update.feeds %}
+                            <div class="allocated-item">
+                                <span class="item-name">{{ feed.brand }} - {{ feed.category }}</span>
+                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if last_update.medicines %}
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="fas fa-pills"></i>
+                            Medicines Allocated
+                        </div>
+                        <div class="allocated-items">
+                            {% for medicine in last_update.medicines %}
+                            <div class="allocated-item">
+                                <span class="item-name">{{ medicine.name }}</span>
+                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_medicine_quantity(medicine.id)) }} {{ medicine.unit_type }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if last_update.health_materials %}
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="fas fa-medkit"></i>
+                            Health Materials Used
+                        </div>
+                        <div class="allocated-items">
+                            {% for material in last_update.health_materials %}
+                            <div class="allocated-item">
+                                <span class="item-name">{{ material.name }} - {{ material.category }}</span>
+                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_health_material_quantity(material.id)) }} {{ material.unit_type }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if last_update.notes %}
+                    <div class="info-section">
+                        <div class="info-section-title">
+                            <i class="fas fa-sticky-note"></i>
+                            Notes
+                        </div>
+                        <div class="info-item">
+                            <span>{{ last_update.notes }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="no-updates">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No updates available for this batch</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="action-buttons">
         <a href="{{ url_for('edit_batch', batch_id=batch.id) }}" class="edit-btn">
             <i class="fas fa-edit"></i> Edit Batch
         </a>
+        <button onclick="showStatusModal()" class="status-btn">
+            <i class="fas fa-exchange-alt"></i> Change Status
+        </button>
         <button onclick="deleteBatch({{ batch.id }})" class="delete-btn">
             <i class="fas fa-trash"></i> Delete Batch
         </button>
         <a href="{{ url_for('batches') }}" class="back-btn">
             <i class="fas fa-arrow-left"></i> Back to Batches
         </a>
+    </div>
+</div>
+
+<!-- Status Change Modal -->
+<div id="statusModal" class="modal">
+    <div class="modal-content">
+        <h2>Change Batch Status</h2>
+        <div class="status-options">
+            <button onclick="updateStatus('ongoing')" class="status-option {% if batch.status == 'ongoing' %}active{% endif %}">
+                <i class="fas fa-play-circle"></i> Ongoing
+            </button>
+            <button onclick="updateStatus('closing')" class="status-option {% if batch.status == 'closing' %}active{% endif %}">
+                <i class="fas fa-hourglass-half"></i> Closing
+            </button>
+            <button onclick="updateStatus('closed')" class="status-option {% if batch.status == 'closed' %}active{% endif %}">
+                <i class="fas fa-check-circle"></i> Closed
+            </button>
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeStatusModal()" class="cancel-btn">Cancel</button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -97,5 +293,592 @@ function deleteBatch(batchId) {
         });
     }
 }
+
+function showStatusModal() {
+    document.getElementById('statusModal').style.display = 'block';
+}
+
+function closeStatusModal() {
+    document.getElementById('statusModal').style.display = 'none';
+}
+
+function updateStatus(newStatus) {
+    fetch(`/batches/{{ batch.id }}/update-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error updating status: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating the status');
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('statusModal');
+    if (event.target == modal) {
+        closeStatusModal();
+    }
+}
+
+function loadUpdate() {
+    const date = document.getElementById('updateDate').value;
+    if (!date) return;
+
+    fetch(`/batches/{{ batch.id }}/update/${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.update) {
+                const updateDetails = document.getElementById('updateDetails');
+                const formattedDate = new Date(data.update.date).toISOString().split('T')[0];
+                
+                let html = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Date</label>
+                            <span>${formattedDate}</span>
+                            <a href="/batches/{{ batch.id }}/update/${date}/edit" class="edit-update-btn">
+                                <i class="fas fa-edit"></i> Edit Update
+                            </a>
+                        </div>
+                        <div class="info-item">
+                            <label>Mortality Count</label>
+                            <span>${data.update.mortality_count}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Feed Used</label>
+                            <span>${data.update.feed_used.toFixed(2)} packets</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Feed Allocated</label>
+                            <span>${data.update.feed_allocation.toFixed(2)} packets</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Average Weight</label>
+                            <span>${data.update.avg_weight.toFixed(2)} kg</span>
+                        </div>`;
+
+                if (data.update.feeds && data.update.feeds.length > 0) {
+                    html += `
+                        <div class="info-item full-width">
+                            <label>Feeds Allocated</label>
+                            <div class="allocated-items">
+                                ${data.update.feeds.map(feed => `
+                                    <div class="allocated-item">
+                                        <span class="item-name">${feed.brand} - ${feed.category}</span>
+                                        <span class="item-quantity">${feed.quantity.toFixed(2)} packets</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                }
+
+                if (data.update.medicines && data.update.medicines.length > 0) {
+                    html += `
+                        <div class="info-item full-width">
+                            <label>Medicines Allocated</label>
+                            <div class="allocated-items">
+                                ${data.update.medicines.map(medicine => `
+                                    <div class="allocated-item">
+                                        <span class="item-name">${medicine.name}</span>
+                                        <span class="item-quantity">${medicine.quantity.toFixed(2)} ${medicine.unit_type}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                }
+
+                if (data.update.health_materials && data.update.health_materials.length > 0) {
+                    html += `
+                        <div class="info-item full-width">
+                            <label>Health Materials Used</label>
+                            <div class="allocated-items">
+                                ${data.update.health_materials.map(material => `
+                                    <div class="allocated-item">
+                                        <span class="item-name">${material.name} - ${material.category}</span>
+                                        <span class="item-quantity">${material.quantity.toFixed(2)} ${material.unit_type}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                }
+
+                if (data.update.notes) {
+                    html += `
+                        <div class="info-item full-width">
+                            <label>Notes</label>
+                            <span>${data.update.notes}</span>
+                        </div>`;
+                }
+
+                html += '</div>';
+                updateDetails.innerHTML = html;
+            } else {
+                document.getElementById('updateDetails').innerHTML = `
+                    <div class="no-updates">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No update available for this date</p>
+                    </div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while loading the update');
+        });
+}
+
+function loadLatestUpdate() {
+    const today = new Date();
+    document.getElementById('updateDate').value = today.toISOString().split('T')[0];
+    loadUpdate();
+}
+
+function deleteBatchUpdate(date) {
+    if (confirm('Are you sure you want to delete this update? This action cannot be undone.')) {
+        fetch(`/batches/{{ batch.id }}/update/${date}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting update: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the update');
+        });
+    }
+}
 </script>
+
+<style>
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.status-ongoing {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-closing {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.status-closed {
+    background-color: #e8f5e9;
+    color: #388e3c;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+}
+
+.status-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.status-option {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-option:hover {
+    background-color: #f5f5f5;
+}
+
+.status-option.active {
+    background-color: #e3f2fd;
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.action-btn.status {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn.status:hover {
+    background-color: #1557b0;
+}
+
+.update-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.update-selector input[type="date"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.latest-btn {
+    padding: 8px 16px;
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.latest-btn:hover {
+    background-color: #1557b0;
+}
+
+.update-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 10px;
+}
+
+.update-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.update-date {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1a73e8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.update-date i {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.update-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.update-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.info-section {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.info-section-title {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-section-title i {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.info-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.info-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.info-label {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+.badge-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.status-ongoing {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-closing {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.status-closed {
+    background-color: #dc3545;
+    color: white;
+}
+
+.text-muted {
+    color: #6c757d;
+}
+
+.allocated-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.allocated-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.item-name {
+    color: #334155;
+    font-weight: 500;
+}
+
+.item-quantity {
+    color: #1a73e8;
+    font-weight: 500;
+}
+
+.edit-update-btn,
+.delete-update-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.edit-update-btn {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+}
+
+.edit-update-btn:hover {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
+.delete-update-btn {
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    color: #dc2626;
+    cursor: pointer;
+}
+
+.delete-update-btn:hover {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+    .update-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .update-actions {
+        width: 100%;
+    }
+
+    .edit-update-btn,
+    .delete-update-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.no-updates {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.no-updates i {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.edit-update-btn,
+.delete-update-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.edit-update-btn {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.edit-update-btn:hover {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.delete-update-btn {
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    cursor: pointer;
+}
+
+.delete-update-btn:hover {
+    background-color: #fecaca;
+    color: #b91c1c;
+}
+
+.text-muted {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.badge-primary {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.badge-secondary {
+    background-color: #f1f3f4;
+    color: #5f6368;
+}
+</style>
 {% endblock %} 

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Add Health Material - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Health Material</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Health Materials</span> / <span>Add Health Material</span>
+    </div>
+</div>
+
+<div class="section-container">
+    <form method="POST" class="form-container">
+        <div class="form-group">
+            <label for="name">Material Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="">Select Category</option>
+                <option value="Disinfectant">Disinfectant</option>
+                <option value="Sanitizer">Sanitizer</option>
+                <option value="Equipment">Equipment</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Safety">Safety</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity_per_unit">Quantity per Unit</label>
+            <div class="input-group">
+                <input type="number" id="quantity_per_unit" name="quantity_per_unit" step="0.01" min="0" required>
+                <select name="unit_type" required>
+                    <option value="litre">Litre</option>
+                    <option value="piece">Piece</option>
+                    <option value="box">Box</option>
+                    <option value="kg">Kilogram</option>
+                    <option value="pack">Pack</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price per Unit (₹)</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('health_materials') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Add Health Material</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

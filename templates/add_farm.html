@@ -32,8 +32,28 @@
         </div>
 
         <div class="form-group">
+            <label for="total_area">Total Area (square meters)</label>
+            <input type="number" id="total_area" name="total_area" min="0" step="0.01" required>
+        </div>
+
+        <div class="form-group">
             <label for="owner_name">Owner Name</label>
             <input type="text" id="owner_name" name="owner_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="contact_number">Contact Number</label>
+            <input type="tel" id="contact_number" name="contact_number" pattern="[0-9]+" required>
+        </div>
+
+        <div class="form-group">
+            <label for="farm_condition">Farm Condition</label>
+            <select id="farm_condition" name="farm_condition" required>
+                <option value="">Select Condition</option>
+                <option value="average">Average</option>
+                <option value="medium">Medium</option>
+                <option value="good">Good</option>
+            </select>
         </div>
 
         <div class="form-actions">

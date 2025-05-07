@@ -16,6 +16,12 @@
             <input type="text" id="batchSearch" placeholder="Search batches...">
             <i class="fas fa-search"></i>
         </div>
+        <div class="status-filter">
+            <button class="filter-btn active" data-status="all">All</button>
+            <button class="filter-btn" data-status="ongoing">Ongoing</button>
+            <button class="filter-btn" data-status="closing">Closing</button>
+            <button class="filter-btn" data-status="closed">Closed</button>
+        </div>
         <button class="add-batch-btn" onclick="location.href='{{ url_for('add_batch') }}'">
             <i class="fas fa-plus"></i> Add Batch
         </button>
@@ -25,22 +31,44 @@
         <table class="batches-table">
             <thead>
                 <tr>
+                    <th>Batch No.</th>
                     <th>Farm Name</th>
-                    <th>Batch Number</th>
+                    <th>Status</th>
                     <th>Total Birds</th>
                     <th>Available Birds</th>
-                    <th>Age (Days)</th>
+                    <th>Total Mortality</th>
+                    <th>Age</th>
+                    <th>Last Update</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for batch in batches %}
-                <tr>
-                    <td>{{ batch.farm.name }}</td>
+                {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
+                <tr data-status="{{ batch.status }}">
                     <td>{{ batch.batch_number }}</td>
+                    <td>{{ batch.farm.name }}</td>
+                    <td><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
                     <td>{{ batch.total_birds }}</td>
                     <td>{{ batch.available_birds }}</td>
+                    <td>{{ batch.total_mortality }}</td>
                     <td>{{ batch.get_age_days() }}</td>
+                    <td>
+                        {% if batch.updates %}
+                            {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                            {% set today = now.date() %}
+                            {% set yesterday = today - timedelta(days=1) %}
+                            
+                            {% if last_update.date == today %}
+                                <span class="update-badge today">Today</span>
+                            {% elif last_update.date == yesterday %}
+                                <span class="update-badge yesterday">Yesterday</span>
+                            {% else %}
+                                <span class="update-badge">{{ last_update.date.strftime('%d-%m-%Y') }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="update-badge no-updates">No updates</span>
+                        {% endif %}
+                    </td>
                     <td class="action-buttons">
                         <button class="action-btn view" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-eye"></i>
@@ -48,6 +76,15 @@
                         <button class="action-btn edit" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-edit"></i>
                         </button>
+                        {% if batch.updates and batch.updates|sort(attribute='date', reverse=true)|first|attr('date') == now.date() %}
+                        <button class="action-btn update disabled" title="Update already submitted for today">
+                            <i class="fas fa-calendar-plus"></i>
+                        </button>
+                        {% else %}
+                        <button class="action-btn update" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
+                            <i class="fas fa-calendar-plus"></i>
+                        </button>
+                        {% endif %}
                         <button class="action-btn delete" onclick="deleteBatch({{ batch.id }})">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -58,6 +95,146 @@
         </table>
     </div>
 </div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .search-bar input {
+        border: 1px solid #1a73e8;
+    }
+    
+    .search-bar input:focus {
+        border-color: #1557b0;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    }
+    
+    .add-batch-btn {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .add-batch-btn:hover {
+        background-color: #1557b0;
+    }
+    
+    .batches-table th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+    }
+    
+    .batches-table tr:nth-child(even) {
+        background-color: rgba(26, 115, 232, 0.05);
+    }
+    
+    .action-btn.view, .action-btn.edit {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .action-btn.view:hover, .action-btn.edit:hover {
+        background-color: #1557b0;
+    }
+    
+    .action-btn.delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background-color: #c82333;
+    }
+
+    .status-filter {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+    }
+
+    .filter-btn {
+        padding: 6px 12px;
+        border: 1px solid #1a73e8;
+        background: white;
+        color: #1a73e8;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background-color: #e8f0fe;
+    }
+
+    .filter-btn.active {
+        background-color: #1a73e8;
+        color: white;
+    }
+
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.9em;
+    }
+
+    .status-ongoing {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .status-closing {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+
+    .status-closed {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .action-btn.update {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .action-btn.update:hover {
+        background-color: #218838;
+    }
+
+    .update-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.9em;
+        display: inline-block;
+    }
+
+    .update-badge.today {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .update-badge.yesterday {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+
+    .update-badge.no-updates {
+        background-color: #f5f5f5;
+        color: #757575;
+    }
+
+    .action-btn.update.disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .action-btn.update.disabled:hover {
+        background-color: #6c757d;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -92,7 +269,36 @@ document.getElementById('batchSearch').addEventListener('input', function(e) {
     
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchText) ? '' : 'none';
+        const status = row.getAttribute('data-status');
+        const statusFilter = document.querySelector('.filter-btn.active').getAttribute('data-status');
+        
+        const matchesSearch = text.includes(searchText);
+        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        
+        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+    });
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Update active button
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filter rows
+        const status = this.getAttribute('data-status');
+        const searchText = document.getElementById('batchSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.batches-table tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            
+            const matchesSearch = text.includes(searchText);
+            const matchesStatus = status === 'all' || rowStatus === status;
+            
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
     });
 });
 </script>

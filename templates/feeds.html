@@ -29,7 +29,6 @@
                     <th>Category</th>
                     <th>Weight (kg)</th>
                     <th>Price (₹/kg)</th>
-                    <th>Stock (kg)</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -40,7 +39,6 @@
                     <td>{{ feed.category }}</td>
                     <td>{{ "%.2f"|format(feed.weight) }}</td>
                     <td>₹{{ "%.2f"|format(feed.price) }}</td>
-                    <td>{{ "%.2f"|format(feed.stock_quantity) }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view" title="View">
                             <i class="fas fa-eye"></i>
@@ -58,6 +56,68 @@
         </table>
     </div>
 </div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .search-bar input {
+        border: 1px solid #1a73e8;
+    }
+    
+    .search-bar input:focus {
+        border-color: #1557b0;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    }
+    
+    .add-feed-btn {
+        background-color: #1a73e8;
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .add-feed-btn:hover {
+        background-color: #1557b0;
+        color: white;
+    }
+    
+    .feeds-table th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+    }
+    
+    .feeds-table tr:nth-child(even) {
+        background-color: rgba(26, 115, 232, 0.05);
+    }
+    
+    .action-btn.view, .action-btn.edit {
+        background-color: #1a73e8;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .action-btn.view:hover, .action-btn.edit:hover {
+        background-color: #1557b0;
+        color: white;
+    }
+    
+    .action-btn.delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .action-btn.delete:hover {
+        background-color: #c82333;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}

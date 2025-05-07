@@ -1,0 +1,457 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Reports - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Reports</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Reports</span>
+    </div>
+</div>
+
+<div class="reports-container">
+    <!-- Date Range Filter -->
+    <div class="filter-section">
+        <div class="date-range">
+            <div class="date-input">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" name="startDate">
+            </div>
+            <div class="date-input">
+                <label for="endDate">End Date</label>
+                <input type="date" id="endDate" name="endDate">
+            </div>
+            <button class="btn btn-primary" onclick="applyDateFilter()">
+                <i class="fas fa-filter"></i> Apply Filter
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-kiwi-bird"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Total Birds</h3>
+                <p class="stat-number">{{ total_birds }}</p>
+                <span class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i> 5%
+                </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-syringe"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Vaccinations Completed</h3>
+                <p class="stat-number">{{ vaccinations_completed }}</p>
+                <span class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i> 12%
+                </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-pills"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Medicines Administered</h3>
+                <p class="stat-number">{{ medicines_administered }}</p>
+                <span class="stat-trend down">
+                    <i class="fas fa-arrow-down"></i> 3%
+                </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Growth Rate</h3>
+                <p class="stat-number">{{ growth_rate }}%</p>
+                <span class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i> 8%
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <h3>Batch Growth</h3>
+            <canvas id="batchGrowthChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Vaccination Completion</h3>
+            <canvas id="vaccinationChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Medicine Usage</h3>
+            <canvas id="medicineChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Batch Distribution</h3>
+            <canvas id="batchDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Detailed Reports -->
+    <div class="reports-section">
+        <h2>Detailed Reports</h2>
+        <div class="reports-grid">
+            <a href="#" class="report-card" onclick="generateReport('batch')">
+                <i class="fas fa-kiwi-bird"></i>
+                <h3>Batch Report</h3>
+                <p>Detailed analysis of batch performance and growth</p>
+            </a>
+            <a href="#" class="report-card" onclick="generateReport('vaccination')">
+                <i class="fas fa-syringe"></i>
+                <h3>Vaccination Report</h3>
+                <p>Comprehensive vaccination schedule and completion rates</p>
+            </a>
+            <a href="#" class="report-card" onclick="generateReport('medicine')">
+                <i class="fas fa-pills"></i>
+                <h3>Medicine Report</h3>
+                <p>Medicine usage and administration statistics</p>
+            </a>
+            <a href="#" class="report-card" onclick="generateReport('health')">
+                <i class="fas fa-heartbeat"></i>
+                <h3>Health Report</h3>
+                <p>Overall health metrics and mortality rates</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% block styles %}
+<style>
+    .reports-container {
+        padding: 2rem;
+    }
+
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .date-range {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .date-input {
+        flex: 1;
+    }
+
+    .date-input label {
+        display: block;
+        color: var(--text-light);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .date-input input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-color);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .stat-info {
+        flex: 1;
+    }
+
+    .stat-info h3 {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .stat-number {
+        color: var(--text-color);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0.25rem 0;
+    }
+
+    .stat-trend {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .stat-trend.up {
+        color: var(--success-color);
+    }
+
+    .stat-trend.down {
+        color: var(--danger-color);
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: 300px; /* Set fixed height for chart cards */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-card h3 {
+        color: var(--text-color);
+        margin: 0 0 1rem;
+        font-size: 1.1rem;
+    }
+
+    .chart-card canvas {
+        flex: 1;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .reports-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .reports-section h2 {
+        color: var(--text-color);
+        margin: 0 0 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .report-card {
+        background: var(--background-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: var(--text-color);
+        transition: all 0.2s;
+    }
+
+    .report-card:hover {
+        background: var(--secondary-color);
+        transform: translateY(-2px);
+    }
+
+    .report-card i {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .report-card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .report-card p {
+        color: var(--text-light);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+    });
+
+    function initializeCharts() {
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        };
+
+        // Batch Growth Chart
+        new Chart(document.getElementById('batchGrowthChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Batch Growth',
+                    data: [65, 59, 80, 81, 56, 55],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Vaccination Chart
+        new Chart(document.getElementById('vaccinationChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending'],
+                datasets: [{
+                    data: [75, 25],
+                    backgroundColor: [
+                        'rgb(75, 192, 192)',
+                        'rgb(255, 99, 132)'
+                    ]
+                }]
+            },
+            options: commonOptions
+        });
+
+        // Medicine Chart
+        new Chart(document.getElementById('medicineChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Medicine Usage',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: 'rgb(54, 162, 235)'
+                }]
+            },
+            options: {
+                ...commonOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Batch Distribution Chart
+        new Chart(document.getElementById('batchDistributionChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Active', 'Completed', 'Pending'],
+                datasets: [{
+                    data: [45, 35, 20],
+                    backgroundColor: [
+                        'rgb(75, 192, 192)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 99, 132)'
+                    ]
+                }]
+            },
+            options: commonOptions
+        });
+    }
+
+    function applyDateFilter() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+
+        // Here you would typically make an API call to get filtered data
+        // For now, we'll just reload the charts
+        initializeCharts();
+    }
+
+    function generateReport(type) {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates before generating a report');
+            return;
+        }
+
+        // Here you would typically make an API call to generate the report
+        alert(`Generating ${type} report for the selected date range...`);
+    }
+</script>
+{% endblock %}
+{% endblock %} 

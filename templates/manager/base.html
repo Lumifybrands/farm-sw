@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Manager Dashboard - Bismi Farms{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --secondary-color: #e3f2fd;
+            --text-color: #2c3e50;
+            --text-light: #666;
+            --border-color: #e2e8f0;
+            --background-light: #f8f9fa;
+            --success-color: #34a853;
+            --warning-color: #fbbc05;
+            --error-color: #ea4335;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: white;
+            height: 60px;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--background-light);
+            color: var(--primary-color);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            height: 100%;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            transition: all 0.3s ease;
+            z-index: 999;
+            width: 280px;
+        }
+
+        /* Backdrop for mobile */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-backdrop.active {
+            opacity: 1;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .sidebar-section h3 {
+            color: #1a73e8;
+            padding: 0.75rem 1rem;
+            margin: 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+            position: relative;
+        }
+
+        .sidebar-menu > li > a {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #000000cc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu > li > a:hover {
+            background-color: rgba(26, 115, 232, 0.08);
+            color: #1557b0;
+        }
+
+        .sidebar-menu > li.active > a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-menu > li > a i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Main Content Styles */
+        .dashboard-container {
+            display: flex;
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+            position: relative;
+        }
+
+        .dashboard-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: calc(100vh - 60px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 70px;
+            right: 1rem;
+            z-index: 1000;
+        }
+
+        .flash-message {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .flash-message.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .flash-message.error {
+            border-left: 4px solid var(--error-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Mobile Styles */
+        .mobile-nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .mobile-nav-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                width: 85%;
+                max-width: 320px;
+                bottom: 0;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .dashboard-content {
+                margin-left: 0;
+                padding: 1rem;
+                width: 100%;
+                overflow-x: hidden;
+            }
+
+            /* Hide only username on mobile */
+            .user-info span:not(.logout-text) {
+                display: none;
+            }
+
+            .user-info {
+                display: flex;
+                gap: 0;
+            }
+
+            .logout-btn {
+                padding: 0.5rem;
+            }
+
+            /* Keep logo text visible but adjust size */
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .logo i {
+                font-size: 1.2rem;
+            }
+
+            /* Prevent background scroll but allow content scroll */
+            body.sidebar-open {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+            }
+
+            body.sidebar-open .dashboard-content {
+                pointer-events: none;
+            }
+
+            body.sidebar-open .sidebar {
+                pointer-events: auto;
+                overflow-y: auto;
+            }
+        }
+    </style>
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <!-- Add backdrop div -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+        
+        <!-- Navbar -->
+        <nav class="navbar">
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fas fa-kiwi-bird"></i>
+                <span>Bismi Farms</span>
+            </div>
+            <div class="user-info">
+                <span>{{ session.get('username') }} (Manager)</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="logout-text">Logout</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Main Menu</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'manager_dashboard' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_dashboard') }}">
+                                <i class="fas fa-home"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'manager_batches' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_batches') }}">
+                                <i class="fas fa-kiwi-bird"></i>
+                                <span>Batches</span>
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'manager_medicines' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_medicines') }}">
+                                <i class="fas fa-pills"></i>
+                                <span>Medicines</span>
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'manager_vaccines' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_vaccines') }}">
+                                <i class="fas fa-syringe"></i>
+                                <span>Vaccines</span>
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'manager_reports' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_reports') }}">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Settings</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'settings' %}class="active"{% endif %}>
+                            <a href="{{ url_for('settings') }}">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="dashboard-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+
+        <!-- Flash Messages -->
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Move sidebar JavaScript to before the block scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileNavToggle = document.getElementById('mobileNavToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const body = document.body;
+            let scrollPosition = 0;
+
+            function openSidebar() {
+                scrollPosition = window.pageYOffset;
+                sidebar.classList.add('active');
+                backdrop.classList.add('active');
+                body.classList.add('sidebar-open');
+                body.style.top = `-${scrollPosition}px`;
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('active');
+                backdrop.classList.remove('active');
+                body.classList.remove('sidebar-open');
+                body.style.top = '';
+                window.scrollTo(0, scrollPosition);
+            }
+
+            mobileNavToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (sidebar.classList.contains('active')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+
+            // Close sidebar when clicking the backdrop
+            backdrop.addEventListener('click', closeSidebar);
+
+            // Handle touch events for swipe to close
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            sidebar.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+            }, false);
+
+            sidebar.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, false);
+
+            function handleSwipe() {
+                const swipeThreshold = 100;
+                if (touchStartX - touchEndX > swipeThreshold) {
+                    // Swiped left
+                    closeSidebar();
+                }
+            }
+
+            // Close sidebar on window resize if screen becomes larger
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    closeSidebar();
+                }
+            });
+
+            // Handle escape key to close sidebar
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                    closeSidebar();
+                }
+            });
+
+            // Auto-hide flash messages after 5 seconds
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+            });
+        });
+    </script>
+
+    {% block scripts %}
+    <!-- Additional page-specific scripts can be added here -->
+    {% endblock %}
+</body>
+</html> 

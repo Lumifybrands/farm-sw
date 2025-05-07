@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}View Vaccine - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Vaccine Details</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Vaccines</span> / <span>View Vaccine</span>
+    </div>
+</div>
+
+<div class="vaccine-details">
+    <div class="detail-group">
+        <label><i class="fas fa-syringe"></i> Basic Information</label>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Name</label>
+                <span>{{ vaccine.name }}</span>
+            </div>
+            <div class="info-item">
+                <label>Quantity per Unit</label>
+                <span>{{ vaccine.quantity_per_unit }} ml</span>
+            </div>
+            <div class="info-item">
+                <label>Price</label>
+                <span>₹{{ "%.2f"|format(vaccine.price) }}</span>
+            </div>
+            <div class="info-item">
+                <label>Doses Required</label>
+                <span>{{ vaccine.doses_required }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-calendar-alt"></i> Dose Schedule</label>
+        <div class="info-grid">
+            {% for age in vaccine.get_dose_ages() %}
+            <div class="info-item">
+                <label>Dose {{ loop.index }}</label>
+                <span>{{ age }} days</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if vaccine.notes %}
+    <div class="detail-group">
+        <label><i class="fas fa-sticky-note"></i> Notes</label>
+        <p>{{ vaccine.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="detail-group">
+        <label><i class="fas fa-calendar-check"></i> Scheduled Vaccinations</label>
+        {% if vaccine.schedules %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Farm</th>
+                        <th>Dose Number</th>
+                        <th>Schedule Date</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in vaccine.schedules %}
+                    <tr>
+                        <td>Batch {{ schedule.batch.batch_number }}</td>
+                        <td>{{ schedule.batch.farm.name }}</td>
+                        <td>Dose {{ schedule.dose_number }}</td>
+                        <td>{{ schedule.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <span class="status-badge {{ 'completed' if schedule.completed else 'pending' }}">
+                                {{ 'Completed' if schedule.completed else 'Pending' }}
+                            </span>
+                        </td>
+                        <td>{{ schedule.notes or '-' }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if not schedule.completed %}
+                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted({{ schedule.id }})">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule({{ schedule.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No scheduled vaccinations found.</p>
+        {% endif %}
+    </div>
+
+    <div class="action-buttons">
+        <a href="{{ url_for('edit_vaccine', id=vaccine.id) }}" class="edit-btn">
+            <i class="fas fa-edit"></i> Edit Vaccine
+        </a>
+        <button class="schedule-btn" onclick="openScheduleModal()">
+            <i class="fas fa-calendar-plus"></i> Schedule Vaccination
+        </button>
+        <a href="{{ url_for('vaccines') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Vaccines
+        </a>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div id="scheduleModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Schedule Vaccination</h2>
+            <span class="close">&times;</span>
+        </div>
+        <form id="scheduleForm" action="{{ url_for('schedule_vaccine') }}" method="POST">
+            <input type="hidden" name="vaccine_id" value="{{ vaccine.id }}">
+            <div class="form-group">
+                <label for="batch_id">Select Batch</label>
+                <select name="batch_id" id="batch_id" required>
+                    <option value="">Select Batch</option>
+                    {% for batch in batches %}
+                    <option value="{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="dose_number">Dose Number</label>
+                <select name="dose_number" id="dose_number" required>
+                    {% for i in range(1, vaccine.doses_required + 1) %}
+                    <option value="{{ i }}">Dose {{ i }} ({{ vaccine.get_dose_ages()[i-1] }} days)</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="scheduled_date">Schedule Date</label>
+                <input type="date" name="scheduled_date" required>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea name="notes" rows="3"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="closeScheduleModal()">Cancel</button>
+                <button type="submit" class="submit-btn">Schedule</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function openScheduleModal() {
+    document.getElementById('scheduleModal').style.display = 'block';
+}
+
+function closeScheduleModal() {
+    document.getElementById('scheduleModal').style.display = 'none';
+    // Reset form when closing
+    document.getElementById('scheduleForm').reset();
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Are you sure you want to delete this schedule?')) {
+        fetch(`/vaccine/schedule/${scheduleId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+function markAsCompleted(scheduleId) {
+    if (confirm('Mark this vaccination as completed?')) {
+        fetch(`/vaccine/schedule/${scheduleId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            }
+        });
+    }
+}
+
+// Close modal when clicking outside or on close button
+window.onclick = function(event) {
+    const modal = document.getElementById('scheduleModal');
+    if (event.target == modal) {
+        closeScheduleModal();
+    }
+}
+
+// Add event listener for close button
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.onclick = function() {
+            closeScheduleModal();
+        }
+    }
+});
+</script>
+{% endblock %} 

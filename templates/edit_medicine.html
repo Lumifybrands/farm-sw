@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section-container">
+    <div class="section-header">
+        <h1 class="section-title">Edit Medicine</h1>
+    </div>
+
+    <div class="form-container">
+        <form class="data-form" method="POST" action="{{ url_for('edit_medicine', id=medicine.id) }}">
+            <div class="form-group">
+                <label for="name">Medicine Name</label>
+                <input type="text" id="name" name="name" value="{{ medicine.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity_per_unit">Quantity per Unit</label>
+                <div class="input-group">
+                    <input type="number" id="quantity_per_unit" name="quantity_per_unit" step="0.01" value="{{ medicine.quantity_per_unit }}" required>
+                    <select name="unit_type" required>
+                        <option value="litre" {% if medicine.unit_type == 'litre' %}selected{% endif %}>Litre</option>
+                        <option value="gram" {% if medicine.unit_type == 'gram' %}selected{% endif %}>Gram</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price (₹)</label>
+                <input type="number" id="price" name="price" step="0.01" value="{{ medicine.price }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Additional Notes</label>
+                <textarea id="notes" name="notes" rows="4">{{ medicine.notes }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('medicines') }}'">Cancel</button>
+                <button type="submit" class="submit-btn">Update Medicine</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -19,14 +19,14 @@
 
 .hero-content h1 {
     font-size: 2.8rem;
-    color: #2c3e50;
+    color: #1a73e8;
     margin-bottom: 0.5rem;
     font-weight: 700;
 }
 
 .hero-content p {
     font-size: 1.2rem;
-    color: #7f8c8d;
+    color: #5f6368;
     margin-bottom: 1.5rem;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .login-box-header {
-    background: #e74c3c;
+    background: #1a73e8;
     padding: 0.8rem;
     text-align: center;
 }
@@ -110,14 +110,14 @@
 
 .login-box-content input:focus {
     outline: none;
-    border-color: #e74c3c;
-    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
 }
 
 .login-submit-btn {
     width: 100%;
     padding: 0.8rem;
-    background: #e74c3c;
+    background: #1a73e8;
     color: white;
     border: none;
     border-radius: 6px;
@@ -136,7 +136,7 @@
 }
 
 .login-submit-btn:hover {
-    background: #c0392b;
+    background: #1557b0;
     transform: translateY(-2px);
 }
 
@@ -158,11 +158,11 @@
 }
 
 .flash-message.success {
-    background: #2ecc71;
+    background: #1a73e8;
 }
 
 .flash-message.error {
-    background: #e74c3c;
+    background: #dc3545;
 }
 
 @keyframes slideIn {

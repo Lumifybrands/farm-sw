@@ -28,6 +28,8 @@
                     <th>Farm Name</th>
                     <th>Total Capacity</th>
                     <th>No. of Sheds</th>
+                    <th>Total Area (m²)</th>
+                    <th>Farm Condition</th>
                     <th>Owner Name</th>
                     <th>Actions</th>
                 </tr>
@@ -38,6 +40,8 @@
                     <td>{{ farm.name }}</td>
                     <td>{{ farm.total_capacity }}</td>
                     <td>{{ farm.num_sheds }}</td>
+                    <td>{{ "%.2f"|format(farm.total_area) }}</td>
+                    <td><span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span></td>
                     <td>{{ farm.owner_name }}</td>
                     <td class="action-buttons">
                         <button class="action-btn view" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
@@ -56,6 +60,79 @@
         </table>
     </div>
 </div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .search-bar input {
+        border: 1px solid #1a73e8;
+    }
+    
+    .search-bar input:focus {
+        border-color: #1557b0;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    }
+    
+    .add-farm-btn {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .add-farm-btn:hover {
+        background-color: #1557b0;
+    }
+    
+    .farms-table th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+    }
+    
+    .farms-table tr:nth-child(even) {
+        background-color: rgba(26, 115, 232, 0.05);
+    }
+    
+    .action-btn.view, .action-btn.edit {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .action-btn.view:hover, .action-btn.edit:hover {
+        background-color: #1557b0;
+    }
+    
+    .action-btn.delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background-color: #c82333;
+    }
+    
+    .condition-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .condition-average {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+
+    .condition-medium {
+        background-color: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .condition-good {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}

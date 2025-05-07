@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Vaccine - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Edit Vaccine</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Vaccines</span> / <span>Edit Vaccine</span>
+    </div>
+</div>
+
+<div class="section-container">
+    <form method="POST" class="form-container">
+        <div class="form-group">
+            <label for="name">Vaccine Name</label>
+            <input type="text" id="name" name="name" value="{{ vaccine.name }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity_per_unit">Quantity per Unit (ml)</label>
+            <input type="number" id="quantity_per_unit" name="quantity_per_unit" value="{{ vaccine.quantity_per_unit }}" step="0.01" required>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price per Unit (₹)</label>
+            <input type="number" id="price" name="price" value="{{ vaccine.price }}" step="0.01" required>
+        </div>
+
+        <div class="form-group">
+            <label for="doses_required">Number of Doses Required</label>
+            <input type="number" id="doses_required" name="doses_required" value="{{ vaccine.doses_required }}" min="1" required>
+        </div>
+
+        <div id="doseAgesContainer">
+            {% set dose_ages = vaccine.get_dose_ages() %}
+            {% for i in range(vaccine.doses_required) %}
+            <div class="form-group dose-age-group">
+                <label>Dose {{ i + 1 }} Age (days)</label>
+                <input type="number" name="dose_age_{{ i + 1 }}" value="{{ dose_ages[i] if i < dose_ages|length else 0 }}" min="0" required>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3">{{ vaccine.notes }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('view_vaccine', id=vaccine.id) }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Initialize dose ages when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const dosesRequired = document.getElementById('doses_required');
+    const container = document.getElementById('doseAgesContainer');
+    
+    // Ensure the number of dose age fields matches doses_required
+    const currentDoses = container.children.length;
+    const requiredDoses = parseInt(dosesRequired.value);
+    
+    if (currentDoses !== requiredDoses) {
+        updateDoseAgeFields(requiredDoses);
+    }
+});
+
+// Handle changes to the number of doses
+document.getElementById('doses_required').addEventListener('change', function() {
+    const newDoses = parseInt(this.value);
+    updateDoseAgeFields(newDoses);
+});
+
+function updateDoseAgeFields(newDoses) {
+    const container = document.getElementById('doseAgesContainer');
+    const currentDoses = container.children.length;
+    
+    if (newDoses > currentDoses) {
+        // Add new dose age fields
+        for (let i = currentDoses + 1; i <= newDoses; i++) {
+            const div = document.createElement('div');
+            div.className = 'form-group dose-age-group';
+            div.innerHTML = `
+                <label>Dose ${i} Age (days)</label>
+                <input type="number" name="dose_age_${i}" value="0" min="0" required>
+            `;
+            container.appendChild(div);
+        }
+    } else if (newDoses < currentDoses) {
+        // Remove excess dose age fields
+        while (container.children.length > newDoses) {
+            container.removeChild(container.lastChild);
+        }
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Add Vaccine - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Vaccine</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Vaccines</span> / <span>Add Vaccine</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('add_vaccine') }}" method="POST" class="vaccine-form">
+        <div class="form-group">
+            <label for="name">Vaccine Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity_per_unit">Quantity per Unit (ml)</label>
+            <input type="number" id="quantity_per_unit" name="quantity_per_unit" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price (₹)</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="doses_required">Number of Doses Required</label>
+            <input type="number" id="doses_required" name="doses_required" min="1" max="10" required onchange="updateDoseAgeFields()">
+        </div>
+
+        <div id="doseAgeFields" class="form-group">
+            <!-- Dose age fields will be dynamically added here -->
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('vaccines') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Add Vaccine</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function updateDoseAgeFields() {
+    const dosesRequired = parseInt(document.getElementById('doses_required').value);
+    const container = document.getElementById('doseAgeFields');
+    container.innerHTML = '';
+
+    for (let i = 1; i <= dosesRequired; i++) {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+            <label for="dose_age_${i}">Age for Dose ${i} (days)</label>
+            <input type="number" id="dose_age_${i}" name="dose_age_${i}" min="0" required>
+        `;
+        container.appendChild(div);
+    }
+}
+
+// Initialize dose age fields on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateDoseAgeFields();
+});
+</script>
+{% endblock %} 

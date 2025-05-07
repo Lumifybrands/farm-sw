@@ -1,0 +1,342 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Manage Batches - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Manage Batches</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span>
+    </div>
+</div>
+
+<div class="batches-container">
+    <!-- Search and Filter Bar -->
+    <div class="batches-header">
+        <div class="search-bar">
+            <input type="text" id="batchSearch" placeholder="Search batches...">
+            <i class="fas fa-search"></i>
+        </div>
+        <div class="status-filter">
+            <button class="filter-btn active" data-status="all">All</button>
+            <button class="filter-btn" data-status="ongoing">Ongoing</button>
+            <button class="filter-btn" data-status="closing">Closing</button>
+            <button class="filter-btn" data-status="closed">Closed</button>
+        </div>
+    </div>
+
+    <!-- Batches Grid -->
+    <div class="batches-grid">
+        {% for batch in batches %}
+        <div class="batch-card" data-status="{{ batch.status }}">
+            <div class="batch-header">
+                <h3>Batch #{{ batch.batch_number }}</h3>
+                <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+            </div>
+            <div class="batch-details">
+                <div class="detail-item">
+                    <i class="fas fa-kiwi-bird"></i>
+                    <span>Total Birds: {{ batch.total_birds }}</span>
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Available: {{ batch.available_birds }}</span>
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Age: {{ batch.get_age_days() }} days</span>
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ batch.farm.name }}</span>
+                </div>
+                <div class="detail-item">
+                    {% if batch.updates %}
+                        {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                        {% set today = now.date() %}
+                        {% set yesterday = today - timedelta(days=1) %}
+                        
+                        {% if last_update.date == today %}
+                            <i class="fas fa-clock text-success"></i>
+                            <span class="text-success">Updated Today</span>
+                        {% elif last_update.date == yesterday %}
+                            <i class="fas fa-clock text-warning"></i>
+                            <span class="text-warning">Updated Yesterday</span>
+                        {% else %}
+                            <i class="fas fa-clock text-muted"></i>
+                            <span class="text-muted">Last Update: {{ last_update.date.strftime('%d-%m-%Y') }}</span>
+                        {% endif %}
+                    {% else %}
+                        <i class="fas fa-exclamation-circle text-danger"></i>
+                        <span class="text-danger">No updates</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="batch-actions">
+                <a href="{{ url_for('manager_view_batch', batch_id=batch.id) }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% if not batch.updates or batch.updates|sort(attribute='date', reverse=true)|first|attr('date') != now.date() %}
+                <a href="{{ url_for('manager_update_batch', batch_id=batch.id) }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add Update
+                </a>
+                {% else %}
+                <button class="btn btn-secondary" disabled title="Update already submitted for today">
+                    <i class="fas fa-plus"></i> Add Update
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .batches-container {
+        padding: 20px;
+    }
+
+    .batches-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .search-bar {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 10px 15px 10px 35px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+    }
+
+    .status-filter {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        border: 1px solid #1a73e8;
+        background: white;
+        color: #1a73e8;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+        background: #e8f0fe;
+    }
+
+    .filter-btn.active {
+        background: #1a73e8;
+        color: white;
+    }
+
+    .batches-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .batch-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+    }
+
+    .batch-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .batch-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .batch-header h3 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.25rem;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-ongoing {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .status-closing {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .status-closed {
+        background: #e8f5e9;
+        color: #388e3c;
+    }
+
+    .batch-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #4a5568;
+    }
+
+    .detail-item i {
+        width: 20px;
+        color: #1a73e8;
+    }
+
+    .batch-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: #1a73e8;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1557b0;
+    }
+
+    .btn-success {
+        background: #34a853;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #2d8745;
+    }
+
+    .btn-secondary {
+        background: #9aa0a6;
+        color: white;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+        .batches-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-bar {
+            width: 100%;
+        }
+
+        .status-filter {
+            justify-content: center;
+        }
+
+        .batch-card {
+            margin: 10px 0;
+        }
+
+        .batch-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+{% block scripts %}
+<script>
+document.getElementById('batchSearch').addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('.batch-card');
+    
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const status = card.getAttribute('data-status');
+        const statusFilter = document.querySelector('.filter-btn.active').getAttribute('data-status');
+        
+        const matchesSearch = text.includes(searchText);
+        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        
+        card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+    });
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Update active button
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Filter cards
+        const status = this.getAttribute('data-status');
+        const searchText = document.getElementById('batchSearch').value.toLowerCase();
+        const cards = document.querySelectorAll('.batch-card');
+        
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const cardStatus = card.getAttribute('data-status');
+            
+            const matchesSearch = text.includes(searchText);
+            const matchesStatus = status === 'all' || cardStatus === status;
+            
+            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 
