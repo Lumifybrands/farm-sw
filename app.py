@@ -415,14 +415,7 @@ def init_db():
             # Create all tables
             db.create_all()
 
-            # # Create a default admin user
-            # default_user = User(
-            #     username='admin',
-            #     password_hash=generate_password_hash('admin'),
-            #     user_type='admin'
-            # )
-            # db.session.add(default_user)
-            # db.session.commit()
+            # +
             
         except Exception as e:
             print(f"Error initializing database: {str(e)}")
@@ -639,6 +632,73 @@ def view_farm(farm_id):
 def delete_farm(farm_id):
     try:
         farm = Farm.query.get_or_404(farm_id)
+        
+        # Check if farm has any active batches
+        active_batches = Batch.query.filter(
+            Batch.farm_id == farm_id,
+            Batch.status.in_(['ongoing', 'closing'])
+        ).first()
+        
+        if active_batches:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete farm with active batches. Please close all batches first.'
+            })
+
+        # Get all batches for this farm
+        batches = Batch.query.filter_by(farm_id=farm_id).all()
+        
+        for batch in batches:
+            # Delete all batch updates and their associations
+            for update in batch.updates:
+                # Delete feed associations
+                db.session.execute(
+                    batch_update_feeds.delete().where(
+                        batch_update_feeds.c.batch_update_id == update.id
+                    )
+                )
+                # Delete medicine associations
+                db.session.execute(
+                    batch_update_medicines.delete().where(
+                        batch_update_medicines.c.batch_update_id == update.id
+                    )
+                )
+                # Delete health material associations
+                db.session.execute(
+                    batch_update_health_materials.delete().where(
+                        batch_update_health_materials.c.batch_update_id == update.id
+                    )
+                )
+                db.session.delete(update)
+            
+            # Delete vaccine schedule associations
+            db.session.execute(
+                vaccine_schedule_batches.delete().where(
+                    vaccine_schedule_batches.c.batch_id == batch.id
+                )
+            )
+            
+            # Delete medicine schedule associations
+            db.session.execute(
+                medicine_schedule_batches.delete().where(
+                    medicine_schedule_batches.c.batch_id == batch.id
+                )
+            )
+            
+            # Delete health material schedule associations
+            db.session.execute(
+                health_material_schedule_batches.delete().where(
+                    health_material_schedule_batches.c.batch_id == batch.id
+                )
+            )
+            
+            # Delete harvests
+            Harvest.query.filter_by(batch_id=batch.id).delete()
+            
+            # Finally delete the batch
+            db.session.delete(batch)
+        
+        # Delete the farm
         db.session.delete(farm)
         db.session.commit()
         return jsonify({'success': True})
@@ -744,8 +804,28 @@ def add_batch():
             batch.set_shed_birds(shed_birds)
             
             db.session.add(batch)
+            db.session.flush()  # Get batch ID without committing
+
+            # Automatically schedule vaccines for the batch
+            vaccines = Vaccine.query.all()
+            for vaccine in vaccines:
+                dose_ages = vaccine.get_dose_ages()
+                for dose_number, age_in_days in enumerate(dose_ages, 1):
+                    # Calculate scheduled date based on batch creation date and dose age
+                    scheduled_date = created_at.date() + timedelta(days=age_in_days)
+                    
+                    # Create vaccine schedule
+                    schedule = VaccineSchedule(
+                        vaccine_id=vaccine.id,
+                        dose_number=dose_number,
+                        scheduled_date=scheduled_date,
+                        notes=f"Automatically scheduled for Batch {batch_number} - Dose {dose_number}"
+                    )
+                    schedule.batches.append(batch)
+                    db.session.add(schedule)
+
             db.session.commit()
-            flash('Batch added successfully', 'success')
+            flash('Batch added successfully with automatic vaccine schedules', 'success')
             return redirect(url_for('batches'))
         except Exception as e:
             flash('Error adding batch: ' + str(e), 'error')
@@ -842,10 +922,60 @@ def delete_batch(batch_id):
     try:
         batch = Batch.query.get_or_404(batch_id)
         
-        # First delete all related batch updates
-        BatchUpdate.query.filter_by(batch_id=batch_id).delete()
+        # Check if batch is active
+        if batch.status in ['ongoing', 'closing']:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete active batch. Please close the batch first.'
+            })
         
-        # Then delete the batch
+        # Delete all batch updates and their associations
+        for update in batch.updates:
+            # Delete feed associations
+            db.session.execute(
+                batch_update_feeds.delete().where(
+                    batch_update_feeds.c.batch_update_id == update.id
+                )
+            )
+            # Delete medicine associations
+            db.session.execute(
+                batch_update_medicines.delete().where(
+                    batch_update_medicines.c.batch_update_id == update.id
+                )
+            )
+            # Delete health material associations
+            db.session.execute(
+                batch_update_health_materials.delete().where(
+                    batch_update_health_materials.c.batch_update_id == update.id
+                )
+            )
+            db.session.delete(update)
+        
+        # Delete vaccine schedule associations
+        db.session.execute(
+            vaccine_schedule_batches.delete().where(
+                vaccine_schedule_batches.c.batch_id == batch.id
+            )
+        )
+        
+        # Delete medicine schedule associations
+        db.session.execute(
+            medicine_schedule_batches.delete().where(
+                medicine_schedule_batches.c.batch_id == batch.id
+            )
+        )
+        
+        # Delete health material schedule associations
+        db.session.execute(
+            health_material_schedule_batches.delete().where(
+                health_material_schedule_batches.c.batch_id == batch.id
+            )
+        )
+        
+        # Delete harvests
+        Harvest.query.filter_by(batch_id=batch.id).delete()
+        
+        # Finally delete the batch
         db.session.delete(batch)
         db.session.commit()
         return jsonify({'success': True})
@@ -1277,6 +1407,15 @@ def view_feed(feed_id):
 def delete_feed(feed_id):
     try:
         feed = Feed.query.get_or_404(feed_id)
+        
+        # Check if feed is used in any batch updates
+        feed_usage = db.session.query(batch_update_feeds).filter_by(feed_id=feed_id).first()
+        if feed_usage:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete feed that has been used in batch updates.'
+            })
+        
         db.session.delete(feed)
         db.session.commit()
         return jsonify({'success': True})
@@ -1356,11 +1495,33 @@ def delete_medicine(id):
     if not session.get('user_id'):
         return redirect(url_for('login'))
     
-    medicine = Medicine.query.get_or_404(id)
-    db.session.delete(medicine)
-    db.session.commit()
-    flash('Medicine deleted successfully!', 'success')
-    return redirect(url_for('medicines'))
+    try:
+        medicine = Medicine.query.get_or_404(id)
+        
+        # Check if medicine is used in any batch updates
+        medicine_usage = db.session.query(batch_update_medicines).filter_by(medicine_id=id).first()
+        if medicine_usage:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete medicine that has been used in batch updates.'
+            })
+        
+        # Delete medicine schedules and their associations
+        schedules = MedicineSchedule.query.filter_by(medicine_id=id).all()
+        for schedule in schedules:
+            db.session.execute(
+                medicine_schedule_batches.delete().where(
+                    medicine_schedule_batches.c.medicine_schedule_id == schedule.id
+                )
+            )
+            db.session.delete(schedule)
+        
+        db.session.delete(medicine)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/medicine/schedule', methods=['POST'])
 def schedule_medicine():
@@ -1518,11 +1679,37 @@ def delete_vaccine(id):
     if not session.get('user_id'):
         return redirect(url_for('login'))
     
-    vaccine = Vaccine.query.get_or_404(id)
-    db.session.delete(vaccine)
-    db.session.commit()
-    flash('Vaccine deleted successfully!', 'success')
-    return redirect(url_for('vaccines'))
+    try:
+        vaccine = Vaccine.query.get_or_404(id)
+        
+        # Check if vaccine has any completed schedules
+        completed_schedules = VaccineSchedule.query.filter_by(
+            vaccine_id=id,
+            completed=True
+        ).first()
+        
+        if completed_schedules:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete vaccine that has completed schedules.'
+            })
+        
+        # Delete vaccine schedules and their associations
+        schedules = VaccineSchedule.query.filter_by(vaccine_id=id).all()
+        for schedule in schedules:
+            db.session.execute(
+                vaccine_schedule_batches.delete().where(
+                    vaccine_schedule_batches.c.vaccine_schedule_id == schedule.id
+                )
+            )
+            db.session.delete(schedule)
+        
+        db.session.delete(vaccine)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/vaccine/schedule', methods=['POST'])
 def schedule_vaccine():
@@ -1652,11 +1839,33 @@ def delete_health_material(id):
     if not session.get('user_id'):
         return redirect(url_for('login'))
     
-    health_material = HealthMaterial.query.get_or_404(id)
-    db.session.delete(health_material)
-    db.session.commit()
-    flash('Health material deleted successfully!', 'success')
-    return redirect(url_for('health_materials'))
+    try:
+        health_material = HealthMaterial.query.get_or_404(id)
+        
+        # Check if health material is used in any batch updates
+        material_usage = db.session.query(batch_update_health_materials).filter_by(health_material_id=id).first()
+        if material_usage:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete health material that has been used in batch updates.'
+            })
+        
+        # Delete health material schedules and their associations
+        schedules = HealthMaterialSchedule.query.filter_by(health_material_id=id).all()
+        for schedule in schedules:
+            db.session.execute(
+                health_material_schedule_batches.delete().where(
+                    health_material_schedule_batches.c.health_material_schedule_id == schedule.id
+                )
+            )
+            db.session.delete(schedule)
+        
+        db.session.delete(health_material)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/health-material/schedule', methods=['POST'])
 def schedule_health_material():
@@ -2155,15 +2364,39 @@ def edit_manager(user_id):
 @login_required
 @admin_required
 def delete_manager(user_id):
-    user = User.query.get_or_404(user_id)
-    
-    # Prevent deleting the last admin
-    if user.user_type == 'admin' and User.query.filter_by(user_type='admin').count() <= 1:
-        return jsonify({'success': False, 'message': 'Cannot delete the last admin user'})
-    
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Prevent deleting the last admin
+        if user.user_type == 'admin' and User.query.filter_by(user_type='admin').count() <= 1:
+            return jsonify({'success': False, 'message': 'Cannot delete the last admin user'})
+        
+        # Check if manager has any active batches
+        active_batches = Batch.query.filter(
+            Batch.manager_id == user_id,
+            Batch.status.in_(['ongoing', 'closing'])
+        ).first()
+        
+        if active_batches:
+            return jsonify({
+                'success': False, 
+                'message': 'Cannot delete manager with active batches. Please reassign or close all batches first.'
+            })
+        
+        # Update any closed batches to remove manager reference
+        Batch.query.filter_by(manager_id=user_id).update({Batch.manager_id: None})
+        
+        # Delete employee record first if exists
+        if user.employee:
+            db.session.delete(user.employee)
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 # Manager Dashboard Route
 @app.route('/manager/dashboard')
@@ -2508,7 +2741,10 @@ def delete_harvest(harvest_id):
         
         # Add back the harvested birds to available birds
         batch.available_birds += harvest.quantity
-        batch.check_and_update_status()
+        
+        # If batch was closed and this was the last harvest, revert status to closing
+        if batch.status == 'closed' and len(batch.harvests) == 1:
+            batch.status = 'closing'
         
         db.session.delete(harvest)
         db.session.commit()
