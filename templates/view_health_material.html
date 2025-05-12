@@ -58,8 +58,16 @@
                 <tbody>
                     {% for schedule in health_material.schedules %}
                     <tr>
-                        <td>Batch {{ schedule.batch.batch_number }}</td>
-                        <td>{{ schedule.batch.farm.name }}</td>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                Batch {{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                {{ batch.farm.name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
                         <td>{{ schedule.scheduled_date.strftime('%Y-%m-%d') }}</td>
                         <td>
                             <span class="status-badge {{ 'completed' if schedule.completed else 'pending' }}">
@@ -70,11 +78,11 @@
                         <td>
                             <div class="action-buttons">
                                 {% if not schedule.completed %}
-                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted({{ schedule.id }})">
+                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted('{{ schedule.id }}')">
                                     <i class="fas fa-check"></i>
                                 </button>
                                 {% endif %}
-                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule({{ schedule.id }})">
+                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule('{{ schedule.id }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -112,13 +120,15 @@
         <form id="scheduleForm" action="{{ url_for('schedule_health_material') }}" method="POST">
             <input type="hidden" name="health_material_id" value="{{ health_material.id }}">
             <div class="form-group">
-                <label for="batch_id">Select Batch</label>
-                <select name="batch_id" id="batch_id" required>
-                    <option value="">Select Batch</option>
+                <label>Select Batches</label>
+                <div class="batch-selection">
                     {% for batch in batches %}
-                    <option value="{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</option>
+                    <div class="batch-checkbox">
+                        <input type="checkbox" id="batch_{{ batch.id }}" name="batch_ids" value="{{ batch.id }}">
+                        <label for="batch_{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</label>
+                    </div>
                     {% endfor %}
-                </select>
+                </div>
             </div>
             <div class="form-group">
                 <label for="scheduled_date">Schedule Date</label>
@@ -160,22 +170,30 @@ function deleteSchedule(scheduleId) {
         }).then(response => {
             if (response.ok) {
                 window.location.reload();
+            } else {
+                alert('Error deleting schedule');
             }
         });
     }
 }
 
 function markAsCompleted(scheduleId) {
-    if (confirm('Mark this usage as completed?')) {
+    if (confirm('Are you sure you want to mark this schedule as completed?')) {
         fetch(`/health-material/schedule/${scheduleId}/complete`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             }
-        }).then(response => {
-            if (response.ok) {
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
                 window.location.reload();
+            } else {
+                alert(data.message || 'Error marking schedule as completed');
             }
+        })
+        .catch(error => {
+            alert('Error marking schedule as completed');
         });
     }
 }

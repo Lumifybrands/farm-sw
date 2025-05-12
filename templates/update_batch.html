@@ -57,8 +57,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="feed_balance">Feed Used (Packets)</label>
-                    <input type="number" id="feed_balance" name="feed_balance" min="0" step="0.01" value="0" required>
+                    <label for="feed_used">Feed Used (Packets)</label>
+                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
                 </div>
 
                 <div class="form-group">
@@ -71,18 +71,6 @@
             <div class="dynamic-section" id="feedSection">
                 <h3>Feed Allocation</h3>
                 <div class="dynamic-items" id="feedItems">
-                    <div class="dynamic-item">
-                        <select name="feed_id[]" required>
-                            <option value="">Select Feed</option>
-                            {% for feed in feeds %}
-                            <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" required>
-                        <button type="button" class="remove-item" onclick="removeItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
                 </div>
                 <button type="button" class="add-item" onclick="addFeedItem()">
                     <i class="fas fa-plus"></i> Add Feed
@@ -532,13 +520,13 @@ function removeItem(button) {
 function addFeedItem() {
     const template = `
         <div class="dynamic-item">
-            <select name="feed_id[]" required>
+            <select name="feed_id[]">
                 <option value="">Select Feed</option>
                 {% for feed in feeds %}
                 <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" required>
+            <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0">
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -550,13 +538,13 @@ function addFeedItem() {
 function addMedicineItem() {
     const template = `
         <div class="dynamic-item">
-            <select name="medicine_id[]" required>
+            <select name="medicine_id[]">
                 <option value="">Select Medicine</option>
                 {% for medicine in medicines %}
                 <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="medicine_quantity[]" placeholder="Quantity" min="0" step="0.01" required>
+            <input type="number" name="medicine_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -568,13 +556,13 @@ function addMedicineItem() {
 function addHealthMaterialItem() {
     const template = `
         <div class="dynamic-item">
-            <select name="health_material_id[]" required>
+            <select name="health_material_id[]">
                 <option value="">Select Health Material</option>
                 {% for material in health_materials %}
                 <option value="{{ material.id }}">{{ material.name }} - {{ material.category }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="health_material_quantity[]" placeholder="Quantity" min="0" step="0.01" required>
+            <input type="number" name="health_material_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -582,5 +570,76 @@ function addHealthMaterialItem() {
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
+
+// Add validation for the form
+document.querySelector('.update-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate that selected feeds are unique and have valid quantities
+    const feedItems = document.querySelectorAll('select[name="feed_id[]"]');
+    const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
+    const selectedFeeds = new Set();
+    
+    for (let i = 0; i < feedItems.length; i++) {
+        if (feedItems[i].value) {
+            if (selectedFeeds.has(feedItems[i].value)) {
+                alert('Please do not select the same feed multiple times.');
+                return;
+            }
+            selectedFeeds.add(feedItems[i].value);
+            
+            // Check quantity only if feed is selected
+            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) < 0) {
+                alert('Please enter valid quantities for all selected feed items.');
+                return;
+            }
+        }
+    }
+    
+    // Validate medicines if added
+    const medicineItems = document.querySelectorAll('select[name="medicine_id[]"]');
+    const medicineQuantities = document.querySelectorAll('input[name="medicine_quantity[]"]');
+    const selectedMedicines = new Set();
+    
+    for (let i = 0; i < medicineItems.length; i++) {
+        if (medicineItems[i].value) {
+            if (selectedMedicines.has(medicineItems[i].value)) {
+                alert('Please do not select the same medicine multiple times.');
+                return;
+            }
+            selectedMedicines.add(medicineItems[i].value);
+            
+            // Check quantity only if medicine is selected
+            if (!medicineQuantities[i].value || parseFloat(medicineQuantities[i].value) < 0) {
+                alert('Please enter valid quantities for all selected medicine items.');
+                return;
+            }
+        }
+    }
+    
+    // Validate health materials if added
+    const healthItems = document.querySelectorAll('select[name="health_material_id[]"]');
+    const healthQuantities = document.querySelectorAll('input[name="health_material_quantity[]"]');
+    const selectedHealthMaterials = new Set();
+    
+    for (let i = 0; i < healthItems.length; i++) {
+        if (healthItems[i].value) {
+            if (selectedHealthMaterials.has(healthItems[i].value)) {
+                alert('Please do not select the same health material multiple times.');
+                return;
+            }
+            selectedHealthMaterials.add(healthItems[i].value);
+            
+            // Check quantity only if health material is selected
+            if (!healthQuantities[i].value || parseFloat(healthQuantities[i].value) < 0) {
+                alert('Please enter valid quantities for all selected health material items.');
+                return;
+            }
+        }
+    }
+    
+    // If all validations pass, submit the form
+    this.submit();
+});
 </script>
 {% endblock %} 

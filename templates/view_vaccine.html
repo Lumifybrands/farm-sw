@@ -10,7 +10,7 @@
     </div>
 </div>
 
-<div class="vaccine-details">
+<div class="section-container">
     <div class="detail-group">
         <label><i class="fas fa-syringe"></i> Basic Information</label>
         <div class="info-grid">
@@ -20,28 +20,12 @@
             </div>
             <div class="info-item">
                 <label>Quantity per Unit</label>
-                <span>{{ vaccine.quantity_per_unit }} ml</span>
+                <span>{{ vaccine.quantity_per_unit }} {{ vaccine.unit_type }}</span>
             </div>
             <div class="info-item">
                 <label>Price</label>
                 <span>₹{{ "%.2f"|format(vaccine.price) }}</span>
             </div>
-            <div class="info-item">
-                <label>Doses Required</label>
-                <span>{{ vaccine.doses_required }}</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="detail-group">
-        <label><i class="fas fa-calendar-alt"></i> Dose Schedule</label>
-        <div class="info-grid">
-            {% for age in vaccine.get_dose_ages() %}
-            <div class="info-item">
-                <label>Dose {{ loop.index }}</label>
-                <span>{{ age }} days</span>
-            </div>
-            {% endfor %}
         </div>
     </div>
 
@@ -53,7 +37,7 @@
     {% endif %}
 
     <div class="detail-group">
-        <label><i class="fas fa-calendar-check"></i> Scheduled Vaccinations</label>
+        <label><i class="fas fa-calendar-check"></i> Scheduled Applications</label>
         {% if vaccine.schedules %}
         <div class="table-container">
             <table class="data-table">
@@ -61,7 +45,6 @@
                     <tr>
                         <th>Batch</th>
                         <th>Farm</th>
-                        <th>Dose Number</th>
                         <th>Schedule Date</th>
                         <th>Status</th>
                         <th>Notes</th>
@@ -71,9 +54,16 @@
                 <tbody>
                     {% for schedule in vaccine.schedules %}
                     <tr>
-                        <td>Batch {{ schedule.batch.batch_number }}</td>
-                        <td>{{ schedule.batch.farm.name }}</td>
-                        <td>Dose {{ schedule.dose_number }}</td>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                Batch {{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                {{ batch.farm.name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
                         <td>{{ schedule.scheduled_date.strftime('%Y-%m-%d') }}</td>
                         <td>
                             <span class="status-badge {{ 'completed' if schedule.completed else 'pending' }}">
@@ -84,11 +74,11 @@
                         <td>
                             <div class="action-buttons">
                                 {% if not schedule.completed %}
-                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted({{ schedule.id }})">
+                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted('{{ schedule.id }}')">
                                     <i class="fas fa-check"></i>
                                 </button>
                                 {% endif %}
-                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule({{ schedule.id }})">
+                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule('{{ schedule.id }}')">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -99,7 +89,7 @@
             </table>
         </div>
         {% else %}
-        <p>No scheduled vaccinations found.</p>
+        <p>No scheduled applications found.</p>
         {% endif %}
     </div>
 
@@ -108,7 +98,7 @@
             <i class="fas fa-edit"></i> Edit Vaccine
         </a>
         <button class="schedule-btn" onclick="openScheduleModal()">
-            <i class="fas fa-calendar-plus"></i> Schedule Vaccination
+            <i class="fas fa-calendar-plus"></i> Schedule Application
         </button>
         <a href="{{ url_for('vaccines') }}" class="back-btn">
             <i class="fas fa-arrow-left"></i> Back to Vaccines
@@ -120,34 +110,36 @@
 <div id="scheduleModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Schedule Vaccination</h2>
+            <h2>Schedule Vaccine</h2>
             <span class="close">&times;</span>
         </div>
         <form id="scheduleForm" action="{{ url_for('schedule_vaccine') }}" method="POST">
             <input type="hidden" name="vaccine_id" value="{{ vaccine.id }}">
             <div class="form-group">
-                <label for="batch_id">Select Batch</label>
-                <select name="batch_id" id="batch_id" required>
-                    <option value="">Select Batch</option>
+                <label>Select Batches</label>
+                <div class="batch-selection">
                     {% for batch in batches %}
-                    <option value="{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</option>
+                    <div class="batch-checkbox">
+                        <input type="checkbox" id="batch_{{ batch.id }}" name="batch_ids" value="{{ batch.id }}">
+                        <label for="batch_{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</label>
+                    </div>
                     {% endfor %}
-                </select>
+                </div>
             </div>
             <div class="form-group">
-                <label for="dose_number">Dose Number</label>
-                <select name="dose_number" id="dose_number" required>
+                <label>Dose Number</label>
+                <select name="dose_number" required>
                     {% for i in range(1, vaccine.doses_required + 1) %}
-                    <option value="{{ i }}">Dose {{ i }} ({{ vaccine.get_dose_ages()[i-1] }} days)</option>
+                        <option value="{{ i }}">Dose {{ i }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="form-group">
-                <label for="scheduled_date">Schedule Date</label>
+                <label>Schedule Date</label>
                 <input type="date" name="scheduled_date" required>
             </div>
             <div class="form-group">
-                <label for="notes">Notes</label>
+                <label>Notes</label>
                 <textarea name="notes" rows="3"></textarea>
             </div>
             <div class="form-actions">
@@ -172,6 +164,27 @@ function closeScheduleModal() {
     document.getElementById('scheduleForm').reset();
 }
 
+function markAsCompleted(scheduleId) {
+    if (confirm('Are you sure you want to mark this schedule as completed?')) {
+        fetch(`/manager/schedule/vaccine/${scheduleId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error marking schedule as completed. Only managers and admins can complete schedules.');
+            }
+        })
+        .catch(error => {
+            alert('Error marking schedule as completed. Please try again.');
+        });
+    }
+}
+
 function deleteSchedule(scheduleId) {
     if (confirm('Are you sure you want to delete this schedule?')) {
         fetch(`/vaccine/schedule/${scheduleId}/delete`, {
@@ -182,21 +195,8 @@ function deleteSchedule(scheduleId) {
         }).then(response => {
             if (response.ok) {
                 window.location.reload();
-            }
-        });
-    }
-}
-
-function markAsCompleted(scheduleId) {
-    if (confirm('Mark this vaccination as completed?')) {
-        fetch(`/vaccine/schedule/${scheduleId}/complete`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        }).then(response => {
-            if (response.ok) {
-                window.location.reload();
+            } else {
+                alert('Error deleting schedule');
             }
         });
     }

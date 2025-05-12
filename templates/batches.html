@@ -73,6 +73,7 @@
                         <button class="action-btn view" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-eye"></i>
                         </button>
+                        {% if batch.status != 'closed' %}
                         <button class="action-btn edit" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -83,6 +84,12 @@
                         {% else %}
                         <button class="action-btn update" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-calendar-plus"></i>
+                        </button>
+                        {% endif %}
+                        {% endif %}
+                        {% if batch.status == 'closing' or batch.status == 'closed' %}
+                        <button class="action-btn harvest" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
+                            <i class="fas fa-hand-holding"></i>
                         </button>
                         {% endif %}
                         <button class="action-btn delete" onclick="deleteBatch({{ batch.id }})">
@@ -233,6 +240,15 @@
 
     .action-btn.update.disabled:hover {
         background-color: #6c757d;
+    }
+
+    .action-btn.harvest {
+        background-color: #9c27b0;
+        color: white;
+    }
+    
+    .action-btn.harvest:hover {
+        background-color: #7b1fa2;
     }
 </style>
 {% endblock %}

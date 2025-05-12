@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import json
 
@@ -142,6 +142,79 @@ class Batch(db.Model):
         created_date = self.created_at.date()
         return (today - created_date).days
 
+    def check_and_update_status(self):
+        """Check if batch should be marked as closed based on available birds"""
+        if self.available_birds <= 0 and self.status == 'closing':
+            self.status = 'closed'
+
+    def get_total_revenue(self):
+        """Calculate total revenue from all harvests"""
+        total = 0
+        for harvest in self.harvests:
+            total += harvest.total_value
+        return total
+
+    def get_feed_cost(self):
+        """Calculate total feed cost from all batch updates"""
+        total = 0
+        for update in self.updates:
+            for feed in update.feeds:
+                quantity = update.get_feed_quantity(feed.id)
+                total += quantity * feed.price
+        return total
+
+    def get_medicine_cost(self):
+        """Calculate total medicine cost from all batch updates"""
+        total = 0
+        for update in self.updates:
+            for medicine in update.medicines:
+                quantity = update.get_medicine_quantity(medicine.id)
+                total += quantity * medicine.price
+        return total
+
+    def get_health_materials_cost(self):
+        """Calculate total health materials cost from all batch updates"""
+        total = 0
+        for update in self.updates:
+            for material in update.health_materials:
+                quantity = update.get_health_material_quantity(material.id)
+                total += quantity * material.price
+        return total
+
+    def get_vaccine_cost(self):
+        """Calculate total vaccine cost from all vaccine schedules"""
+        total = 0
+        for schedule in self.vaccine_schedules:
+            if schedule.completed:  # Only count completed vaccinations
+                total += schedule.vaccine.price
+        return total
+
+    def get_total_expenses(self):
+        """Calculate total expenses including chicken cost, feed, medicines, health materials, and vaccines"""
+        chicken_cost = self.cost_per_chicken * self.total_birds
+        feed_cost = self.get_feed_cost()
+        medicine_cost = self.get_medicine_cost()
+        health_materials_cost = self.get_health_materials_cost()
+        vaccine_cost = self.get_vaccine_cost()
+        return chicken_cost + feed_cost + medicine_cost + health_materials_cost + vaccine_cost
+
+    def get_total_profit(self):
+        """Calculate total profit (revenue - expenses)"""
+        return self.get_total_revenue() - self.get_total_expenses()
+
+    def get_average_selling_price(self):
+        """Calculate average selling price per kg across all harvests"""
+        total_weight = 0
+        total_value = 0
+        for harvest in self.harvests:
+            total_weight += harvest.weight
+            total_value += harvest.total_value
+        return total_value / total_weight if total_weight > 0 else 0
+
+    def get_total_weight_sold(self):
+        """Calculate total weight sold across all harvests"""
+        return sum(harvest.weight for harvest in self.harvests)
+
 class Feed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     brand = db.Column(db.String(100), nullable=False)
@@ -211,10 +284,21 @@ medicine_schedule_batches = db.Table('medicine_schedule_batches',
     db.Column('batch_id', db.Integer, db.ForeignKey('batch.id'), primary_key=True)
 )
 
+# Association table for many-to-many relationship between VaccineSchedule and Batch
+vaccine_schedule_batches = db.Table('vaccine_schedule_batches',
+    db.Column('vaccine_schedule_id', db.Integer, db.ForeignKey('vaccine_schedule.id'), primary_key=True),
+    db.Column('batch_id', db.Integer, db.ForeignKey('batch.id'), primary_key=True)
+)
+
+# Association table for many-to-many relationship between HealthMaterialSchedule and Batch
+health_material_schedule_batches = db.Table('health_material_schedule_batches',
+    db.Column('health_material_schedule_id', db.Integer, db.ForeignKey('health_material_schedule.id'), primary_key=True),
+    db.Column('batch_id', db.Integer, db.ForeignKey('batch.id'), primary_key=True)
+)
+
 class VaccineSchedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vaccine_id = db.Column(db.Integer, db.ForeignKey('vaccine.id'), nullable=False)
-    batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
     dose_number = db.Column(db.Integer, nullable=False)  # Which dose number this is (1st, 2nd, etc.)
     scheduled_date = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
@@ -223,7 +307,7 @@ class VaccineSchedule(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     vaccine = db.relationship('Vaccine', backref='schedules')
-    batch = db.relationship('Batch', backref='vaccine_schedules')
+    batches = db.relationship('Batch', secondary=vaccine_schedule_batches, backref='vaccine_schedules')
 
 class HealthMaterial(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -236,11 +320,9 @@ class HealthMaterial(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-# Health Material Schedule model
 class HealthMaterialSchedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     health_material_id = db.Column(db.Integer, db.ForeignKey('health_material.id'), nullable=False)
-    batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
     scheduled_date = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
     notes = db.Column(db.Text)
@@ -248,13 +330,7 @@ class HealthMaterialSchedule(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     health_material = db.relationship('HealthMaterial', backref='schedules')
-    batch = db.relationship('Batch', backref='health_material_schedules')
-
-# Association table for many-to-many relationship between HealthMaterialSchedule and Batch
-health_material_schedule_batches = db.Table('health_material_schedule_batches',
-    db.Column('health_material_schedule_id', db.Integer, db.ForeignKey('health_material_schedule.id'), primary_key=True),
-    db.Column('batch_id', db.Integer, db.ForeignKey('batch.id'), primary_key=True)
-)
+    batches = db.relationship('Batch', secondary=health_material_schedule_batches, backref='health_material_schedules')
 
 # Association tables for BatchUpdate relationships
 batch_update_feeds = db.Table('batch_update_feeds',
@@ -315,6 +391,21 @@ class BatchUpdate(db.Model):
         ).scalar()
         return result or 0
 
+class Harvest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    quantity = db.Column(db.Integer, nullable=False)
+    weight = db.Column(db.Float, nullable=False)  # Weight in kg
+    selling_price = db.Column(db.Float, nullable=False)  # Price per kg
+    total_value = db.Column(db.Float, nullable=False)  # Total value (weight * selling_price)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    batch = db.relationship('Batch', backref=db.backref('harvests', lazy=True))
+
 def init_db():
     with app.app_context():
         try:
@@ -371,7 +462,7 @@ def login():
             flash('Login successful!', 'success')
             
             # Redirect based on user type
-            if user.user_type == 'manager':
+            if user.user_type in ['assistant_manager', 'senior_manager']:
                 return redirect(url_for('manager_dashboard'))
             else:
                 return redirect(url_for('dashboard'))
@@ -561,9 +652,9 @@ def delete_farm(farm_id):
 def batches():
     batches = Batch.query.all()
     return render_template('batches.html', 
-                         batches=batches, 
+                         batches=batches,
                          now=datetime.utcnow(),
-                         timedelta=timedelta)
+                         timedelta=timedelta)  # Add timedelta to template context
 
 def generate_batch_number():
     # Get the last batch number
@@ -809,13 +900,14 @@ def update_batch(batch_id):
             avg_weight = float(request.form.get('avg_weight', 0))
             notes = request.form.get('notes', '')
 
-            # Calculate total feed allocation from feed quantities
-            feed_data = request.form.getlist('feed_id[]')
+            # Get feed data
+            feed_ids = request.form.getlist('feed_id[]')
             feed_quantities = request.form.getlist('feed_quantity[]')
+            
+            # Calculate total feed allocation (default to 0 if no feeds added)
             total_feed_allocation = 0
-            for quantity in feed_quantities:
-                if quantity and float(quantity) > 0:
-                    total_feed_allocation += float(quantity)
+            if feed_ids and feed_quantities:
+                total_feed_allocation = sum(float(qty) for qty, fid in zip(feed_quantities, feed_ids) if qty and fid)
 
             # Create new batch update
             update = BatchUpdate(
@@ -830,66 +922,68 @@ def update_batch(batch_id):
             # Update batch's available birds and total mortality
             batch.available_birds -= mortality_count
             batch.total_mortality += mortality_count
+            batch.check_and_update_status()
             
             # Update feed stock and feed usage
             batch.feed_stock = (batch.feed_stock - feed_used) + total_feed_allocation
-            batch.feed_usage += feed_used  # Add to total feed usage
+            batch.feed_usage += feed_used
 
             # First save the batch update to get an ID
             db.session.add(update)
-            db.session.flush()  # This will assign an ID to the update without committing
+            db.session.flush()
 
-            # Process feeds
-            for feed_id, quantity in zip(feed_data, feed_quantities):
-                if feed_id and float(quantity) > 0:
-                    feed = Feed.query.get(int(feed_id))
-                    if feed:
+            # Process feeds if any
+            if feed_ids and feed_quantities:
+                for feed_id, quantity in zip(feed_ids, feed_quantities):
+                    if feed_id and float(quantity) > 0:
                         db.session.execute(
                             batch_update_feeds.insert().values(
                                 batch_update_id=update.id,
-                                feed_id=feed.id,
+                                feed_id=int(feed_id),
                                 quantity=float(quantity)
                             )
                         )
 
-            # Process medicines
-            medicine_data = request.form.getlist('medicine_id[]')
+            # Process medicines if any
+            medicine_ids = request.form.getlist('medicine_id[]')
             medicine_quantities = request.form.getlist('medicine_quantity[]')
-            for medicine_id, quantity in zip(medicine_data, medicine_quantities):
-                if medicine_id and float(quantity) > 0:
-                    medicine = Medicine.query.get(int(medicine_id))
-                    if medicine:
+            if medicine_ids and medicine_quantities:
+                for medicine_id, quantity in zip(medicine_ids, medicine_quantities):
+                    if medicine_id and float(quantity) > 0:
                         db.session.execute(
                             batch_update_medicines.insert().values(
                                 batch_update_id=update.id,
-                                medicine_id=medicine.id,
+                                medicine_id=int(medicine_id),
                                 quantity=float(quantity)
                             )
                         )
 
-            # Process health materials
-            health_material_data = request.form.getlist('health_material_id[]')
+            # Process health materials if any
+            health_material_ids = request.form.getlist('health_material_id[]')
             health_material_quantities = request.form.getlist('health_material_quantity[]')
-            for health_material_id, quantity in zip(health_material_data, health_material_quantities):
-                if health_material_id and float(quantity) > 0:
-                    health_material = HealthMaterial.query.get(int(health_material_id))
-                    if health_material:
+            if health_material_ids and health_material_quantities:
+                for health_material_id, quantity in zip(health_material_ids, health_material_quantities):
+                    if health_material_id and float(quantity) > 0:
                         db.session.execute(
                             batch_update_health_materials.insert().values(
                                 batch_update_id=update.id,
-                                health_material_id=health_material.id,
+                                health_material_id=int(health_material_id),
                                 quantity=float(quantity)
                             )
                         )
 
-            # Now commit everything
             db.session.commit()
             flash('Batch update saved successfully!', 'success')
             return redirect(url_for('batches'))
+        except ValueError as e:
+            db.session.rollback()
+            flash(f'Invalid input: {str(e)}', 'error')
+            return redirect(url_for('update_batch', batch_id=batch_id))
         except Exception as e:
             db.session.rollback()
             flash('Error saving batch update. Please try again.', 'error')
             print(f"Error: {str(e)}")
+            return redirect(url_for('update_batch', batch_id=batch_id))
 
     return render_template('update_batch.html', 
                          batch=batch, 
@@ -1005,6 +1099,7 @@ def edit_batch_update(batch_id, date):
                 # Update batch's available birds and total mortality
                 batch.available_birds -= mortality_difference
                 batch.total_mortality += mortality_difference
+                batch.check_and_update_status()
 
                 # Calculate new feed allocation from feed quantities
                 feed_data = request.form.getlist('feed_id[]')
@@ -1194,7 +1289,8 @@ def medicines():
     if not session.get('user_id'):
         return redirect(url_for('login'))
     medicines = Medicine.query.all()
-    batches = Batch.query.all()  # Get all batches for scheduling
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     return render_template('medicines.html', medicines=medicines, batches=batches)
 
 @app.route('/medicine/add', methods=['GET', 'POST'])
@@ -1231,7 +1327,8 @@ def view_medicine(id):
         return redirect(url_for('login'))
     
     medicine = Medicine.query.get_or_404(id)
-    batches = Batch.query.all()  # Get all batches for scheduling
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     return render_template('view_medicine.html', medicine=medicine, batches=batches)
 
 @app.route('/medicine/<int:id>/edit', methods=['GET', 'POST'])
@@ -1307,24 +1404,33 @@ def delete_schedule(id):
 @app.route('/medicine/schedule/<int:id>/complete', methods=['POST'])
 @login_required
 def complete_medicine_schedule(id):
-    if session.get('user_type') != 'manager':
-        return jsonify({'success': False, 'message': 'Access denied. Managers only.'})
+    if session.get('user_type') not in ['admin', 'senior_manager', 'assistant_manager']:
+        return jsonify({'success': False, 'message': 'Access denied. Only administrators and managers can complete schedules.'}), 403
     
     try:
         schedule = MedicineSchedule.query.get_or_404(id)
+        
+        # Check if assistant manager has access to any of the batches
+        if session.get('user_type') == 'assistant_manager':
+            has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
+            if not has_access:
+                return jsonify({'success': False, 'message': 'Access denied. You can only complete schedules for your assigned batches.'}), 403
+        
         schedule.completed = True
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/vaccines')
 def vaccines():
     if not session.get('user_id'):
         return redirect(url_for('login'))
     vaccines = Vaccine.query.all()
-    return render_template('vaccines.html', vaccines=vaccines)
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
+    return render_template('vaccines.html', vaccines=vaccines, batches=batches)
 
 @app.route('/vaccine/add', methods=['GET', 'POST'])
 def add_vaccine():
@@ -1371,7 +1477,8 @@ def view_vaccine(id):
         return redirect(url_for('login'))
     
     vaccine = Vaccine.query.get_or_404(id)
-    batches = Batch.query.all()
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     return render_template('view_vaccine.html', vaccine=vaccine, batches=batches)
 
 @app.route('/vaccine/<int:id>/edit', methods=['GET', 'POST'])
@@ -1424,18 +1531,23 @@ def schedule_vaccine():
     
     try:
         vaccine_id = request.form.get('vaccine_id')
-        batch_id = request.form.get('batch_id')
+        batch_ids = request.form.getlist('batch_ids')  # Get list of selected batch IDs
         dose_number = int(request.form.get('dose_number'))
         scheduled_date = datetime.strptime(request.form.get('scheduled_date'), '%Y-%m-%d').date()
         notes = request.form.get('notes')
 
         schedule = VaccineSchedule(
             vaccine_id=vaccine_id,
-            batch_id=batch_id,
             dose_number=dose_number,
             scheduled_date=scheduled_date,
             notes=notes
         )
+
+        # Add selected batches to the schedule
+        for batch_id in batch_ids:
+            batch = Batch.query.get(batch_id)
+            if batch:
+                schedule.batches.append(batch)
 
         db.session.add(schedule)
         db.session.commit()
@@ -1458,27 +1570,14 @@ def delete_vaccine_schedule(id):
     flash('Vaccine schedule deleted successfully!', 'success')
     return redirect(url_for('view_vaccine', id=vaccine_id))
 
-@app.route('/vaccine/schedule/<int:id>/complete', methods=['POST'])
-@login_required
-def complete_vaccine_schedule(id):
-    if session.get('user_type') != 'manager':
-        return jsonify({'success': False, 'message': 'Access denied. Managers only.'})
-    
-    try:
-        schedule = VaccineSchedule.query.get_or_404(id)
-        schedule.completed = True
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
-
 @app.route('/health-materials')
 def health_materials():
     if not session.get('user_id'):
         return redirect(url_for('login'))
     health_materials = HealthMaterial.query.all()
-    return render_template('health_materials.html', health_materials=health_materials)
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
+    return render_template('health_materials.html', health_materials=health_materials, batches=batches)
 
 @app.route('/health-material/add', methods=['GET', 'POST'])
 def add_health_material():
@@ -1519,7 +1618,8 @@ def view_health_material(id):
         return redirect(url_for('login'))
     
     health_material = HealthMaterial.query.get_or_404(id)
-    batches = Batch.query.all()
+    # Only show ongoing and closing batches
+    batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     return render_template('view_health_material.html', health_material=health_material, batches=batches)
 
 @app.route('/health-material/<int:id>/edit', methods=['GET', 'POST'])
@@ -1565,18 +1665,33 @@ def schedule_health_material():
     
     try:
         health_material_id = request.form.get('health_material_id')
-        batch_id = request.form.get('batch_id')
+        batch_ids = request.form.getlist('batch_ids')  # Get list of selected batch IDs
+        
+        # Validate that at least one batch is selected
+        if not batch_ids:
+            flash('Please select at least one batch', 'error')
+            return redirect(url_for('view_health_material', id=health_material_id))
+            
         scheduled_date = datetime.strptime(request.form.get('scheduled_date'), '%Y-%m-%d').date()
         notes = request.form.get('notes')
 
+        # Create the schedule first
         schedule = HealthMaterialSchedule(
             health_material_id=health_material_id,
-            batch_id=batch_id,
             scheduled_date=scheduled_date,
             notes=notes
         )
-
+        
+        # Add the schedule to the session to get an ID
         db.session.add(schedule)
+        db.session.flush()
+
+        # Add selected batches to the schedule through the association table
+        for batch_id in batch_ids:
+            batch = Batch.query.get(batch_id)
+            if batch:
+                schedule.batches.append(batch)
+
         db.session.commit()
         flash('Health material scheduled successfully!', 'success')
     except Exception as e:
@@ -1596,6 +1711,359 @@ def delete_health_material_schedule(id):
     db.session.commit()
     flash('Health material schedule deleted successfully!', 'success')
     return redirect(url_for('view_health_material', id=health_material_id))
+
+@app.route('/health-material/schedule/<int:id>/complete', methods=['POST'])
+@login_required
+def complete_health_material_schedule(id):
+    if session.get('user_type') not in ['admin', 'senior_manager', 'assistant_manager']:
+        return jsonify({'success': False, 'message': 'Access denied. Only administrators and managers can complete schedules.'}), 403
+    
+    try:
+        schedule = HealthMaterialSchedule.query.get_or_404(id)
+        
+        # Check if assistant manager has access to any of the batches
+        if session.get('user_type') == 'assistant_manager':
+            has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
+            if not has_access:
+                return jsonify({'success': False, 'message': 'Access denied. You can only complete schedules for your assigned batches.'}), 403
+        
+        schedule.completed = True
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/manager/harvest')
+@login_required
+def manager_harvest():
+    try:
+        # Get current date and time
+        now = datetime.now()
+        today = now.date()
+        yesterday = today - timedelta(days=1)
+        
+        # Get batches in closing or closed status
+        if session.get('user_type') == 'assistant_manager':
+            batches = Batch.query.filter(
+                Batch.manager_id == session.get('user_id'),
+                Batch.status.in_(['closing', 'closed'])
+            ).all()
+        else:
+            batches = Batch.query.filter(
+                Batch.status.in_(['closing', 'closed'])
+            ).all()
+        
+        # Get harvests for these batches
+        harvests = []
+        for batch in batches:
+            batch_harvests = Harvest.query.filter_by(batch_id=batch.id).order_by(Harvest.date.desc()).all()
+            for harvest in batch_harvests:
+                harvests.append({
+                    'id': harvest.id,
+                    'batch_number': batch.batch_number,
+                    'date': harvest.date,
+                    'quantity': harvest.quantity,
+                    'weight': harvest.weight,
+                    'selling_price': harvest.selling_price,
+                    'total_value': harvest.total_value,
+                    'notes': harvest.notes
+                })
+        
+        return render_template('manager/harvest.html', 
+                             batches=batches,
+                             harvests=harvests,
+                             now=now,
+                             today=today,
+                             yesterday=yesterday,
+                             timedelta=timedelta)  # Add timedelta to template context
+    except Exception as e:
+        flash('Error loading harvest data: ' + str(e), 'error')
+        return redirect(url_for('manager_dashboard'))
+
+@app.route('/manager/harvest/<int:batch_id>', methods=['GET', 'POST'])
+@login_required
+def manager_harvest_batch(batch_id):
+    try:
+        # Get current date and time
+        now = datetime.now()
+        
+        batch = Batch.query.get_or_404(batch_id)
+        
+        # Check if batch is in closing or closed status
+        if batch.status not in ['closing', 'closed']:
+            flash('Harvesting is only available for batches in closing or closed status', 'error')
+            return redirect(url_for('manager_harvest'))
+        
+        # Check if assistant manager has access to this batch
+        if session.get('user_type') == 'assistant_manager' and batch.manager_id != session.get('user_id'):
+            flash('You do not have access to this batch', 'error')
+            return redirect(url_for('manager_harvest'))
+        
+        if request.method == 'POST':
+            try:
+                quantity = int(request.form.get('quantity', 0))
+                weight = float(request.form.get('weight', 0))
+                selling_price = float(request.form.get('selling_price', 0))
+                notes = request.form.get('notes', '')
+                
+                if quantity > batch.available_birds:
+                    flash('Harvest quantity cannot exceed available birds', 'error')
+                    return redirect(url_for('manager_harvest_batch', batch_id=batch_id))
+                
+                total_value = weight * selling_price
+                
+                harvest = Harvest(
+                    batch_id=batch.id,
+                    date=now.date(),
+                    quantity=quantity,
+                    weight=weight,
+                    selling_price=selling_price,
+                    total_value=total_value,
+                    notes=notes
+                )
+                
+                # Update batch's available birds
+                batch.available_birds -= quantity
+                batch.check_and_update_status()
+                
+                db.session.add(harvest)
+                db.session.commit()
+                
+                flash('Harvest record added successfully', 'success')
+                return redirect(url_for('manager_harvest'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Error adding harvest record: ' + str(e), 'error')
+        
+        # Get existing harvests for this batch
+        harvests = Harvest.query.filter_by(batch_id=batch.id).order_by(Harvest.date.desc()).all()
+        
+        return render_template('manager/harvest_batch.html', 
+                             batch=batch,
+                             harvests=harvests,
+                             now=now,
+                             today=now.date())
+    except Exception as e:
+        flash('Error accessing harvest data: ' + str(e), 'error')
+        return redirect(url_for('manager_harvest'))
+
+# Schedule Management Routes
+@app.route('/manager/schedules')
+@login_required
+def manager_schedules():
+    try:
+        # Get current date and time
+        today = datetime.now().date()
+        end_date = today + timedelta(days=30)
+        
+        # Get schedules based on user type
+        if session.get('user_type') == 'assistant_manager':
+            # Health Material Schedules
+            health_material_schedules = HealthMaterialSchedule.query.join(
+                health_material_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.manager_id == session.get('user_id'),
+                Batch.status.in_(['ongoing', 'closing']),
+                HealthMaterialSchedule.scheduled_date >= today,
+                HealthMaterialSchedule.scheduled_date <= end_date
+            ).order_by(HealthMaterialSchedule.scheduled_date).all()
+            
+            # Medical Schedules
+            medical_schedules = MedicineSchedule.query.join(
+                medicine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.manager_id == session.get('user_id'),
+                Batch.status.in_(['ongoing', 'closing']),
+                MedicineSchedule.schedule_date >= today,
+                MedicineSchedule.schedule_date <= end_date
+            ).order_by(MedicineSchedule.schedule_date).all()
+            
+            # Vaccine Schedules
+            vaccine_schedules = VaccineSchedule.query.join(
+                vaccine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.manager_id == session.get('user_id'),
+                Batch.status.in_(['ongoing', 'closing']),
+                VaccineSchedule.scheduled_date >= today,
+                VaccineSchedule.scheduled_date <= end_date
+            ).order_by(VaccineSchedule.scheduled_date).all()
+        else:
+            # Senior managers see all schedules
+            health_material_schedules = HealthMaterialSchedule.query.join(
+                health_material_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing']),
+                HealthMaterialSchedule.scheduled_date >= today,
+                HealthMaterialSchedule.scheduled_date <= end_date
+            ).order_by(HealthMaterialSchedule.scheduled_date).all()
+            
+            medical_schedules = MedicineSchedule.query.join(
+                medicine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing']),
+                MedicineSchedule.schedule_date >= today,
+                MedicineSchedule.schedule_date <= end_date
+            ).order_by(MedicineSchedule.schedule_date).all()
+            
+            vaccine_schedules = VaccineSchedule.query.join(
+                vaccine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing']),
+                VaccineSchedule.scheduled_date >= today,
+                VaccineSchedule.scheduled_date <= end_date
+            ).order_by(VaccineSchedule.scheduled_date).all()
+        
+        # Get recent activities (last 5 activities)
+        recent_activities = []
+        
+        # Add health material activities
+        recent_health = HealthMaterialSchedule.query.join(
+            health_material_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(HealthMaterialSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_health:
+            # Get the first batch for display
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-spray-can',
+                    'title': 'Health Material Scheduled',
+                    'description': f'{schedule.health_material.name} for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Add medical activities
+        recent_medical = MedicineSchedule.query.join(
+            medicine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(MedicineSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_medical:
+            # Get the first batch for display
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-pills',
+                    'title': 'Medicine Scheduled',
+                    'description': f'{schedule.medicine.name} for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Add vaccine activities
+        recent_vaccine = VaccineSchedule.query.join(
+            vaccine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(VaccineSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_vaccine:
+            # Get the first batch for display
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-syringe',
+                    'title': 'Vaccine Scheduled',
+                    'description': f'{schedule.vaccine.name} (Dose {schedule.dose_number}) for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Sort activities by time
+        recent_activities.sort(key=lambda x: x['time'], reverse=True)
+        
+        return render_template('manager/schedules.html',
+                             health_material_schedules=health_material_schedules,
+                             medical_schedules=medical_schedules,
+                             vaccine_schedules=vaccine_schedules,
+                             recent_activities=recent_activities,
+                             today=today)
+    except Exception as e:
+        flash('Error loading schedules', 'error')
+        return redirect(url_for('manager_dashboard'))
+
+@app.route('/manager/schedule/<int:schedule_id>/complete', methods=['POST'])
+@login_required
+@admin_required
+def complete_schedule(schedule_id):
+    try:
+        schedule = Schedule.query.get_or_404(schedule_id)
+        
+        # Check if assistant manager has access to this schedule
+        if session.get('user_type') == 'assistant_manager' and schedule.batch.manager_id != session.get('user_id'):
+            return jsonify({'success': False, 'message': 'Access denied'}), 403
+        
+        schedule.status = 'completed'
+        schedule.completed_at = datetime.now()
+        schedule.completed_by = session.get('user_id')
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/manager/schedule/health-material/<int:schedule_id>/complete', methods=['POST'])
+@login_required
+def complete_health_material_schedule_manager(schedule_id):
+    try:
+        schedule = HealthMaterialSchedule.query.get_or_404(schedule_id)
+        
+        # Check if assistant manager has access to this schedule
+        if session.get('user_type') == 'assistant_manager':
+            # Check if any of the batches are assigned to this manager
+            has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
+            if not has_access:
+                return jsonify({'success': False, 'message': 'Access denied'}), 403
+        
+        schedule.completed = True
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/manager/schedule/vaccine/<int:schedule_id>/complete', methods=['POST'])
+@login_required
+def complete_vaccine_schedule_manager(schedule_id):
+    if session.get('user_type') not in ['admin', 'senior_manager', 'assistant_manager']:
+        return jsonify({'success': False, 'message': 'Access denied. Only administrators and managers can complete schedules.'}), 403
+    
+    try:
+        schedule = VaccineSchedule.query.get_or_404(schedule_id)
+        
+        # Check if assistant manager has access to any of the batches
+        if session.get('user_type') == 'assistant_manager':
+            has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
+            if not has_access:
+                return jsonify({'success': False, 'message': 'Access denied. You can only complete schedules for your assigned batches.'}), 403
+        
+        schedule.completed = True
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/logout')
 def logout():
@@ -1701,26 +2169,51 @@ def delete_manager(user_id):
 @app.route('/manager/dashboard')
 @login_required
 def manager_dashboard():
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     
     # Get current date and time
     now = datetime.now()
     
-    # Get statistics for the dashboard
-    total_birds = db.session.query(db.func.sum(Batch.total_birds)).scalar() or 0
-    active_batches = Batch.query.count()
+    # Get batches based on user type
+    if session.get('user_type') == 'senior_manager':
+        # Senior managers can see all batches
+        batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
+    else:
+        # Assistant managers can only see their assigned batches
+        batches = Batch.query.filter(
+            Batch.manager_id == session.get('user_id'),
+            Batch.status.in_(['ongoing', 'closing'])
+        ).all()
     
-    # Get pending vaccinations and medicines
-    pending_vaccinations = VaccineSchedule.query.filter_by(completed=False).count()
-    pending_medicines = MedicineSchedule.query.filter_by(completed=False).count()
+    # Calculate statistics based on filtered batches
+    total_birds = sum(batch.total_birds for batch in batches)
+    active_batches = len(batches)
+    
+    # Get pending vaccinations and medicines for the filtered batches
+    batch_ids = [batch.id for batch in batches]
+    
+    # Get pending vaccinations using the many-to-many relationship
+    pending_vaccinations = VaccineSchedule.query.join(
+        vaccine_schedule_batches
+    ).filter(
+        vaccine_schedule_batches.c.batch_id.in_(batch_ids),
+        VaccineSchedule.completed == False
+    ).count()
+    
+    pending_medicines = MedicineSchedule.query.join(
+        medicine_schedule_batches
+    ).filter(
+        medicine_schedule_batches.c.batch_id.in_(batch_ids),
+        MedicineSchedule.completed == False
+    ).count()
     
     # Get recent activities (last 5 activities)
     recent_activities = []
     
     # Add batch activities
-    recent_batches = Batch.query.order_by(Batch.created_at.desc()).limit(3).all()
+    recent_batches = Batch.query.filter(Batch.id.in_(batch_ids)).order_by(Batch.created_at.desc()).limit(3).all()
     for batch in recent_batches:
         recent_activities.append({
             'icon': 'fa-kiwi-bird',
@@ -1730,14 +2223,25 @@ def manager_dashboard():
         })
     
     # Add vaccination activities
-    recent_vaccines = VaccineSchedule.query.order_by(VaccineSchedule.created_at.desc()).limit(2).all()
+    recent_vaccines = VaccineSchedule.query.join(
+        vaccine_schedule_batches
+    ).filter(
+        vaccine_schedule_batches.c.batch_id.in_(batch_ids)
+    ).order_by(VaccineSchedule.created_at.desc()).limit(2).all()
+    
     for vaccine in recent_vaccines:
-        recent_activities.append({
-            'icon': 'fa-syringe',
-            'title': 'Vaccination Scheduled',
-            'description': f'{vaccine.vaccine.name} for Batch {vaccine.batch.batch_number}',
-            'time': vaccine.created_at.strftime('%Y-%m-%d %H:%M')
-        })
+        # Get the first batch for display
+        batch = vaccine.batches[0] if vaccine.batches else None
+        if batch:
+            recent_activities.append({
+                'icon': 'fa-syringe',
+                'title': 'Vaccination Scheduled',
+                'description': f'{vaccine.vaccine.name} for Batch {batch.batch_number}',
+                'time': vaccine.created_at.strftime('%Y-%m-%d %H:%M')
+            })
+    
+    # Sort activities by time
+    recent_activities.sort(key=lambda x: x['time'], reverse=True)
     
     return render_template('manager/dashboard.html',
                          now=now,
@@ -1751,19 +2255,30 @@ def manager_dashboard():
 @app.route('/manager/batches')
 @login_required
 def manager_batches():
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
-    batches = Batch.query.all()
+    
+    # Get batches based on user type
+    if session.get('user_type') == 'senior_manager':
+        # Senior managers can see all batches
+        batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
+    else:
+        # Assistant managers can only see their assigned batches
+        batches = Batch.query.filter(
+            Batch.manager_id == session.get('user_id'),
+            Batch.status.in_(['ongoing', 'closing'])
+        ).all()
+    
     return render_template('manager/batches.html', 
                          batches=batches,
                          now=datetime.utcnow(),
-                         timedelta=timedelta)
+                         timedelta=timedelta)  # Add timedelta to template context
 
 @app.route('/manager/medicines')
 @login_required
 def manager_medicines():
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     medicines = Medicine.query.all()
@@ -1772,7 +2287,7 @@ def manager_medicines():
 @app.route('/manager/vaccines')
 @login_required
 def manager_vaccines():
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     vaccines = Vaccine.query.all()
@@ -1781,7 +2296,7 @@ def manager_vaccines():
 @app.route('/manager/reports')
 @login_required
 def manager_reports():
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     return render_template('manager/reports.html')
@@ -1789,24 +2304,29 @@ def manager_reports():
 @app.route('/manager/batches/<int:batch_id>/view')
 @login_required
 def manager_view_batch(batch_id):
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     
     batch = Batch.query.get_or_404(batch_id)
     return render_template('manager/view_batch.html', 
                          batch=batch,
-                         now=datetime.utcnow(),
-                         timedelta=timedelta)
+                         now=datetime.utcnow())
 
 @app.route('/manager/batches/<int:batch_id>/update', methods=['GET', 'POST'])
 @login_required
 def manager_update_batch(batch_id):
-    if session.get('user_type') != 'manager':
+    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     
     batch = Batch.query.get_or_404(batch_id)
+    
+    # Check if assistant manager has access to this batch
+    if session.get('user_type') == 'assistant_manager' and batch.manager_id != session.get('user_id'):
+        flash('Access denied. You can only update batches assigned to you.', 'error')
+        return redirect(url_for('manager_batches'))
+    
     today = datetime.utcnow().date()
     
     # Get all available feeds, medicines, and health materials
@@ -1853,13 +2373,15 @@ def manager_update_batch(batch_id):
             # Update batch's available birds and total mortality
             batch.available_birds -= mortality_count
             batch.total_mortality += mortality_count
+            batch.check_and_update_status()
             
-            # Calculate new feed stock: (current stock - used) + allocation
+            # Update feed stock and feed usage
             batch.feed_stock = (batch.feed_stock - feed_used) + total_feed_allocation
+            batch.feed_usage += feed_used  # Add to total feed usage
 
             # First save the batch update to get an ID
             db.session.add(update)
-            db.session.flush()  # This will assign an ID to the update without committing
+            db.session.flush()
 
             # Process feeds
             for feed_id, quantity in zip(feed_data, feed_quantities):
@@ -1918,9 +2440,269 @@ def manager_update_batch(batch_id):
                          existing_update=existing_update,
                          feeds=feeds,
                          medicines=medicines,
-                         health_materials=health_materials,
-                         now=datetime.utcnow(),
-                         timedelta=timedelta)
+                         health_materials=health_materials)
+
+@app.route('/batches/<int:batch_id>/harvest')
+@login_required
+def harvest_batch(batch_id):
+    batch = Batch.query.get_or_404(batch_id)
+    if batch.status not in ['closing', 'closed']:
+        flash('Harvesting is only available for batches in closing or closed status', 'error')
+        return redirect(url_for('batches'))
+    
+    harvests = Harvest.query.filter_by(batch_id=batch_id).order_by(Harvest.date.desc()).all()
+    return render_template('harvesting.html', batch=batch, harvests=harvests)
+
+@app.route('/batches/<int:batch_id>/harvest/add', methods=['GET', 'POST'])
+@login_required
+def add_harvest(batch_id):
+    batch = Batch.query.get_or_404(batch_id)
+    if batch.status not in ['closing', 'closed']:
+        flash('Harvesting is only available for batches in closing or closed status', 'error')
+        return redirect(url_for('batches'))
+    
+    if request.method == 'POST':
+        try:
+            quantity = int(request.form.get('quantity', 0))
+            weight = float(request.form.get('weight', 0))
+            selling_price = float(request.form.get('selling_price', 0))
+            notes = request.form.get('notes', '')
+            
+            if quantity > batch.available_birds:
+                flash('Harvest quantity cannot exceed available birds', 'error')
+                return redirect(url_for('add_harvest', batch_id=batch_id))
+            
+            total_value = weight * selling_price
+            
+            harvest = Harvest(
+                batch_id=batch_id,
+                date=datetime.utcnow().date(),
+                quantity=quantity,
+                weight=weight,
+                selling_price=selling_price,
+                total_value=total_value,
+                notes=notes
+            )
+            
+            # Update batch's available birds
+            batch.available_birds -= quantity
+            batch.check_and_update_status()
+            
+            db.session.add(harvest)
+            db.session.commit()
+            
+            flash('Harvest record added successfully', 'success')
+            return redirect(url_for('harvest_batch', batch_id=batch_id))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding harvest record: ' + str(e), 'error')
+    
+    return render_template('add_harvest.html', batch=batch)
+
+@app.route('/harvests/<int:harvest_id>/delete', methods=['POST'])
+@login_required
+def delete_harvest(harvest_id):
+    try:
+        harvest = Harvest.query.get_or_404(harvest_id)
+        batch = harvest.batch
+        
+        # Add back the harvested birds to available birds
+        batch.available_birds += harvest.quantity
+        batch.check_and_update_status()
+        
+        db.session.delete(harvest)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/harvests/<int:harvest_id>/view')
+@login_required
+def view_harvest(harvest_id):
+    harvest = Harvest.query.get_or_404(harvest_id)
+    return render_template('view_harvest.html', harvest=harvest)
+
+@app.route('/harvests/<int:harvest_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_harvest(harvest_id):
+    harvest = Harvest.query.get_or_404(harvest_id)
+    batch = harvest.batch
+    
+    if batch.status != 'closing':
+        flash('Harvesting is only available for batches in closing status', 'error')
+        return redirect(url_for('batches'))
+    
+    if request.method == 'POST':
+        try:
+            quantity = int(request.form.get('quantity', 0))
+            weight = float(request.form.get('weight', 0))
+            selling_price = float(request.form.get('selling_price', 0))
+            notes = request.form.get('notes', '')
+            
+            # Calculate the difference in quantity
+            quantity_diff = quantity - harvest.quantity
+            
+            if quantity_diff > batch.available_birds:
+                flash('Harvest quantity cannot exceed available birds', 'error')
+                return redirect(url_for('edit_harvest', harvest_id=harvest_id))
+            
+            total_value = weight * selling_price
+            
+            # Update harvest record
+            harvest.quantity = quantity
+            harvest.weight = weight
+            harvest.selling_price = selling_price
+            harvest.total_value = total_value
+            harvest.notes = notes
+            
+            # Update batch's available birds
+            batch.available_birds -= quantity_diff
+            batch.check_and_update_status()
+            
+            db.session.commit()
+            flash('Harvest record updated successfully', 'success')
+            return redirect(url_for('harvest_batch', batch_id=batch.id))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating harvest record: ' + str(e), 'error')
+    
+    return render_template('edit_harvest.html', harvest=harvest)
+
+@app.route('/schedules')
+@login_required
+@admin_required
+def schedules():
+    try:
+        # Get current date and time
+        today = datetime.now().date()
+        end_date = today + timedelta(days=30)
+        
+        # Get all schedules for the next 30 days
+        health_material_schedules = HealthMaterialSchedule.query.join(
+            health_material_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing']),
+            HealthMaterialSchedule.scheduled_date >= today,
+            HealthMaterialSchedule.scheduled_date <= end_date
+        ).order_by(HealthMaterialSchedule.scheduled_date).all()
+        
+        medical_schedules = MedicineSchedule.query.join(
+            medicine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing']),
+            MedicineSchedule.schedule_date >= today,
+            MedicineSchedule.schedule_date <= end_date
+        ).order_by(MedicineSchedule.schedule_date).all()
+        
+        vaccine_schedules = VaccineSchedule.query.join(
+            vaccine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing']),
+            VaccineSchedule.scheduled_date >= today,
+            VaccineSchedule.scheduled_date <= end_date
+        ).order_by(VaccineSchedule.scheduled_date).all()
+        
+        # Get recent activities (last 6 activities)
+        recent_activities = []
+        
+        # Add health material activities
+        recent_health = HealthMaterialSchedule.query.join(
+            health_material_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(HealthMaterialSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_health:
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-spray-can',
+                    'title': 'Health Material Scheduled',
+                    'description': f'{schedule.health_material.name} for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Add medical activities
+        recent_medical = MedicineSchedule.query.join(
+            medicine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(MedicineSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_medical:
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-pills',
+                    'title': 'Medicine Scheduled',
+                    'description': f'{schedule.medicine.name} for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Add vaccine activities
+        recent_vaccine = VaccineSchedule.query.join(
+            vaccine_schedule_batches
+        ).join(
+            Batch
+        ).filter(
+            Batch.status.in_(['ongoing', 'closing'])
+        ).order_by(VaccineSchedule.created_at.desc()).limit(2).all()
+        
+        for schedule in recent_vaccine:
+            batch = schedule.batches[0] if schedule.batches else None
+            if batch:
+                recent_activities.append({
+                    'icon': 'fa-syringe',
+                    'title': 'Vaccine Scheduled',
+                    'description': f'{schedule.vaccine.name} (Dose {schedule.dose_number}) for Batch {batch.batch_number}',
+                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+        
+        # Sort activities by time
+        recent_activities.sort(key=lambda x: x['time'], reverse=True)
+        
+        return render_template('schedules.html',
+                             health_material_schedules=health_material_schedules,
+                             medical_schedules=medical_schedules,
+                             vaccine_schedules=vaccine_schedules,
+                             recent_activities=recent_activities,
+                             today=today)
+    except Exception as e:
+        flash('Error loading schedules', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/vaccine/schedule/<int:id>/complete', methods=['POST'])
+@login_required
+def complete_vaccine_schedule(id):
+    if session.get('user_type') not in ['admin', 'senior_manager', 'assistant_manager']:
+        return jsonify({'success': False, 'message': 'Access denied. Only administrators and managers can complete schedules.'}), 403
+    
+    try:
+        schedule = VaccineSchedule.query.get_or_404(id)
+        
+        # Check if assistant manager has access to any of the batches
+        if session.get('user_type') == 'assistant_manager':
+            has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
+            if not has_access:
+                return jsonify({'success': False, 'message': 'Access denied. You can only complete schedules for your assigned batches.'}), 403
+        
+        schedule.completed = True
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

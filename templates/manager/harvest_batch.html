@@ -1,0 +1,383 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Harvest Batch {{ batch.batch_number }} - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Harvest Batch {{ batch.batch_number }}</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Harvest</span> / <span>Batch {{ batch.batch_number }}</span>
+    </div>
+</div>
+
+<div class="harvest-container">
+    <!-- Batch Information Card -->
+    <div class="batch-info-card">
+        <div class="batch-header">
+            <h3>Batch Information</h3>
+            <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+        </div>
+        <div class="batch-details">
+            <div class="detail-item">
+                <i class="fas fa-kiwi-bird"></i>
+                <span>Total Birds: {{ batch.total_birds }}</span>
+            </div>
+            <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Available Birds: {{ batch.available_birds }}</span>
+            </div>
+            <div class="detail-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Age: {{ (now.date() - batch.created_at.date()).days }} days</span>
+            </div>
+            <div class="detail-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Farm: {{ batch.farm.name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Harvest Form -->
+    <div class="add-harvest-form">
+        <h3>Add New Harvest</h3>
+        <form method="POST" class="harvest-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" name="quantity" required min="1" max="{{ batch.available_birds }}">
+                    <small>Available birds: {{ batch.available_birds }}</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="weight">Weight (kg)</label>
+                    <input type="number" id="weight" name="weight" required step="0.01" min="0">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="selling_price">Selling Price (per kg)</label>
+                    <input type="number" id="selling_price" name="selling_price" required step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="total_value">Total Value</label>
+                    <input type="text" id="total_value" readonly>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="4" placeholder="Add any additional notes about this harvest..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Harvest Record
+                </button>
+                <a href="{{ url_for('manager_harvest') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Previous Harvests Table -->
+    <div class="previous-harvests">
+        <h3>Previous Harvests</h3>
+        {% if harvests %}
+        <div class="table-responsive">
+            <table class="harvest-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Quantity</th>
+                        <th>Weight (kg)</th>
+                        <th>Price/kg</th>
+                        <th>Total Value</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for harvest in harvests %}
+                    <tr>
+                        <td>{{ harvest.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ harvest.quantity }}</td>
+                        <td>{{ harvest.weight }}</td>
+                        <td>{{ harvest.selling_price }}</td>
+                        <td>{{ harvest.total_value }}</td>
+                        <td>{{ harvest.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="no-harvests-message">
+            <i class="fas fa-info-circle"></i>
+            <p>No harvests recorded for this batch yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .harvest-container {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .batch-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .batch-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .batch-header h3 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.25rem;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-closing {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .batch-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #4a5568;
+    }
+
+    .detail-item i {
+        width: 20px;
+        color: #1a73e8;
+    }
+
+    .add-harvest-form {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .add-harvest-form h3 {
+        margin: 0 0 20px 0;
+        color: #2d3748;
+    }
+
+    .harvest-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
+    }
+
+    .form-group input[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .form-group small {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-success {
+        background: #34a853;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #2d8745;
+    }
+
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #2c3e50;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: #e9ecef;
+    }
+
+    .previous-harvests {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .previous-harvests h3 {
+        margin: 0 0 20px 0;
+        color: #2d3748;
+    }
+
+    .harvest-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .harvest-table th,
+    .harvest-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .harvest-table th {
+        background-color: #f8f9fa;
+        font-weight: 500;
+        color: #2d3748;
+    }
+
+    .harvest-table tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .no-harvests-message {
+        text-align: center;
+        padding: 40px;
+        color: #4a5568;
+    }
+
+    .no-harvests-message i {
+        font-size: 2rem;
+        color: #1a73e8;
+        margin-bottom: 15px;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .harvest-table {
+            display: block;
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantity');
+    const weightInput = document.getElementById('weight');
+    const sellingPriceInput = document.getElementById('selling_price');
+    const totalValueInput = document.getElementById('total_value');
+
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+        const total = weight * sellingPrice;
+        totalValueInput.value = total.toFixed(2);
+    }
+
+    quantityInput.addEventListener('input', calculateTotal);
+    weightInput.addEventListener('input', calculateTotal);
+    sellingPriceInput.addEventListener('input', calculateTotal);
+
+    // Validate quantity input
+    quantityInput.addEventListener('change', function() {
+        const maxBirds = parseInt(this.getAttribute('max'));
+        const value = parseInt(this.value);
+        if (value > maxBirds) {
+            alert(`Quantity cannot exceed available birds (${maxBirds})`);
+            this.value = maxBirds;
+            calculateTotal();
+        }
+    });
+});
+</script>
+{% endblock %} 

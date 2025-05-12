@@ -1,94 +1,108 @@
 {% extends "base.html" %}
 
+{% block title %}View Medicine - Bismi Farms{% endblock %}
+
 {% block content %}
+<div class="content-header">
+    <h1>Medicine Details</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Medicines</span> / <span>View Medicine</span>
+    </div>
+</div>
+
 <div class="section-container">
-    <div class="section-header">
-        <h1 class="section-title">Medicine Details</h1>
+    <div class="detail-group">
+        <label><i class="fas fa-pills"></i> Basic Information</label>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Name</label>
+                <span>{{ medicine.name }}</span>
+            </div>
+            <div class="info-item">
+                <label>Quantity per Unit</label>
+                <span>{{ medicine.quantity_per_unit }} {{ medicine.unit_type }}</span>
+            </div>
+            <div class="info-item">
+                <label>Price</label>
+                <span>₹{{ "%.2f"|format(medicine.price) }}</span>
+            </div>
+        </div>
     </div>
 
-    <div class="details-container">
-        <div class="detail-group">
-            <label><i class="fas fa-pills"></i> Basic Information</label>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label>Name</label>
-                    <span>{{ medicine.name }}</span>
-                </div>
-                <div class="info-item">
-                    <label>Quantity per Unit</label>
-                    <span>{{ medicine.quantity_per_unit }} {{ medicine.unit_type }}</span>
-                </div>
-                <div class="info-item">
-                    <label>Price</label>
-                    <span>₹{{ "%.2f"|format(medicine.price) }}</span>
-                </div>
-            </div>
-        </div>
+    {% if medicine.notes %}
+    <div class="detail-group">
+        <label><i class="fas fa-sticky-note"></i> Notes</label>
+        <p>{{ medicine.notes }}</p>
+    </div>
+    {% endif %}
 
-        {% if medicine.notes %}
-        <div class="detail-group">
-            <label><i class="fas fa-sticky-note"></i> Notes</label>
-            <p>{{ medicine.notes }}</p>
+    <div class="detail-group">
+        <label><i class="fas fa-calendar-check"></i> Scheduled Applications</label>
+        {% if medicine.schedules %}
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Batch</th>
+                        <th>Farm</th>
+                        <th>Schedule Date</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schedule in medicine.schedules %}
+                    <tr>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                Batch {{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for batch in schedule.batches %}
+                                {{ batch.farm.name }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ schedule.schedule_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <span class="status-badge {{ 'completed' if schedule.completed else 'pending' }}">
+                                {{ 'Completed' if schedule.completed else 'Pending' }}
+                            </span>
+                        </td>
+                        <td>{{ schedule.notes or '-' }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if not schedule.completed %}
+                                <button class="action-btn complete" title="Mark as Completed" onclick="markAsCompleted('{{ schedule.id }}')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule('{{ schedule.id }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+        <p>No scheduled applications found.</p>
         {% endif %}
+    </div>
 
-        <div class="detail-group">
-            <label><i class="fas fa-calendar-alt"></i> Scheduled Applications</label>
-            {% if medicine.schedules %}
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Batch</th>
-                            <th>Farm</th>
-                            <th>Schedule Date</th>
-                            <th>Notes</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for schedule in medicine.schedules %}
-                        <tr>
-                            <td>
-                                {% for batch in schedule.batches %}
-                                    Batch {{ batch.batch_number }}{% if not loop.last %}, {% endif %}
-                                {% endfor %}
-                            </td>
-                            <td>
-                                {% for batch in schedule.batches %}
-                                    {{ batch.farm.name }}{% if not loop.last %}, {% endif %}
-                                {% endfor %}
-                            </td>
-                            <td>{{ schedule.schedule_date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ schedule.notes or '-' }}</td>
-                            <td>
-                                <div class="action-buttons">
-                                    <button class="action-btn delete" title="Delete Schedule" onclick="deleteSchedule({{ schedule.id }})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p>No scheduled applications found.</p>
-            {% endif %}
-        </div>
-
-        <div class="action-buttons">
-            <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="edit-btn">
-                <i class="fas fa-edit"></i> Edit Medicine
-            </a>
-            <button class="schedule-btn" onclick="openScheduleModal({{ medicine.id }})">
-                <i class="fas fa-calendar-plus"></i> Schedule Application
-            </button>
-            <a href="{{ url_for('medicines') }}" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Back to Medicines
-            </a>
-        </div>
+    <div class="action-buttons">
+        <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="edit-btn">
+            <i class="fas fa-edit"></i> Edit Medicine
+        </a>
+        <button class="schedule-btn" onclick="openScheduleModal()">
+            <i class="fas fa-calendar-plus"></i> Schedule Application
+        </button>
+        <a href="{{ url_for('medicines') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Medicines
+        </a>
     </div>
 </div>
 
@@ -132,7 +146,7 @@
 {% block scripts %}
 {{ super() }}
 <script>
-function openScheduleModal(medicineId) {
+function openScheduleModal() {
     document.getElementById('scheduleModal').style.display = 'block';
 }
 
@@ -140,6 +154,23 @@ function closeScheduleModal() {
     document.getElementById('scheduleModal').style.display = 'none';
     // Reset form when closing
     document.getElementById('scheduleForm').reset();
+}
+
+function markAsCompleted(scheduleId) {
+    if (confirm('Are you sure you want to mark this schedule as completed?')) {
+        fetch(`/medicine/schedule/${scheduleId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Error marking schedule as completed');
+            }
+        });
+    }
 }
 
 function deleteSchedule(scheduleId) {
@@ -152,6 +183,8 @@ function deleteSchedule(scheduleId) {
         }).then(response => {
             if (response.ok) {
                 window.location.reload();
+            } else {
+                alert('Error deleting schedule');
             }
         });
     }

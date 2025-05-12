@@ -92,7 +92,7 @@
                     <input type="number" id="medicine_quantity_{{ medicine.id }}" name="medicine_quantity[]" 
                            value="{{ update.get_medicine_quantity(medicine.id) }}" step="0.01" min="0"
                            {% if medicine not in update.medicines %}disabled{% endif %}>
-                    <span class="unit">{{ medicine.unit_type }}</span>
+                    <span class="unit">Unit</span>
                 </div>
                 {% endfor %}
             </div>
@@ -110,7 +110,7 @@
                     <input type="number" id="health_material_quantity_{{ material.id }}" name="health_material_quantity[]" 
                            value="{{ update.get_health_material_quantity(material.id) }}" step="0.01" min="0"
                            {% if material not in update.health_materials %}disabled{% endif %}>
-                    <span class="unit">{{ material.unit_type }}</span>
+                    <span class="unit">Unit</span>
                 </div>
                 {% endfor %}
             </div>

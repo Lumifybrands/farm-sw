@@ -84,6 +84,70 @@
         </div>
     </div>
 
+    {% if batch.status == 'closed' %}
+    <div class="detail-group financial-details">
+        <label><i class="fas fa-chart-line"></i> Financial Summary</label>
+        <div class="info-grid">
+            <div class="info-box highlight">
+                <div class="info-label">Total Revenue</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.get_total_revenue()) }}</div>
+            </div>
+            <div class="info-box highlight">
+                <div class="info-label">Total Expenses</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.get_total_expenses()) }}</div>
+            </div>
+            <div class="info-box highlight {% if batch.get_total_profit() > 0 %}profit{% else %}loss{% endif %}">
+                <div class="info-label">Total Profit/Loss</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.get_total_profit()) }}</div>
+            </div>
+        </div>
+
+        <div class="expense-breakdown">
+            <h4>Expense Breakdown</h4>
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="info-label">Chicken Cost</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.cost_per_chicken * batch.total_birds) }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Feed Cost</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.get_feed_cost()) }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Medicine Cost</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.get_medicine_cost()) }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Health Materials Cost</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.get_health_materials_cost()) }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Vaccine Cost</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.get_vaccine_cost()) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="revenue-breakdown">
+            <h4>Revenue Breakdown</h4>
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="info-label">Total Birds Harvested</div>
+                    <div class="info-value">{{ batch.total_birds - batch.available_birds }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Average Selling Price</div>
+                    <div class="info-value">₹{{ "%.2f"|format(batch.get_average_selling_price()) }}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Total Weight Sold</div>
+                    <div class="info-value">{{ "%.2f"|format(batch.get_total_weight_sold()) }} kg</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="detail-group">
         <label><i class="fas fa-warehouse"></i> Shed Distribution</label>
         <div class="shed-capacities">
@@ -185,7 +249,7 @@
                             {% for medicine in last_update.medicines %}
                             <div class="allocated-item">
                                 <span class="item-name">{{ medicine.name }}</span>
-                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_medicine_quantity(medicine.id)) }} {{ medicine.unit_type }}</span>
+                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_medicine_quantity(medicine.id)) }} Unit</span>
                             </div>
                             {% endfor %}
                         </div>
@@ -202,7 +266,7 @@
                             {% for material in last_update.health_materials %}
                             <div class="allocated-item">
                                 <span class="item-name">{{ material.name }} - {{ material.category }}</span>
-                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_health_material_quantity(material.id)) }} {{ material.unit_type }}</span>
+                                <span class="item-quantity">{{ "%.2f"|format(last_update.get_health_material_quantity(material.id)) }} Unit</span>
                             </div>
                             {% endfor %}
                         </div>
@@ -879,6 +943,59 @@ function deleteBatchUpdate(date) {
 .badge-secondary {
     background-color: #f1f3f4;
     color: #5f6368;
+}
+
+.financial-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.financial-details h4 {
+    color: #1a73e8;
+    margin: 20px 0 15px;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.info-box.highlight {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    border: 1px solid #e9ecef;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.info-box.highlight .info-label {
+    color: #495057;
+    font-weight: 600;
+}
+
+.info-box.highlight .info-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.info-box.profit .info-value {
+    color: #28a745;
+}
+
+.info-box.loss .info-value {
+    color: #dc3545;
+}
+
+.expense-breakdown,
+.revenue-breakdown {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.expense-breakdown h4,
+.revenue-breakdown h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    font-weight: 600;
 }
 </style>
 {% endblock %} 

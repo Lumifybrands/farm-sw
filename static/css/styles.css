@@ -1169,6 +1169,14 @@ body {
     min-width: 80px;
 }
 
+.add-shed-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+}
+
 .capacity-value {
     color: #212529;
 }
@@ -2280,4 +2288,44 @@ body {
 
 .action-btn.complete:hover {
     background-color: #388e3c;
+}
+
+/* Multi-select styles */
+.multi-select {
+    width: 100%;
+    min-height: 100px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+}
+
+.multi-select option {
+    padding: 8px;
+    margin: 2px 0;
+    border-radius: 2px;
+}
+
+.multi-select option:hover {
+    background-color: #f0f0f0;
+}
+
+.multi-select option:checked {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.form-text {
+    display: block;
+    margin-top: 4px;
+    color: #666;
+    font-size: 0.875rem;
 } 
+
+.add-dose-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}

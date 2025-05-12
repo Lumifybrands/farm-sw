@@ -324,7 +324,7 @@
                 <span>Bismi Farms</span>
             </div>
             <div class="user-info">
-                <span>{{ session.get('username') }} (Manager)</span>
+                <span>{{ session.get('username') }} ({{ session.get('user_type').replace('_', ' ').title() }})</span>
                 <a href="{{ url_for('logout') }}" class="logout-btn">
                     <i class="fas fa-sign-out-alt"></i>
                     <span class="logout-text">Logout</span>
@@ -350,22 +350,16 @@
                                 <span>Batches</span>
                             </a>
                         </li>
-                        <li {% if request.endpoint == 'manager_medicines' %}class="active"{% endif %}>
-                            <a href="{{ url_for('manager_medicines') }}">
-                                <i class="fas fa-pills"></i>
-                                <span>Medicines</span>
+                        <li {% if request.endpoint == 'manager_harvest' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_harvest') }}">
+                                <i class="fas fa-hand-holding"></i>
+                                <span>Harvest</span>
                             </a>
                         </li>
-                        <li {% if request.endpoint == 'manager_vaccines' %}class="active"{% endif %}>
-                            <a href="{{ url_for('manager_vaccines') }}">
-                                <i class="fas fa-syringe"></i>
-                                <span>Vaccines</span>
-                            </a>
-                        </li>
-                        <li {% if request.endpoint == 'manager_reports' %}class="active"{% endif %}>
-                            <a href="{{ url_for('manager_reports') }}">
-                                <i class="fas fa-chart-bar"></i>
-                                <span>Reports</span>
+                        <li {% if request.endpoint == 'manager_schedules' %}class="active"{% endif %}>
+                            <a href="{{ url_for('manager_schedules') }}">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Schedules</span>
                             </a>
                         </li>
                     </ul>

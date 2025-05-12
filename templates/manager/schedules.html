@@ -1,0 +1,417 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Schedules - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Schedule Management</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Schedules</span>
+    </div>
+</div>
+
+<div class="schedules-container">
+    
+
+    <!-- Health Material Schedules Card -->
+    <div class="schedule-card">
+        <div class="card-header">
+            <h3><i class="fas fa-spray-can"></i> Health Material Schedules</h3>
+        </div>
+        <div class="card-content">
+            {% if health_material_schedules %}
+                {% for schedule in health_material_schedules %}
+                <div class="schedule-item {% if schedule.scheduled_date == today %}urgent{% elif schedule.scheduled_date < today %}overdue{% elif (schedule.scheduled_date - today).days <= 3 %}upcoming{% endif %}">
+                    <div class="schedule-info">
+                        <h4>{{ schedule.health_material.name }}</h4>
+                        <p>Batches: 
+                            {% for batch in schedule.batches %}
+                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p>Date: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}</p>
+                    </div>
+                    <div class="schedule-status">
+                        {% if schedule.completed %}
+                            <span class="status-badge completed">Completed</span>
+                        {% else %}
+                            <span class="status-badge pending">Pending</span>
+                            <button class="complete-btn" onclick="completeSchedule('health-material', {{ schedule.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-schedules">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No health material schedules</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Medical Schedules Card -->
+    <div class="schedule-card">
+        <div class="card-header">
+            <h3><i class="fas fa-pills"></i> Medical Schedules</h3>
+        </div>
+        <div class="card-content">
+            {% if medical_schedules %}
+                {% for schedule in medical_schedules %}
+                <div class="schedule-item {% if schedule.schedule_date == today %}urgent{% elif schedule.schedule_date < today %}overdue{% elif (schedule.schedule_date - today).days <= 3 %}upcoming{% endif %}">
+                    <div class="schedule-info">
+                        <h4>{{ schedule.medicine.name }}</h4>
+                        <p>Batches: 
+                            {% for batch in schedule.batches %}
+                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p>Date: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}</p>
+                    </div>
+                    <div class="schedule-status">
+                        {% if schedule.completed %}
+                            <span class="status-badge completed">Completed</span>
+                        {% else %}
+                            <span class="status-badge pending">Pending</span>
+                            <button class="complete-btn" onclick="completeSchedule('medicine', {{ schedule.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-schedules">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No medical schedules</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Vaccine Schedules Card -->
+    <div class="schedule-card">
+        <div class="card-header">
+            <h3><i class="fas fa-syringe"></i> Vaccine Schedules</h3>
+        </div>
+        <div class="card-content">
+            {% if vaccine_schedules %}
+                {% for schedule in vaccine_schedules %}
+                <div class="schedule-item {% if schedule.scheduled_date == today %}urgent{% elif schedule.scheduled_date < today %}overdue{% elif (schedule.scheduled_date - today).days <= 3 %}upcoming{% endif %}">
+                    <div class="schedule-info">
+                        <h4>{{ schedule.vaccine.name }}</h4>
+                        <p>Batches: 
+                            {% for batch in schedule.batches %}
+                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p>Dose: {{ schedule.dose_number }}</p>
+                        <p>Date: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}</p>
+                    </div>
+                    <div class="schedule-status">
+                        {% if schedule.completed %}
+                            <span class="status-badge completed">Completed</span>
+                        {% else %}
+                            <span class="status-badge pending">Pending</span>
+                            <button class="complete-btn" onclick="completeSchedule('vaccine', {{ schedule.id }})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-schedules">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No vaccine schedules</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Activities Card -->
+    <div class="schedule-card recent-activities">
+        <div class="card-header">
+            <h3><i class="fas fa-history"></i> Recent Activities</h3>
+        </div>
+        <div class="card-content">
+            {% if recent_activities %}
+                {% for activity in recent_activities %}
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas {{ activity.icon }}"></i>
+                    </div>
+                    <div class="activity-details">
+                        <h4>{{ activity.title }}</h4>
+                        <p>{{ activity.description }}</p>
+                        <span class="activity-time">{{ activity.time }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-activities">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No recent activities</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .schedules-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .schedule-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .recent-activities {
+        grid-column: 1 / -1;
+        height: 400px;
+    }
+
+    .card-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-content {
+        padding: 20px;
+        overflow-y: auto;
+        flex-grow: 1;
+        /* For Firefox */
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 #f8f9fa;
+    }
+
+    /* For Webkit browsers like Chrome/Safari */
+    .card-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .card-content::-webkit-scrollbar-track {
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .card-content::-webkit-scrollbar-thumb {
+        background-color: #cbd5e0;
+        border-radius: 4px;
+        border: 2px solid #f8f9fa;
+    }
+
+    .activity-item, .schedule-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .activity-item:last-child, .schedule-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        background: #e3f2fd;
+        color: #1a73e8;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .activity-details, .schedule-info {
+        flex: 1;
+    }
+
+    .activity-details h4, .schedule-info h4 {
+        margin: 0 0 5px 0;
+        color: #2d3748;
+        font-size: 1rem;
+    }
+
+    .activity-details p, .schedule-info p {
+        margin: 0;
+        color: #4a5568;
+        font-size: 0.9rem;
+    }
+
+    .activity-time {
+        font-size: 0.8rem;
+        color: #718096;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .schedule-status {
+        display: flex;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .status-badge.completed {
+        background: #e6f4ea;
+        color: #34a853;
+    }
+
+    .status-badge.pending {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .no-activities, .no-schedules {
+        text-align: center;
+        padding: 30px;
+        color: #718096;
+    }
+
+    .no-activities i, .no-schedules i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #a0aec0;
+    }
+
+    @media (max-width: 768px) {
+        .schedules-container {
+            grid-template-columns: 1fr;
+        }
+
+        .schedule-card {
+            height: 400px;
+        }
+
+        .recent-activities {
+            grid-column: auto;
+        }
+    }
+
+    .complete-btn {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: background-color 0.3s;
+    }
+
+    .complete-btn:hover {
+        background: #45a049;
+    }
+
+    .complete-btn i {
+        font-size: 14px;
+    }
+
+    .schedule-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0;
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .schedule-item.urgent {
+        border-left-color: #dc3545;
+        background-color: #fff5f5;
+    }
+
+    .schedule-item.overdue {
+        border-left-color: #fd7e14;
+        background-color: #fff8f0;
+    }
+
+    .schedule-item.upcoming {
+        border-left-color: #ffc107;
+        background-color: #fffdf0;
+    }
+
+    .schedule-item:hover {
+        transform: translateX(5px);
+    }
+
+    .schedule-item.urgent .status-badge.pending {
+        background: #ffe5e5;
+        color: #dc3545;
+    }
+
+    .schedule-item.overdue .status-badge.pending {
+        background: #fff0e5;
+        color: #fd7e14;
+    }
+
+    .schedule-item.upcoming .status-badge.pending {
+        background: #fff8e5;
+        color: #ffc107;
+    }
+</style>
+
+<script>
+function completeSchedule(type, scheduleId) {
+    if (!confirm('Are you sure you want to mark this schedule as completed?')) {
+        return;
+    }
+
+    fetch(`/manager/schedule/${type}/${scheduleId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload the page to show updated status
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error completing schedule');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error completing schedule');
+    });
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Add Harvest - Batch {{ batch.batch_number }} - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add Harvest - Batch {{ batch.batch_number }}</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Harvesting</span> / <span>Add Harvest</span>
+    </div>
+</div>
+
+<div class="add-harvest-container">
+    <form method="POST" class="harvest-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" name="quantity" required min="1" max="{{ batch.available_birds }}">
+                <small>Available birds: {{ batch.available_birds }}</small>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg)</label>
+                <input type="number" id="weight" name="weight" required step="0.01" min="0">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="selling_price">Selling Price (per kg)</label>
+                <input type="number" id="selling_price" name="selling_price" required step="0.01" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="total_value">Total Value</label>
+                <input type="text" id="total_value" readonly>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Add Harvest Record</button>
+            <a href="{{ url_for('harvest_batch', batch_id=batch.id) }}" class="btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .add-harvest-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .harvest-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-group input:focus,
+    .form-group textarea:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
+    }
+
+    .form-group input[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+    
+    .form-group small {
+        color: #666;
+        font-size: 12px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        padding: 10px 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        text-align: center;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e9ecef;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantity');
+    const weightInput = document.getElementById('weight');
+    const sellingPriceInput = document.getElementById('selling_price');
+    const totalValueInput = document.getElementById('total_value');
+
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+        const total = weight * sellingPrice;
+        totalValueInput.value = total.toFixed(2);
+    }
+
+    quantityInput.addEventListener('input', calculateTotal);
+    weightInput.addEventListener('input', calculateTotal);
+    sellingPriceInput.addEventListener('input', calculateTotal);
+});
+</script>
+{% endblock %} 

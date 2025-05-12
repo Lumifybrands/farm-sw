@@ -1,18 +1,18 @@
 {% extends "manager/base.html" %}
 
-{% block title %}Manage Batches - Manager Dashboard{% endblock %}
+{% block title %}Harvest Management - Manager Dashboard{% endblock %}
 
 {% block content %}
 <div class="content-header">
-    <h1>Manage Batches</h1>
+    <h1>Harvest Management</h1>
     <div class="breadcrumb">
-        <span>Home</span> / <span>Batches</span>
+        <span>Home</span> / <span>Harvest</span>
     </div>
 </div>
 
-<div class="batches-container">
+<div class="harvest-container">
     <!-- Search Bar -->
-    <div class="batches-header">
+    <div class="harvest-header">
         <div class="search-bar">
             <input type="text" id="batchSearch" placeholder="Search batches...">
             <i class="fas fa-search"></i>
@@ -31,10 +31,11 @@
     <div class="batches-grid">
         {% if batches %}
             {% for batch in batches %}
+                {% if batch.status == 'closing' %}
                 <div class="batch-card">
                     <div class="batch-header">
                         <h3>Batch #{{ batch.batch_number }}</h3>
-                        <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+                        <span class="status-badge status-closing">{{ batch.status|title }}</span>
                     </div>
                     <div class="batch-details">
                         <div class="detail-item">
@@ -47,7 +48,7 @@
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Age: {{ (now.date() - batch.created_at.date()).days }} days</span>
+                            <span>Age: {{ batch.get_age_days() }} days</span>
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-map-marker-alt"></i>
@@ -85,26 +86,21 @@
                         <a href="{{ url_for('manager_view_batch', batch_id=batch.id) }}" class="btn btn-primary">
                             <i class="fas fa-eye"></i> View Details
                         </a>
-                        {% if not batch.updates or batch.updates|sort(attribute='date', reverse=true)|first|attr('date') != now.date() %}
-                        <a href="{{ url_for('manager_update_batch', batch_id=batch.id) }}" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add Update
+                        <a href="{{ url_for('manager_harvest_batch', batch_id=batch.id) }}" class="btn btn-success">
+                            <i class="fas fa-hand-holding"></i> Harvest
                         </a>
-                        {% else %}
-                        <button class="btn btn-secondary" disabled title="Update already submitted for today">
-                            <i class="fas fa-plus"></i> Add Update
-                        </button>
-                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
             {% endfor %}
         {% else %}
             <div class="no-batches-message">
                 {% if session.get('user_type') == 'assistant_manager' %}
                     <i class="fas fa-info-circle"></i>
-                    <p>You don't have any batches assigned to you yet.</p>
+                    <p>You don't have any batches ready for harvest.</p>
                 {% else %}
                     <i class="fas fa-info-circle"></i>
-                    <p>No batches found.</p>
+                    <p>No batches ready for harvest.</p>
                 {% endif %}
             </div>
         {% endif %}
@@ -112,11 +108,11 @@
 </div>
 
 <style>
-    .batches-container {
+    .harvest-container {
         padding: 20px;
     }
 
-    .batches-header {
+    .harvest-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -221,9 +217,9 @@
         font-weight: 500;
     }
 
-    .status-ongoing {
-        background: #e3f2fd;
-        color: #1976d2;
+    .status-closing {
+        background: #fff3e0;
+        color: #f57c00;
     }
 
     .batch-details {
@@ -282,14 +278,8 @@
         background: #2d8745;
     }
 
-    .btn-secondary {
-        background: #9aa0a6;
-        color: white;
-        cursor: not-allowed;
-    }
-
     @media (max-width: 768px) {
-        .batches-header {
+        .harvest-header {
             flex-direction: column;
             align-items: stretch;
         }

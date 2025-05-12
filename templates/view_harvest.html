@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}View Harvest - Batch {{ harvest.batch.batch_number }} - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>View Harvest - Batch {{ harvest.batch.batch_number }}</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Harvesting</span> / <span>View Harvest</span>
+    </div>
+</div>
+
+<div class="view-harvest-container">
+    <div class="harvest-details">
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Date</label>
+                <span>{{ harvest.date.strftime('%d-%m-%Y') }}</span>
+            </div>
+            <div class="detail-group">
+                <label>Quantity</label>
+                <span>{{ harvest.quantity }}</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Weight (kg)</label>
+                <span>{{ "%.2f"|format(harvest.weight) }}</span>
+            </div>
+            <div class="detail-group">
+                <label>Price (per kg)</label>
+                <span>{{ "%.2f"|format(harvest.selling_price) }}</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Total Value</label>
+                <span>{{ "%.2f"|format(harvest.total_value) }}</span>
+            </div>
+        </div>
+
+        <div class="detail-group">
+            <label>Notes</label>
+            <p class="notes">{{ harvest.notes or 'No notes available' }}</p>
+        </div>
+
+        <div class="detail-actions">
+            <a href="{{ url_for('edit_harvest', harvest_id=harvest.id) }}" class="btn-primary">
+                <i class="fas fa-edit"></i> Edit Harvest
+            </a>
+            <a href="{{ url_for('harvest_batch', batch_id=harvest.batch.id) }}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Harvesting
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .view-harvest-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .harvest-details {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .detail-row {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .detail-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .detail-group label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .detail-group span {
+        font-size: 16px;
+        color: #1a73e8;
+    }
+    
+    .notes {
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        color: #2c3e50;
+        margin: 0;
+    }
+    
+    .detail-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        border: 1px solid #ddd;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %} 

@@ -84,11 +84,6 @@
             <input type="number" id="cost_per_chicken" name="cost_per_chicken" min="0" step="0.01" required>
         </div>
 
-        <div class="form-group">
-            <label for="extra_chickens">Extra Chickens</label>
-            <input type="number" id="extra_chickens" name="extra_chickens" min="0" value="0" required>
-        </div>
-
         <div class="form-actions">
             <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
             <button type="submit" class="submit-btn">Add Batch</button>

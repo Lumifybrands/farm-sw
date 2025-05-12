@@ -39,6 +39,21 @@
                     <label>Cost per Bird</label>
                     <span>₹{{ "%.2f"|format(batch.cost_per_chicken) }}</span>
                 </div>
+                <div class="info-item">
+                    <i class="fas fa-utensils"></i>
+                    <label>Feed Usage</label>
+                    <span>{{ "%.2f"|format(batch.feed_usage) }} kg</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-box"></i>
+                    <label>Feed Stock</label>
+                    <span>{{ "%.2f"|format(batch.feed_stock) }} kg</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-skull"></i>
+                    <label>Total Mortality</label>
+                    <span>{{ batch.total_mortality }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -64,6 +79,11 @@
                     <i class="fas fa-layer-group"></i>
                     <label>Number of Sheds</label>
                     <span>{{ batch.farm.num_sheds }}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-phone"></i>
+                    <label>Contact</label>
+                    <span>{{ batch.farm.contact_number }}</span>
                 </div>
             </div>
         </div>
@@ -105,13 +125,13 @@
                                 <span>{{ "%.2f"|format(update.avg_weight) }} kg</span>
                             </div>
                             <div class="stat-item">
-                                <label>Feed Balance</label>
-                                <span>{{ "%.2f"|format(update.feed_balance) }} kg</span>
+                                <label>Feed Used</label>
+                                <span>{{ "%.2f"|format(update.feed_used) }} kg</span>
                             </div>
                         </div>
                         {% if update.feeds %}
                         <div class="update-section">
-                            <h4>Feeds Used</h4>
+                            <h4>Feeds Allocated</h4>
                             <div class="items-grid">
                                 {% for feed in update.feeds %}
                                 <div class="item">
@@ -262,7 +282,6 @@
     .info-item span {
         color: #2d3748;
         font-weight: 500;
-        /* margin-left: auto; */
     }
 
     .status-badge {
