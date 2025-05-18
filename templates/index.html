@@ -13,8 +13,8 @@
         <p>Modern Poultry Management Solutions</p>
         
         <div class="login-box">
-            <div class="login-box-header">
-                <button type="button" class="login-toggle-btn" onclick="toggleLoginForm()">Login</button>
+            <div class="login-box-header" onclick="toggleLoginForm()">
+                <button type="button" class="login-toggle-btn">Login</button>
             </div>
             <div class="login-box-content" id="loginBoxContent">
                 <form id="loginForm" action="{{ url_for('login') }}" method="POST">

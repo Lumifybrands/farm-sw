@@ -40,7 +40,7 @@
                 {% for medicine in medicines %}
                 <tr>
                     <td>{{ medicine.name }}</td>
-                    <td>{{ medicine.quantity_per_unit }} ml</td>
+                    <td>{{ medicine.quantity_per_unit }} {{ medicine.unit_type }}</td>
                     <td>₹{{ "%.2f"|format(medicine.price) }}</td>
                     <td class="action-buttons">
                         <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view" title="View">

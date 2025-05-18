@@ -48,8 +48,14 @@
 
 .login-box-header {
     background: #1a73e8;
-    padding: 0.8rem;
+    padding: 0;
     text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-box-header:hover {
+    background: #1557b0;
 }
 
 .login-toggle-btn {
@@ -59,12 +65,10 @@
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    padding: 0.4rem 0.8rem;
+    padding: 0.8rem;
     transition: all 0.3s ease;
-}
-
-.login-toggle-btn:hover {
-    transform: scale(1.05);
+    width: 100%;
+    height: 100%;
 }
 
 .login-box-content {

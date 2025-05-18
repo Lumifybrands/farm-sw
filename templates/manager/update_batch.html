@@ -83,6 +83,7 @@
                 <div class="item-type-selector">
                     <button type="button" onclick="addMedicineItem()">Add Medicine</button>
                     <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                    <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
                 </div>
                 <div class="dynamic-items" id="otherItems"></div>
             </div>
@@ -506,6 +507,16 @@ textarea:focus {
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     outline: none;
 }
+
+.dynamic-item.vaccine-item {
+    grid-template-columns: 2fr 1fr 1fr auto;
+}
+
+@media (max-width: 480px) {
+    .dynamic-item.vaccine-item {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 {% block scripts %}
@@ -568,7 +579,33 @@ function addHealthMaterialItem() {
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
 
-// Add validation for the form
+function addVaccineItem() {
+    const template = `
+        <div class="dynamic-item vaccine-item">
+            <select name="vaccine_id[]">
+                <option value="">Select Vaccine</option>
+                {% for vaccine in vaccines %}
+                <option value="{{ vaccine.id }}">{{ vaccine.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="vaccine_dose[]">
+                <option value="">Select Dose</option>
+                <option value="1">Dose 1</option>
+                <option value="2">Dose 2</option>
+                <option value="3">Dose 3</option>
+                <option value="4">Dose 4</option>
+                <option value="5">Dose 5</option>
+            </select>
+            <input type="number" name="vaccine_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <button type="button" class="remove-item" onclick="removeItem(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+}
+
+// Update form validation to include vaccines
 document.querySelector('.update-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -632,6 +669,36 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
                 alert('Please enter valid quantities for all selected health material items.');
                 return;
             }
+        }
+    }
+    
+    // Validate vaccines if added
+    const vaccineItems = document.querySelectorAll('select[name="vaccine_id[]"]');
+    const vaccineDoses = document.querySelectorAll('select[name="vaccine_dose[]"]');
+    const vaccineQuantities = document.querySelectorAll('input[name="vaccine_quantity[]"]');
+    const selectedVaccines = new Set();
+    
+    for (let i = 0; i < vaccineItems.length; i++) {
+        if (vaccineItems[i].value) {
+            const vaccineKey = `${vaccineItems[i].value}-${vaccineDoses[i].value}`;
+            if (selectedVaccines.has(vaccineKey)) {
+                alert('Please do not select the same vaccine and dose combination multiple times.');
+                return;
+            }
+            if (!vaccineDoses[i].value) {
+                alert('Please select a dose number for all vaccines.');
+                return;
+            }
+            selectedVaccines.add(vaccineKey);
+            
+            // Check quantity only if vaccine is selected
+            if (!vaccineQuantities[i].value || parseFloat(vaccineQuantities[i].value) < 0) {
+                alert('Please enter valid quantities for all selected vaccines.');
+                return;
+            }
+        } else if (vaccineDoses[i].value) {
+            alert('Please select a vaccine when specifying a dose.');
+            return;
         }
     }
     
