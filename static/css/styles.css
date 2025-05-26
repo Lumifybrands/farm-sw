@@ -782,6 +782,7 @@ body {
 /* Farms styles */
 .farms-container {
     padding: 20px;
+    
 }
 
 .farms-header {
@@ -842,12 +843,13 @@ body {
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+    overflow-x: scroll;
 }
 
 .farms-table {
     width: 100%;
     border-collapse: collapse;
+    
 }
 
 .farms-table th,
@@ -870,23 +872,26 @@ body {
 /* Action Buttons */
 .action-buttons {
     display: flex;
+    flex-direction: column;
     gap: 8px;
     align-items: center;
 }
 
 .action-btn {
     background: none;
+    font-size: 15px;
     border: none;
-    padding: 6px;
+    padding: 10px;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 32px;
+    min-width: 150px;
     height: 32px;
     text-decoration: none;
+    gap: 5px;
 }
 
 .action-btn.view, .action-btn.edit, .action-btn.schedule{
@@ -915,7 +920,7 @@ body {
     }
 
     .action-btn {
-        padding: 4px;
+        padding: 8px;
         min-width: 28px;
         height: 28px;
     }
@@ -930,6 +935,7 @@ body {
     .batches-table td:last-child {
         min-width: 100px;
         white-space: nowrap;
+        
     }
 }
 
@@ -939,7 +945,7 @@ body {
     }
 
     .action-btn {
-        padding: 3px;
+        padding: 10px;
         min-width: 26px;
         height: 26px;
     }
@@ -1395,7 +1401,8 @@ body {
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+    overflow-x: scroll;
+    
 }
 
 .batches-table {
@@ -2328,4 +2335,10 @@ body {
     border: none;
     padding: 8px 16px;
     border-radius: 4px;
+}
+
+/* View batch button special modification */
+.view-batch-actions {
+    display: flex;
+    flex-direction: row;
 }

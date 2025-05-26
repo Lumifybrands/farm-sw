@@ -43,10 +43,10 @@
                     </td>
                     <td class="action-buttons">
                         <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}')">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Edit
                         </button>
                         <button class="action-btn delete" onclick="deleteManager('{{ user.id }}')">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
                 </tr>

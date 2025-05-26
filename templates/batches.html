@@ -71,29 +71,29 @@
                     </td>
                     <td class="action-buttons">
                         <button class="action-btn view" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
-                            <i class="fas fa-eye"></i>
+                            <i class="fas fa-eye"></i> View Details
                         </button>
                         {% if batch.status != 'closed' %}
                         <button class="action-btn edit" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Edit Details
                         </button>
                         {% if batch.updates and batch.updates|sort(attribute='date', reverse=true)|first|attr('date') == now.date() %}
                         <button class="action-btn update disabled" title="Update already submitted for today">
-                            <i class="fas fa-calendar-plus"></i>
+                            <i class="fas fa-calendar-plus"></i> Update Batch
                         </button>
                         {% else %}
                         <button class="action-btn update" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
-                            <i class="fas fa-calendar-plus"></i>
+                            <i class="fas fa-calendar-plus"></i> Update Batch
                         </button>
                         {% endif %}
                         {% endif %}
                         {% if batch.status == 'closing' or batch.status == 'closed' %}
                         <button class="action-btn harvest" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
-                            <i class="fas fa-hand-holding"></i>
+                            <i class="fas fa-hand-holding"></i> Harvest
                         </button>
                         {% endif %}
                         <button class="action-btn delete" onclick="deleteBatch({{ batch.id }})">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash"></i> Delete Batch
                         </button>
                     </td>
                 </tr>

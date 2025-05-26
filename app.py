@@ -1194,6 +1194,16 @@ def update_batch(batch_id):
                         dose = int(dose)
                         quantity = float(quantity)
                         
+                        # Add to batch update
+                        db.session.execute(
+                            batch_update_vaccines.insert().values(
+                                batch_update_id=update.id,
+                                vaccine_id=vaccine_id,
+                                dose_number=dose,
+                                quantity=quantity
+                            )
+                        )
+
                         # Check and complete any matching vaccine schedules
                         schedules = VaccineSchedule.query.join(
                             vaccine_schedule_batches
@@ -1352,6 +1362,7 @@ def get_batch_update(batch_id, date):
 def edit_batch_update(batch_id, date):
     try:
         batch = Batch.query.get_or_404(batch_id)
+        today = datetime.utcnow().date()
         try:
             update_date = datetime.strptime(date, '%Y-%m-%d').date()
         except ValueError as e:
@@ -1447,6 +1458,19 @@ def edit_batch_update(batch_id, date):
                                 )
                             )
 
+                            # Check and complete any matching medicine schedules
+                            schedules = MedicineSchedule.query.join(
+                                medicine_schedule_batches
+                            ).filter(
+                                medicine_schedule_batches.c.batch_id == batch.id,
+                                MedicineSchedule.medicine_id == medicine_id,
+                                MedicineSchedule.schedule_date == today,
+                                MedicineSchedule.completed == False
+                            ).all()
+                            
+                            for schedule in schedules:
+                                schedule.completed = True
+
                 # Update health materials
                 db.session.execute(batch_update_health_materials.delete().where(
                     batch_update_health_materials.c.batch_update_id == update.id
@@ -1464,6 +1488,19 @@ def edit_batch_update(batch_id, date):
                                     quantity=float(quantity)
                                 )
                             )
+
+                            # Check and complete any matching health material schedules
+                            schedules = HealthMaterialSchedule.query.join(
+                                health_material_schedule_batches
+                            ).filter(
+                                health_material_schedule_batches.c.batch_id == batch.id,
+                                HealthMaterialSchedule.health_material_id == health_material_id,
+                                HealthMaterialSchedule.scheduled_date == today,
+                                HealthMaterialSchedule.completed == False
+                            ).all()
+                            
+                            for schedule in schedules:
+                                schedule.completed = True
 
                 # Update vaccines
                 db.session.execute(batch_update_vaccines.delete().where(
@@ -1488,6 +1525,20 @@ def edit_batch_update(batch_id, date):
                                     quantity=quantity
                                 )
                             )
+
+                            # Check and complete any matching vaccine schedules
+                            schedules = VaccineSchedule.query.join(
+                                vaccine_schedule_batches
+                            ).filter(
+                                vaccine_schedule_batches.c.batch_id == batch.id,
+                                VaccineSchedule.vaccine_id == vaccine_id,
+                                VaccineSchedule.dose_number == dose,
+                                VaccineSchedule.scheduled_date == today,
+                                VaccineSchedule.completed == False
+                            ).all()
+                            
+                            for schedule in schedules:
+                                schedule.completed = True
 
                 db.session.commit()
                 flash('Batch update edited successfully!', 'success')
@@ -2913,6 +2964,16 @@ def manager_update_batch(batch_id):
                         vaccine_id = int(vaccine_id)
                         dose = int(dose)
                         quantity = float(quantity)
+
+                        # Add to batch update
+                        db.session.execute(
+                            batch_update_vaccines.insert().values(
+                                batch_update_id=update.id,
+                                vaccine_id=vaccine_id,
+                                dose_number=dose,
+                                quantity=quantity
+                            )
+                        )
                         
                         # Check and complete any matching vaccine schedules
                         schedules = VaccineSchedule.query.join(

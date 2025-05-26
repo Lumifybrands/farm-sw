@@ -45,13 +45,13 @@
                     <td>{{ farm.owner_name }}</td>
                     <td class="action-buttons">
                         <button class="action-btn view" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
-                            <i class="fas fa-eye"></i>
+                            <i class="fas fa-eye"></i> View Details
                         </button>
                         <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Edit Details
                         </button>
                         <button class="action-btn delete" onclick="deleteFarm({{ farm.id }})">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash"></i> Delete Farm
                         </button>
                     </td>
                 </tr>

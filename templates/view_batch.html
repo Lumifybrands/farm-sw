@@ -963,13 +963,6 @@
                             {% endfor %}
                         </div>
                     </div>
-                    {% else %}
-                    <div class="items-section">
-                        <div class="no-items">
-                            <i class="fas fa-box-open"></i>
-                            <p>No health materials used in this update</p>
-                        </div>
-                    </div>
                     {% endif %}
 
                     {% if last_update.notes %}
@@ -993,7 +986,7 @@
         </div>
     </div>
 
-    <div class="action-buttons">
+    <div class="action-buttons view-batch-actions">
         <a href="{{ url_for('edit_batch', batch_id=batch.id) }}" class="edit-btn">
             <i class="fas fa-edit"></i> Edit Batch
         </a>
@@ -1112,237 +1105,276 @@ function loadUpdate() {
                 const formattedDate = data.update.date;
                 
                 let html = `
-                    <div class="update-header">
-                        <div class="update-date">
-                            <i class="fas fa-calendar"></i>
-                            <span>${formattedDate}</span>
-                        </div>
-                        <div class="update-actions">
-                            <a href="/batches/{{ batch.id }}/update/${formattedDate}/edit" class="edit-update-btn">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            <button onclick="deleteBatchUpdate('${formattedDate}')" class="delete-update-btn">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                    <div class="update-content">
-                        <div class="update-section">
-                            <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
-                            <div class="info-grid">
-                        <div class="info-item">
-                            <label>Mortality Count</label>
-                                    <span>${data.update.mortality_count} birds</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Feed Used</label>
-                                    <span>${data.update.feed_used} kg</span>
-                        </div>
-                        <div class="info-item">
-                                    <label>Average Weight</label>
-                                    <span>${data.update.avg_weight} kg</span>
-                        </div>
-                        <div class="info-item">
-                                    <label>Created At</label>
-                                    <span>${data.update.created_at}</span>
+                    <div id="updateDetails" class="update-details">
+                        {% if batch.updates %}
+                            {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                            <div class="update-header">
+                                <div class="update-date">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ last_update.date.strftime('%Y-%m-%d') }}</span>
+                                </div>
+                                <div class="update-actions">
+                                    <a href="/batches/{{ batch.id }}/update/{{ last_update.date.strftime('%Y-%m-%d') }}/edit" class="edit-update-btn">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <button onclick="deleteBatchUpdate('{{ last_update.date.strftime('%Y-%m-%d') }}')" class="delete-update-btn">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="update-section">
-                            <h3><i class="fas fa-dollar-sign"></i> Cost Summary</h3>
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <label>Feed Cost</label>
-                                    <span>₹${data.update.costs.feed_cost.toFixed(2)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Medicine Cost</label>
-                                    <span>₹${data.update.costs.medicine_cost.toFixed(2)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Health Material Cost</label>
-                                    <span>₹${data.update.costs.health_material_cost.toFixed(2)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <label>Vaccine Cost</label>
-                                    <span>₹${data.update.costs.vaccine_cost.toFixed(2)}</span>
-                                </div>
-                                <div class="info-item total-cost">
-                                    <label>Total Cost</label>
-                                    <span>₹${data.update.costs.total_cost.toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${data.update.feeds && data.update.feeds.length > 0 ? `
-                        <div class="update-section">
-                            <h3><i class="fas fa-drumstick-bite"></i> Feeds</h3>
-                            <div class="item-list">
-                                ${data.update.feeds.map(feed => `
-                                    <div class="item-card">
-                                        <div class="item-header">
-                                            <span class="item-name">${feed.brand}</span>
-                                            <span class="item-category">${feed.category}</span>
+                            <div class="update-content">
+                                <div class="info-section">
+                                    <div class="info-section-title">
+                                        <i class="fas fa-info-circle"></i>
+                                        Basic Information
+                                    </div>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <label>Mortality Count</label>
+                                            <span>{{ last_update.mortality_count }}</span>
                                         </div>
-                                        <div class="item-details">
-                                            <div class="detail-row">
-                                                <label>Quantity:</label>
-                                                <span>${feed.quantity} kg</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Weight/Unit:</label>
-                                                <span>${feed.weight} kg</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Price/Unit:</label>
-                                                <span>₹${feed.price}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Total Cost:</label>
-                                                <span>₹${(feed.price * feed.quantity).toFixed(2)}</span>
-                                            </div>
+                                        <div class="info-item">
+                                            <label>Feed Used</label>
+                                            <span>{{ "%.2f"|format(last_update.feed_used) }} packets</span>
+                                        </div>
+                                        <div class="info-item" style="display: none;">
+                                            <label>Feed Allocated</label>
+                                            <span>
+                                                {% set total_allocation = 0 %}
+                                                {% for feed in last_update.feeds %}
+                                                    {% set total_allocation = total_allocation + last_update.get_feed_quantity(feed.id) %}
+                                                {% endfor %}
+                                                {{ "%.2f"|format(total_allocation) }} packets
+                                            </span>
+                                        </div>
+                                        <div class="info-item">
+                                            <label>Average Weight</label>
+                                            <span>{{ "%.2f"|format(last_update.avg_weight) }} kg</span>
                                         </div>
                                     </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
+                                </div>
 
-                        ${data.update.medicines && data.update.medicines.length > 0 ? `
-                        <div class="update-section">
-                            <h3><i class="fas fa-pills"></i> Medicines</h3>
-                            <div class="item-list">
-                                ${data.update.medicines.map(medicine => `
-                                    <div class="item-card">
-                                        <div class="item-header">
-                                        <span class="item-name">${medicine.name}</span>
-                                            <span class="item-category">${medicine.unit_type}</span>
-                                        </div>
-                                        <div class="item-details">
-                                            <div class="detail-row">
-                                                <label>Quantity:</label>
-                                                <span>${medicine.quantity} ${medicine.unit_type}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Qty/Unit:</label>
-                                                <span>${medicine.quantity_per_unit} ${medicine.unit_type}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Price/Unit:</label>
-                                                <span>₹${medicine.price}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Total Cost:</label>
-                                                <span>₹${(medicine.price * medicine.quantity).toFixed(2)}</span>
-                                            </div>
-                                            ${medicine.notes ? `
-                                            <div class="detail-row notes">
-                                                <label>Notes:</label>
-                                                <span>${medicine.notes}</span>
-                                            </div>
-                                            ` : ''}
-                                        </div>
+                                {% if last_update.feeds %}
+                                <div class="items-section">
+                                    <div class="items-header">
+                                        <i class="fas fa-drumstick-bite"></i>
+                                        <h3>Feed Allocation</h3>
                                     </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
+                                    <div class="items-grid">
+                                        {% for feed in last_update.feeds %}
+                                        <div class="item-card feed-card">
+                                            <div class="item-header">
+                                                <span class="item-name">{{ feed.brand }}</span>
+                                                <span class="item-category">{{ feed.category }}</span>
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="detail-row">
+                                                    <label>Feed Allocated</label>
+                                                    <span>{{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Weight per Packet</label>
+                                                    <span>{{ feed.weight }} kg</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Price per Packet</label>
+                                                    <span>₹{{ "%.2f"|format(feed.price) }}</span>
+                                                </div>
+                                                <div class="detail-row highlight">
+                                                    <label>Total Cost</label>
+                                                    <span>₹{{ "%.2f"|format(feed.price * last_update.get_feed_quantity(feed.id)) }}</span>
+                                                </div>
+                                                
+                                                <!-- <div class="feed-stock">
+                                                    <div class="feed-stock-header">
+                                                        <i class="fas fa-warehouse"></i>
+                                                        Current Stock Level
+                                                    </div>
+                                                    {% set stock_percentage = (batch.feed_stock / batch.total_birds * 100)|round %}
+                                                    <div class="feed-progress">
+                                                        <div class="feed-progress-bar 
+                                                            {% if stock_percentage < 30 %}feed-progress-low
+                                                            {% elif stock_percentage < 60 %}feed-progress-medium{% endif %}"
+                                                            style="width: {{ stock_percentage }}%">
+                                                        </div>
+                                                    </div>
+                                                    <div class="feed-stats">
+                                                        <span>{{ "%.2f"|format(batch.feed_stock) }} packets available</span>
+                                                        <span>{{ stock_percentage }}% remaining</span>
+                                                    </div>
+                                                </div> -->
 
-                        ${data.update.health_materials && data.update.health_materials.length > 0 ? `
-                        <div class="update-section">
-                            <h3><i class="fas fa-first-aid"></i> Health Materials</h3>
-                            <div class="item-list">
-                                ${data.update.health_materials.map(material => `
-                                    <div class="item-card">
-                                        <div class="item-header">
-                                            <span class="item-name">${material.name}</span>
-                                            <span class="item-category">${material.category}</span>
+                                                {% if feed.notes %}
+                                                <div class="detail-row notes">
+                                                    <label>Notes</label>
+                                                    <span>{{ feed.notes }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                        <div class="item-details">
-                                            <div class="detail-row">
-                                                <label>Quantity:</label>
-                                                <span>${material.quantity} ${material.unit_type}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Qty/Unit:</label>
-                                                <span>${material.quantity_per_unit} ${material.unit_type}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Price/Unit:</label>
-                                                <span>₹${material.price}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Total Cost:</label>
-                                                <span>₹${(material.price * material.quantity).toFixed(2)}</span>
-                                            </div>
-                                            ${material.notes ? `
-                                            <div class="detail-row notes">
-                                                <label>Notes:</label>
-                                                <span>${material.notes}</span>
-                                            </div>
-                                            ` : ''}
-                                        </div>
+                                        {% endfor %}
                                     </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        ${data.update.vaccine_updates && data.update.vaccine_updates.length > 0 ? `
-                        <div class="update-section">
-                            <h3><i class="fas fa-syringe"></i> Vaccines</h3>
-                            <div class="item-list">
-                                ${data.update.vaccine_updates.map(update => {
-                                    const vaccine = data.update.vaccines.find(v => v.id === update[0]);
-                                    return `
-                                    <div class="item-card">
-                                        <div class="item-header">
-                                            <span class="item-name">${vaccine.name}</span>
-                                            <span class="item-category">Dose ${update[1]}/${vaccine.doses_required}</span>
-                                        </div>
-                                        <div class="item-details">
-                                            <div class="detail-row">
-                                                <label>Quantity:</label>
-                                                <span>${update[2]} doses</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Qty/Unit:</label>
-                                                <span>${vaccine.quantity_per_unit} doses</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Price/Unit:</label>
-                                                <span>₹${vaccine.price}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Total Cost:</label>
-                                                <span>₹${(vaccine.price * update[2]).toFixed(2)}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <label>Dose Ages:</label>
-                                                <span>${vaccine.dose_ages.join(', ')} days</span>
-                                            </div>
-                                            ${vaccine.notes ? `
-                                            <div class="detail-row notes">
-                                                <label>Notes:</label>
-                                                <span>${vaccine.notes}</span>
-                                            </div>
-                                            ` : ''}
-                                        </div>
+                                </div>
+                                {% else %}
+                                <div class="items-section">
+                                    <div class="no-items">
+                                        <i class="fas fa-box-open"></i>
+                                        <p>No feed allocated in this update</p>
                                     </div>
-                                `}).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
+                                </div>
+                                {% endif %}
 
-                        ${data.update.notes ? `
-                        <div class="update-section">
-                            <h3><i class="fas fa-sticky-note"></i> Notes</h3>
-                            <div class="notes-content">
-                                ${data.update.notes}
+                                {% if last_update.medicines %}
+                                <div class="items-section">
+                                    <div class="items-header">
+                                        <i class="fas fa-pills"></i>
+                                        <h3>Medicines Used</h3>
+                                    </div>
+                                    <div class="items-grid">
+                                        {% for medicine in last_update.medicines %}
+                                        <div class="item-card">
+                                            <div class="item-header">
+                                            <span class="item-name">{{ medicine.name }}</span>
+                                                <span class="item-category">{{ medicine.unit_type }}</span>
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="detail-row">
+                                                    <label>Quantity Used</label>
+                                                    <span>{{ "%.2f"|format(last_update.get_medicine_quantity(medicine.id)) }} Units</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Quantity per Unit</label>
+                                                    <span>{{ medicine.quantity_per_unit }} {{ medicine.unit_type }}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Price per Unit</label>
+                                                    <span>₹{{ "%.2f"|format(medicine.price) }}</span>
+                                                </div>
+                                                <div class="detail-row highlight">
+                                                    <label>Total Cost</label>
+                                                    <span>₹{{ "%.2f"|format(medicine.price * last_update.get_medicine_quantity(medicine.id)) }}</span>
+                                                </div>
+                                                {% if medicine.notes %}
+                                                <div class="detail-row notes">
+                                                    <label>Notes</label>
+                                                    <span>{{ medicine.notes }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if last_update.vaccine_updates %}
+                                <div class="items-section">
+                                    <div class="items-header">
+                                        <i class="fas fa-syringe"></i>
+                                        <h3>Vaccines Administered</h3>
+                                    </div>
+                                    <div class="items-grid">
+                                        {% for vaccine_update in last_update.vaccine_updates %}
+                                        {% set vaccine = last_update.vaccines|selectattr("id", "equalto", vaccine_update[0])|first %}
+                                        <div class="item-card">
+                                            <div class="item-header">
+                                                <span class="item-name">{{ vaccine.name }}</span>
+                                                <span class="dose-badge">
+                                                    <i class="fas fa-circle"></i>
+                                                    Dose {{ vaccine_update[1] }}/{{ vaccine.doses_required }}
+                                                </span>
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="detail-row">
+                                                    <label>Quantity Used</label>
+                                                    <span>{{ "%.2f"|format(vaccine_update[2]) }} Units</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Quantity per Unit</label>
+                                                    <span>{{ vaccine.quantity_per_unit }} doses</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Price per Unit</label>
+                                                    <span>₹{{ "%.2f"|format(vaccine.price) }}</span>
+                                                </div>
+                                                <div class="detail-row highlight">
+                                                    <label>Total Cost</label>
+                                                    <span>₹{{ "%.2f"|format(vaccine.price * vaccine_update[2]) }}</span>
+                                                </div>
+                                                {% if vaccine.notes %}
+                                                <div class="detail-row notes">
+                                                    <label>Notes</label>
+                                                    <span>{{ vaccine.notes }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if last_update.health_materials %}
+                                <div class="items-section">
+                                    <div class="items-header">
+                                        <i class="fas fa-medkit"></i>
+                                        <h3>Health Materials Used</h3>
+                                    </div>
+                                    <div class="items-grid">
+                                        {% for material in last_update.health_materials %}
+                                        <div class="item-card">
+                                            <div class="item-header">
+                                                <span class="item-name">{{ material.name }}</span>
+                                                <span class="item-category">{{ material.category }}</span>
+                                            </div>
+                                            <div class="item-details">
+                                                <div class="detail-row">
+                                                    <label>Quantity Used</label>
+                                                    <span>{{ "%.2f"|format(last_update.get_health_material_quantity(material.id)) }} Units</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Quantity per Unit</label>
+                                                    <span>{{ material.quantity_per_unit }} {{ material.unit_type }}</span>
+                                                </div>
+                                                <div class="detail-row">
+                                                    <label>Price per Unit</label>
+                                                    <span>₹{{ "%.2f"|format(material.price) }}</span>
+                                                </div>
+                                                <div class="detail-row highlight">
+                                                    <label>Total Cost</label>
+                                                    <span>₹{{ "%.2f"|format(material.price * last_update.get_health_material_quantity(material.id)) }}</span>
+                                                </div>
+                                                {% if material.notes %}
+                                                <div class="detail-row notes">
+                                                    <label>Notes</label>
+                                                    <span>{{ material.notes }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if last_update.notes %}
+                                <div class="info-section">
+                                    <div class="info-section-title">
+                                        <i class="fas fa-sticky-note"></i>
+                                        Notes
+                                    </div>
+                                    <div class="info-item">
+                                        <span>{{ last_update.notes }}</span>
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
-                        </div>
-                        ` : ''}
+                        {% else %}
+                            <div class="no-updates">
+                                <i class="fas fa-info-circle"></i>
+                                <p>No updates available for this batch</p>
+                            </div>
+                        {% endif %}
                     </div>
                 `;
                 
