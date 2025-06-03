@@ -13,9 +13,22 @@
 <div class="form-container">
     <form action="{{ url_for('edit_batch', batch_id=batch.id) }}" method="POST" class="batch-form">
         <div class="form-group">
-            <label>Farm</label>
+            <label for="farm_id">Farm</label>
             <input type="text" value="{{ batch.farm.name }}" readonly disabled>
             <input type="hidden" name="farm_id" value="{{ batch.farm.id }}">
+        </div>
+
+        <div class="form-group">
+            <label for="manager_id">Assign Manager</label>
+            <select id="manager_id" name="manager_id">
+                <option value="">Select a manager...</option>
+                {% for manager in managers %}
+                <option value="{{ manager.id }}" {% if batch.manager_id == manager.id %}selected{% endif %}>
+                    {{ manager.employee.name if manager.employee else manager.username }} 
+                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
         <div class="farm-info">
@@ -38,8 +51,50 @@
         </div>
 
         <div class="form-group">
-            <label for="brand">Brand (Optional)</label>
+            <label for="brand">Brand</label>
             <input type="text" id="brand" name="brand" value="{{ batch.brand or '' }}" placeholder="Enter brand name">
+        </div>
+
+        <div class="form-group">
+            <label>Shed Distribution</label>
+            <div id="shed_distribution">
+                {% set shed_birds = batch.get_shed_birds() %}
+                {% set shed_available = batch.farm.get_shed_available_capacities() %}
+                {% set shed_capacities = batch.farm.get_shed_capacities() %}
+                {% for i in range(batch.farm.num_sheds) %}
+                <div class="form-group">
+                    <label for="shed_birds_{{ i + 1 }}">
+                        Shed {{ i + 1 }} (Available: {{ shed_available[i] + shed_birds[i] }}/{{ shed_capacities[i] }})
+                    </label>
+                    <input type="number" 
+                           class="form-control shed-input" 
+                           name="shed_{{ i + 1 }}_birds"
+                           id="shed_{{ i + 1 }}_birds"
+                           min="0" 
+                           max="{{ shed_available[i] + shed_birds[i] + 500 }}"
+                           value="{{ shed_birds[i] }}"
+                           {% if shed_available[i] < shed_capacities[i] and shed_available[i] + shed_birds[i] < shed_capacities[i] %}disabled{% endif %}
+                           onchange="validateTotalBirds()">
+                    {% if shed_available[i] < shed_capacities[i] and shed_available[i] + shed_birds[i] < shed_capacities[i] %}
+                        <small class="text-danger">Shed is allocated</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <small class="form-text text-muted">Total birds must match the sum of birds in sheds</small>
+        </div>
+
+        <div class="form-group">
+            <label for="total_birds">Total Birds</label>
+            <input type="number" class="form-control" id="total_birds" name="total_birds" 
+                   value="{{ batch.total_birds }}" required min="1">
+        </div>
+
+        <div class="form-group">
+            <label for="extra_chicks">Extra Chicks (Optional)</label>
+            <input type="number" class="form-control" id="extra_chicks" name="extra_chicks" 
+                   min="0" value="{{ batch.extra_chicks }}">
+            <small class="form-text text-muted">Additional chicks kept as backup</small>
         </div>
 
         <div class="form-group">
@@ -49,45 +104,7 @@
         </div>
 
         <div class="form-group">
-            <label for="manager_id">Assign Manager</label>
-            <select id="manager_id" name="manager_id">
-                <option value="">Select a manager...</option>
-                {% for manager in managers %}
-                <option value="{{ manager.id }}" {% if batch.manager_id == manager.id %}selected{% endif %}>
-                    {{ manager.employee.name if manager.employee else manager.username }} 
-                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="total_birds">Total Birds</label>
-            <input type="number" id="total_birds" name="total_birds" value="{{ batch.total_birds }}" required min="1">
-        </div>
-
-        <div id="shed_birds_container">
-            {% set shed_birds = batch.get_shed_birds() %}
-            {% set shed_available = batch.farm.get_shed_available_capacities() %}
-            {% for i in range(batch.farm.num_sheds) %}
-            <div class="form-group">
-                <label for="shed_birds_{{ i + 1 }}">
-                    Birds in Shed {{ i + 1 }} 
-                    (Available: {{ shed_available[i] + shed_birds[i] }})
-                </label>
-                <input type="number" id="shed_birds_{{ i + 1 }}" 
-                       name="shed_birds_{{ i + 1 }}" min="0" 
-                       max="{{ shed_available[i] + shed_birds[i] }}"
-                       value="{{ shed_birds[i] }}" required 
-                       onchange="validateShedBirds({{ i + 1 }}, {{ shed_available[i] + shed_birds[i] }})">
-                <small class="error-message" id="shedError_{{ i + 1 }}" 
-                       style="display: none; color: red;"></small>
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="form-group">
-            <label for="cost_per_chicken">Cost per Chicken (₹)</label>
+            <label for="cost_per_chicken">Cost per Chicks (₹)</label>
             <input type="number" id="cost_per_chicken" name="cost_per_chicken" 
                    min="0" step="0.01" value="{{ batch.cost_per_chicken }}" required>
         </div>
@@ -136,6 +153,76 @@
     margin-top: 5px;
     font-size: 0.9em;
 }
+
+.text-danger {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-control:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.cancel-btn, .submit-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    color: #666;
+}
+
+.submit-btn {
+    background-color: #1a73e8;
+    border: none;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background-color: #f8f9fa;
+}
+
+.submit-btn:hover {
+    background-color: #1557b0;
+}
 </style>
 
 {% endblock %}
@@ -143,37 +230,29 @@
 {% block scripts %}
 {{ super() }}
 <script>
-function validateTotalBirds() {
+document.addEventListener('DOMContentLoaded', function() {
     const totalBirdsInput = document.getElementById('total_birds');
-    const errorElement = document.getElementById('totalBirdsError');
-    const currentBatchBirds = {{ batch.total_birds }};
-    const availableCapacity = {{ batch.farm.get_available_capacity() + batch.total_birds }};
-    
-    if (totalBirdsInput.value) {
-        const totalBirds = parseInt(totalBirdsInput.value);
-        if (totalBirds > availableCapacity) {
-            errorElement.textContent = `Total birds cannot exceed available capacity (${availableCapacity})`;
-            errorElement.style.display = 'block';
-            totalBirdsInput.setCustomValidity('Total birds exceeds available capacity');
-        } else {
-            errorElement.style.display = 'none';
-            totalBirdsInput.setCustomValidity('');
-        }
-    }
-}
+    const shedInputs = document.querySelectorAll('.shed-input:not([disabled])');
 
-function validateShedBirds(shedNumber, maxCapacity) {
-    const input = document.getElementById(`shed_birds_${shedNumber}`);
-    const errorElement = document.getElementById(`shedError_${shedNumber}`);
-    
-    if (parseInt(input.value) > maxCapacity) {
-        errorElement.textContent = `Cannot exceed available capacity (${maxCapacity})`;
-        errorElement.style.display = 'block';
-        input.setCustomValidity('Exceeds available capacity');
-    } else {
-        errorElement.style.display = 'none';
-        input.setCustomValidity('');
+    function validateTotalBirds() {
+        const totalBirds = parseInt(totalBirdsInput.value) || 0;
+        let totalDistributed = 0;
+
+        shedInputs.forEach(input => {
+            totalDistributed += parseInt(input.value) || 0;
+        });
+
+        const isValid = totalBirds === totalDistributed;
+        totalBirdsInput.setCustomValidity(isValid ? '' : 'Total birds must match the sum of birds in sheds');
     }
-}
+
+    totalBirdsInput.addEventListener('input', validateTotalBirds);
+    shedInputs.forEach(input => {
+        input.addEventListener('input', validateTotalBirds);
+    });
+
+    // Initial validation
+    validateTotalBirds();
+});
 </script>
 {% endblock %} 

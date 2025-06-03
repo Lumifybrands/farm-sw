@@ -61,8 +61,27 @@
         </div>
 
         <div class="form-group">
-            <label for="brand">Brand (Optional)</label>
-            <input type="text" id="brand" name="brand" placeholder="Enter brand name">
+            <label for="brand">Brand</label>
+            <input type="text" class="form-control" id="brand" name="brand">
+        </div>
+
+        <div class="form-group">
+            <label>Shed Distribution</label>
+            <div id="shed_distribution">
+                <!-- Shed inputs will be dynamically added here -->
+            </div>
+            <small class="form-text text-muted">Total birds must match the sum of birds in sheds</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="total_birds">Total Birds</label>
+            <input type="number" class="form-control" id="total_birds" name="total_birds" required min="1">
+        </div>
+
+        <div class="form-group">
+            <label for="extra_chicks">Extra Chicks (Optional)</label>
+            <input type="number" class="form-control" id="extra_chicks" name="extra_chicks" min="0" value="0">
+            <small class="form-text text-muted">Additional chicks kept as backup</small>
         </div>
 
         <div class="form-group">
@@ -71,17 +90,8 @@
         </div>
 
         <div class="form-group">
-            <label for="total_birds">Total Birds</label>
-            <input type="number" id="total_birds" name="total_birds" required min="1">
-        </div>
-
-        <div id="shed_birds_container">
-            <!-- Shed birds fields will be dynamically added here -->
-        </div>
-
-        <div class="form-group">
-            <label for="cost_per_chicken">Cost per Chicken (₹)</label>
-            <input type="number" id="cost_per_chicken" name="cost_per_chicken" min="0" step="0.01" required>
+            <label for="cost_per_chicken">Cost per Chicks</label>
+            <input type="number" class="form-control" id="cost_per_chicken" name="cost_per_chicken" required min="0" step="0.01">
         </div>
 
         <div class="form-actions">
@@ -138,6 +148,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener for farm selection
     document.getElementById('farm_id').addEventListener('change', updateFarmInfo);
+
+    const farmSelect = document.getElementById('farm_id');
+    const shedDistribution = document.getElementById('shed_distribution');
+    const totalBirdsInput = document.getElementById('total_birds');
+    const farmSheds = {{ farm_sheds|tojson|safe }};
+
+    function updateShedDistribution() {
+        const farmId = farmSelect.value;
+        const farm = farmSheds[farmId];
+        shedDistribution.innerHTML = '';
+
+        if (!farm) return;
+
+        for (let i = 0; i < farm.num_sheds; i++) {
+            const available = farm.shed_available[i];
+            const total = farm.shed_capacities[i];
+            const status = farm.shed_status[i];
+            const isDisabled = status.is_partially_allocated;
+
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label for="shed_${i + 1}_birds">Shed ${i + 1} (Available: ${available}/${total})</label>
+                <input type="number" 
+                       class="form-control shed-input" 
+                       id="shed_${i + 1}_birds" 
+                       name="shed_${i + 1}_birds" 
+                       min="0" 
+                       max="${available + 500}"
+                       value="0"
+                       ${isDisabled ? 'disabled' : ''}
+                       onchange="validateTotalBirds()">
+                ${status.is_partially_allocated ? '<small class="text-danger">Shed is allocated</small>' : ''}
+            `;
+            shedDistribution.appendChild(div);
+        }
+    }
+
+    function validateTotalBirds() {
+        const totalBirds = parseInt(totalBirdsInput.value) || 0;
+        const shedInputs = document.querySelectorAll('.shed-input:not([disabled])');
+        let totalDistributed = 0;
+
+        shedInputs.forEach(input => {
+            totalDistributed += parseInt(input.value) || 0;
+        });
+
+        const isValid = totalBirds === totalDistributed;
+        totalBirdsInput.setCustomValidity(isValid ? '' : 'Total birds must match the sum of birds in sheds');
+    }
+
+    farmSelect.addEventListener('change', updateShedDistribution);
+    totalBirdsInput.addEventListener('input', validateTotalBirds);
+
+    // Initialize shed distribution on page load
+    updateShedDistribution();
 });
 
 function updateFarmInfo() {
@@ -163,8 +229,8 @@ function updateFarmInfo() {
             const div = document.createElement('div');
             div.className = 'form-group';
             div.innerHTML = `
-                <label for="shed_birds_${i + 1}">Birds in Shed ${i + 1} (Available: ${shedAvailable[i]})</label>
-                <input type="number" id="shed_birds_${i + 1}" name="shed_birds_${i + 1}" 
+                <label for="shed_${i + 1}_birds">Birds in Shed ${i + 1} (Available: ${shedAvailable[i]})</label>
+                <input type="number" id="shed_${i + 1}_birds" name="shed_${i + 1}_birds" 
                        min="0" max="${shedAvailable[i]}" required 
                        onchange="validateShedBirds(${i + 1}, ${shedAvailable[i]})">
                 <small class="error-message" id="shedError_${i + 1}" style="display: none; color: red;"></small>
@@ -177,29 +243,8 @@ function updateFarmInfo() {
     }
 }
 
-function validateTotalBirds() {
-    const farmSelect = document.getElementById('farm_id');
-    const selectedOption = farmSelect.options[farmSelect.selectedIndex];
-    const totalBirdsInput = document.getElementById('total_birds');
-    const errorElement = document.getElementById('totalBirdsError');
-    
-    if (farmSelect.value && totalBirdsInput.value) {
-        const availableCapacity = parseInt(selectedOption.dataset.available);
-        const totalBirds = parseInt(totalBirdsInput.value);
-        
-        if (totalBirds > availableCapacity) {
-            errorElement.textContent = `Total birds cannot exceed available capacity (${availableCapacity})`;
-            errorElement.style.display = 'block';
-            totalBirdsInput.setCustomValidity('Total birds exceeds available capacity');
-        } else {
-            errorElement.style.display = 'none';
-            totalBirdsInput.setCustomValidity('');
-        }
-    }
-}
-
 function validateShedBirds(shedNumber, maxCapacity) {
-    const input = document.getElementById(`shed_birds_${shedNumber}`);
+    const input = document.getElementById(`shed_${shedNumber}_birds`);
     const errorElement = document.getElementById(`shedError_${shedNumber}`);
     
     if (parseInt(input.value) > maxCapacity) {

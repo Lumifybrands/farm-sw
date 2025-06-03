@@ -19,86 +19,252 @@
 
         <div class="form-group">
             <label for="quantity_per_unit">Quantity per Unit (ml)</label>
-            <input type="number" id="quantity_per_unit" name="quantity_per_unit" value="{{ vaccine.quantity_per_unit }}" step="0.01" required>
+            <input type="number" id="quantity_per_unit" name="quantity_per_unit" step="0.01" min="0" value="{{ vaccine.quantity_per_unit }}" required>
         </div>
 
         <div class="form-group">
             <label for="price">Price per Unit (₹)</label>
-            <input type="number" id="price" name="price" value="{{ vaccine.price }}" step="0.01" required>
+            <input type="number" id="price" name="price" step="0.01" min="0" value="{{ vaccine.price }}" required>
         </div>
 
         <div class="form-group">
             <label for="doses_required">Number of Doses Required</label>
-            <input type="number" id="doses_required" name="doses_required" value="{{ vaccine.doses_required }}" min="1" required>
+            <div class="input-group">
+                <input type="number" id="doses_required" name="doses_required" min="1" max="10" value="{{ vaccine.doses_required }}" required onchange="updateDoseAgeFields()">
+                <button type="button" class="add-dose-btn" onclick="updateDoseAgeFields()">Add Dose</button>
+            </div>
         </div>
 
-        <div id="doseAgesContainer">
-            {% set dose_ages = vaccine.get_dose_ages() %}
-            {% for i in range(vaccine.doses_required) %}
-            <div class="form-group dose-age-group">
-                <label>Dose {{ i + 1 }} Age (days)</label>
-                <input type="number" name="dose_age_{{ i + 1 }}" value="{{ dose_ages[i] if i < dose_ages|length else 0 }}" min="0" required>
-            </div>
-            {% endfor %}
+        <div id="doseAgeFields" class="form-group">
+            <!-- Dose age fields will be dynamically added here -->
         </div>
 
         <div class="form-group">
-            <label for="notes">Notes</label>
-            <textarea id="notes" name="notes" rows="3">{{ vaccine.notes }}</textarea>
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="4">{{ vaccine.notes }}</textarea>
         </div>
 
         <div class="form-actions">
-            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('view_vaccine', id=vaccine.id) }}'">Cancel</button>
+            <a href="{{ url_for('vaccines') }}" class="cancel-btn">Cancel</a>
             <button type="submit" class="submit-btn">Save Changes</button>
         </div>
     </form>
 </div>
-{% endblock %}
+
+<style>
+.section-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex: 2;
+}
+
+.input-group .add-dose-btn {
+    flex: 1;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.input-group .add-dose-btn:hover {
+    background-color: #218838;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.cancel-btn, .submit-btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+    text-align: center;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.submit-btn {
+    background-color: #1a73e8;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #1557b0;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .section-container {
+        padding: 15px;
+    }
+
+    .form-container {
+        padding: 15px;
+    }
+
+    .input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .input-group input,
+    .input-group .add-dose-btn {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .cancel-btn, .submit-btn {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+/* Additional optimizations for very small screens */
+@media (max-width: 480px) {
+    .section-container {
+        padding: 10px;
+    }
+
+    .form-container {
+        padding: 12px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group select,
+    .form-group textarea {
+        font-size: 13px;
+        padding: 8px;
+    }
+}
+</style>
+{% endblock %} 
 
 {% block scripts %}
 {{ super() }}
 <script>
-// Initialize dose ages when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    const dosesRequired = document.getElementById('doses_required');
-    const container = document.getElementById('doseAgesContainer');
-    
-    // Ensure the number of dose age fields matches doses_required
-    const currentDoses = container.children.length;
-    const requiredDoses = parseInt(dosesRequired.value);
-    
-    if (currentDoses !== requiredDoses) {
-        updateDoseAgeFields(requiredDoses);
+document.addEventListener('DOMContentLoaded', function () {
+    // Safely parse the doseAges array with error handling
+    let doseAges = [];
+    try {
+        const doseAgesStr = '{{ vaccine.get_dose_ages() | tojson | safe }}';
+        doseAges = JSON.parse(doseAgesStr) || [];
+        if (!Array.isArray(doseAges)) {
+            doseAges = [];
+        }
+    } catch (error) {
+        console.error('Error parsing doseAges:', error);
+        doseAges = [];
     }
-});
+    console.log("doseAges:", doseAges);
 
-// Handle changes to the number of doses
-document.getElementById('doses_required').addEventListener('change', function() {
-    const newDoses = parseInt(this.value);
-    updateDoseAgeFields(newDoses);
-});
+    function updateDoseAgeFields() {
+        const dosesRequiredInput = document.getElementById('doses_required');
+        const container = document.getElementById('doseAgeFields');
+        
+        if (!dosesRequiredInput || !container) {
+            console.error('Required elements not found');
+            return;
+        }
 
-function updateDoseAgeFields(newDoses) {
-    const container = document.getElementById('doseAgesContainer');
-    const currentDoses = container.children.length;
-    
-    if (newDoses > currentDoses) {
-        // Add new dose age fields
-        for (let i = currentDoses + 1; i <= newDoses; i++) {
+        const dosesRequired = parseInt(dosesRequiredInput.value) || 0;
+        container.innerHTML = '';
+
+        for (let i = 0; i < dosesRequired; i++) {
+            const age = (Array.isArray(doseAges) && i < doseAges.length && doseAges[i] != null) ? doseAges[i] : '';
+            console.log(`Setting Dose ${i + 1} input with doseAges[${i}] =`, age);
+
             const div = document.createElement('div');
-            div.className = 'form-group dose-age-group';
+            div.className = 'form-group';
             div.innerHTML = `
-                <label>Dose ${i} Age (days)</label>
-                <input type="number" name="dose_age_${i}" value="0" min="0" required>
+                <label for="dose_age_${i + 1}">Age for Dose ${i + 1} (days)</label>
+                <input type="number" id="dose_age_${i + 1}" name="dose_age_${i + 1}" min="0" value="${age}" required>
             `;
             container.appendChild(div);
         }
-    } else if (newDoses < currentDoses) {
-        // Remove excess dose age fields
-        while (container.children.length > newDoses) {
-            container.removeChild(container.lastChild);
-        }
     }
-}
+
+    // Initialize the fields
+    updateDoseAgeFields();
+
+    // Add event listener for changes
+    const dosesRequiredInput = document.getElementById('doses_required');
+    if (dosesRequiredInput) {
+        dosesRequiredInput.addEventListener('change', updateDoseAgeFields);
+    }
+});
 </script>
-{% endblock %} 
+{% endblock %}

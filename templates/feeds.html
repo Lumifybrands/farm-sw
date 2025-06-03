@@ -21,6 +21,7 @@
         </a>
     </div>
 
+    <!-- Desktop Table View -->
     <div class="feeds-table-container">
         <table class="feeds-table">
             <thead>
@@ -28,7 +29,7 @@
                     <th>Brand</th>
                     <th>Category</th>
                     <th>Weight (kg)</th>
-                    <th>Price (₹/kg)</th>
+                    <th>Price Per Unit</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -55,6 +56,41 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Mobile Card View -->
+    <div class="feeds-cards">
+        {% for feed in feeds %}
+        <div class="feed-card">
+            <div class="feed-card-header">
+                <h3>{{ feed.brand }}</h3>
+                <span class="category-badge">{{ feed.category }}</span>
+            </div>
+            <div class="feed-card-body">
+                <div class="feed-info">
+                    <div class="info-group">
+                        <label>Weight</label>
+                        <span>{{ "%.2f"|format(feed.weight) }} kg</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Price</label>
+                        <span>₹{{ "%.2f"|format(feed.price) }}</span>
+                    </div>
+                </div>
+                <div class="feed-actions">
+                    <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 
 <style>
@@ -62,24 +98,60 @@
         color: #1a73e8;
     }
     
+    .feeds-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+    
+    .feeds-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    
+    .search-bar {
+        position: relative;
+        flex: 1;
+    }
+    
     .search-bar input {
+        width: 100%;
+        padding: 10px 15px;
+        padding-left: 40px;
         border: 1px solid #1a73e8;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-bar i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #1a73e8;
     }
     
     .search-bar input:focus {
         border-color: #1557b0;
         box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
     }
     
     .add-feed-btn {
         background-color: #1a73e8;
         color: white;
         text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 4px;
+        padding: 10px 20px;
+        border-radius: 8px;
         display: inline-flex;
         align-items: center;
         gap: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
     }
     
     .add-feed-btn:hover {
@@ -87,24 +159,59 @@
         color: white;
     }
     
+    /* Desktop Table Styles */
+    .feeds-table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .feeds-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
     .feeds-table th {
         background-color: #f8f9fa;
         color: #2c3e50;
+        padding: 15px;
+        text-align: left;
+        font-weight: 500;
+    }
+    
+    .feeds-table td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
     }
     
     .feeds-table tr:nth-child(even) {
         background-color: rgba(26, 115, 232, 0.05);
     }
     
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+    }
+    
     .action-btn.view, .action-btn.edit {
         background-color: #1a73e8;
         color: white;
-        text-decoration: none;
     }
     
     .action-btn.view:hover, .action-btn.edit:hover {
         background-color: #1557b0;
-        color: white;
     }
     
     .action-btn.delete {
@@ -117,7 +224,153 @@
     .action-btn.delete:hover {
         background-color: #c82333;
     }
+
+    /* Mobile Card View Styles */
+    .feeds-cards {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px 0;
+    }
+
+    .feed-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+
+    .feed-card:active {
+        transform: scale(0.98);
+    }
+
+    .feed-card-header {
+        padding: 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .feed-card-header h3 {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 18px;
+    }
+
+    .category-badge {
+        background: #e8f0fe;
+        color: #1a73e8;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .feed-card-body {
+        padding: 15px;
+    }
+
+    .feed-info {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-group label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .info-group span {
+        font-size: 14px;
+        color: #2c3e50;
+    }
+
+    .feed-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .feed-actions .action-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .feeds-table-container {
+            display: none;
+        }
+
+        .feeds-cards {
+            display: grid;
+        }
+
+        .feeds-header {
+            flex-direction: column;
+        }
+
+        .search-bar {
+            width: 100%;
+        }
+
+        .add-feed-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Improve touch targets */
+        .feed-card {
+            cursor: pointer;
+        }
+
+        .action-btn {
+            min-height: 44px;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .feeds-container {
+            padding: 0 10px;
+        }
+
+        .feed-card-header h3 {
+            font-size: 16px;
+        }
+
+        .category-badge {
+            font-size: 12px;
+        }
+
+        .info-group label {
+            font-size: 11px;
+        }
+
+        .info-group span {
+            font-size: 13px;
+        }
+
+        .feed-actions .action-btn {
+            font-size: 13px;
+            padding: 8px;
+        }
+    }
 </style>
+
 {% endblock %}
 
 {% block scripts %}
@@ -127,14 +380,16 @@ function searchFeeds() {
     const input = document.getElementById('feedSearch');
     const filter = input.value.toLowerCase();
     const table = document.querySelector('.feeds-table');
+    const cards = document.querySelectorAll('.feed-card');
+    
+    // Search in table
     const rows = table.getElementsByTagName('tr');
-
     for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         const cells = row.getElementsByTagName('td');
         let found = false;
 
-        for (let j = 0; j < cells.length - 1; j++) {  // Exclude actions column
+        for (let j = 0; j < cells.length - 1; j++) {
             const cell = cells[j];
             if (cell.textContent.toLowerCase().indexOf(filter) > -1) {
                 found = true;
@@ -144,6 +399,12 @@ function searchFeeds() {
 
         row.style.display = found ? '' : 'none';
     }
+
+    // Search in cards
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(filter) ? '' : 'none';
+    });
 }
 
 function deleteFeed(feedId) {
@@ -168,5 +429,20 @@ function deleteFeed(feedId) {
         });
     }
 }
+
+// Add touch feedback for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    if ('ontouchstart' in window) {
+        const buttons = document.querySelectorAll('.action-btn');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.opacity = '0.8';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.opacity = '';
+            });
+        });
+    }
+});
 </script>
 {% endblock %} 

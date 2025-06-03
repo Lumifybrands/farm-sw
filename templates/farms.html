@@ -16,19 +16,27 @@
             <input type="text" id="farmSearch" placeholder="Search farms...">
             <i class="fas fa-search"></i>
         </div>
-        <button class="add-farm-btn" onclick="location.href='{{ url_for('add_farm') }}'">
-            <i class="fas fa-plus"></i> Add Farm
-        </button>
+        <div class="action-buttons-container">
+            <button class="add-farm-btn" onclick="openFCRModal()">
+                <i class="fas fa-chart-line"></i> FCR Rates
+            </button>
+            <button class="add-farm-btn" onclick="location.href='{{ url_for('add_farm') }}'">
+                <i class="fas fa-plus"></i> Add Farm
+            </button>
+        </div>
     </div>
 
+    <!-- Desktop Table View -->
     <div class="farms-table-container">
         <table class="farms-table">
             <thead>
                 <tr>
                     <th>Farm Name</th>
                     <th>Total Capacity</th>
-                    <th>No. of Sheds</th>
-                    <th>Total Area (m²)</th>
+                    <!-- <th>No. of Sheds</th> -->
+                    <!-- <th>Total Area (m²)</th> -->
+                    <th>Ongoing Batches</th>
+                    <th>Available Sheds</th>
                     <th>Farm Condition</th>
                     <th>Owner Name</th>
                     <th>Actions</th>
@@ -39,8 +47,18 @@
                 <tr>
                     <td>{{ farm.name }}</td>
                     <td>{{ farm.total_capacity }}</td>
-                    <td>{{ farm.num_sheds }}</td>
-                    <td>{{ "%.2f"|format(farm.total_area) }}</td>
+                    <!-- <td>{{ farm.num_sheds }}</td> -->
+                    <!-- <td>{{ "%.2f"|format(farm.total_area) }}</td> -->
+                    <td>
+                        <span class="batch-count {% if farm_stats[farm.id].ongoing_batches > 0 %}active{% endif %}">
+                            {{ farm_stats[farm.id].ongoing_batches }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="shed-count {% if farm_stats[farm.id].completely_available_sheds > 0 %}available{% endif %}">
+                            {{ farm_stats[farm.id].completely_available_sheds }}/{{ farm.num_sheds }}
+                        </span>
+                    </td>
                     <td><span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span></td>
                     <td>{{ farm.owner_name }}</td>
                     <td class="action-buttons">
@@ -58,6 +76,85 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="farms-cards">
+        {% for farm in farms %}
+        <div class="farm-card">
+            <div class="farm-card-header">
+                <h3>{{ farm.name }}</h3>
+                <span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span>
+            </div>
+            <div class="farm-card-body">
+                <div class="farm-info">
+                    <div class="info-group">
+                        <label>Total Capacity</label>
+                        <span>{{ farm.total_capacity }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Ongoing Batches</label>
+                        <span class="batch-count {% if farm_stats[farm.id].ongoing_batches > 0 %}active{% endif %}">
+                            {{ farm_stats[farm.id].ongoing_batches }}
+                        </span>
+                    </div>
+                    <div class="info-group">
+                        <label>Available Sheds</label>
+                        <span class="shed-count {% if farm_stats[farm.id].completely_available_sheds > 0 %}available{% endif %}">
+                            {{ farm_stats[farm.id].completely_available_sheds }}/{{ farm.num_sheds }}
+                        </span>
+                    </div>
+                    <div class="info-group">
+                        <label>Owner Name</label>
+                        <span>{{ farm.owner_name }}</span>
+                    </div>
+                </div>
+                <div class="farm-actions">
+                    <button class="action-btn view" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn delete" onclick="deleteFarm({{ farm.id }})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="fcrModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>FCR Rates Management</h2>
+            <span class="close" onclick="closeFCRModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="fcr-table-container">
+                <table class="fcr-table">
+                    <thead>
+                        <tr>
+                            <th>Lower Limit</th>
+                            <th>Upper Limit</th>
+                            <th>Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fcrTableBody">
+                        <!-- Rows will be added here dynamically -->
+                    </tbody>
+                </table>
+                <button class="add-row-btn" onclick="addFCRRow()">
+                    <i class="fas fa-plus"></i> Add Row
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="save-btn" onclick="saveFCRRates()">Save Changes</button>
+        </div>
     </div>
 </div>
 
@@ -132,6 +229,336 @@
         background-color: #e8f5e9;
         color: #388e3c;
     }
+
+    .batch-count, .shed-count {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+
+    .batch-count.active {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+    }
+
+    .shed-count.available {
+        background-color: #e8f5e9;
+        color: #388e3c;
+    }
+
+    /* FCR Rates Button */
+    .fcr-rates-btn {
+        display: none;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #333;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        color: #333;
+    }
+
+    /* FCR Table Styles */
+    .fcr-table-container {
+        margin-bottom: 20px;
+    }
+
+    .fcr-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+
+    .fcr-table th,
+    .fcr-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .fcr-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .fcr-table input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .fcr-table input:focus {
+        border-color: #1a73e8;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    }
+
+    .add-row-btn {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-row-btn:hover {
+        background-color: #1557b0;
+    }
+
+    .modal-footer {
+        text-align: right;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    .save-btn {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .save-btn:hover {
+        background-color: #45a049;
+    }
+
+    .delete-row-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .delete-row-btn:hover {
+        background-color: #c82333;
+    }
+
+    /* Add new styles for action buttons container */
+    .action-buttons-container {
+        display: flex;
+        gap: 10px;
+    }
+
+    /* Update add-farm-btn to be more generic */
+    .add-farm-btn {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-farm-btn:hover {
+        background-color: #1557b0;
+    }
+
+    /* Mobile Card View Styles */
+    .farms-cards {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .farm-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+
+    .farm-card:active {
+        transform: scale(0.98);
+    }
+
+    .farm-card-header {
+        padding: 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .farm-card-header h3 {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 18px;
+    }
+
+    .farm-card-body {
+        padding: 15px;
+    }
+
+    .farm-info {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-group label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .info-group span {
+        font-size: 14px;
+        color: #2c3e50;
+    }
+
+    .farm-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .farm-actions .action-btn {
+        padding: 10px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border-radius: 8px;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .farms-table-container {
+            display: none;
+        }
+
+        .farms-cards {
+            display: grid;
+        }
+
+        .farms-header {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .search-bar {
+            width: 100%;
+        }
+
+        .action-buttons-container {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .add-farm-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Improve touch targets */
+        .farm-card {
+            cursor: pointer;
+        }
+
+        .action-btn {
+            min-height: 44px;
+        }
+
+        /* Optimize modal for mobile */
+        .modal-content {
+            width: 95%;
+            margin: 10px auto;
+            padding: 15px;
+        }
+
+        .fcr-table {
+            display: block;
+            overflow-x: auto;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .farm-card-header h3 {
+            font-size: 16px;
+        }
+
+        .info-group label {
+            font-size: 11px;
+        }
+
+        .info-group span {
+            font-size: 13px;
+        }
+
+        .farm-actions .action-btn {
+            font-size: 13px;
+            padding: 8px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -164,11 +591,120 @@ function deleteFarm(farmId) {
 document.getElementById('farmSearch').addEventListener('input', function(e) {
     const searchText = e.target.value.toLowerCase();
     const rows = document.querySelectorAll('.farms-table tbody tr');
+    const cards = document.querySelectorAll('.farm-card');
     
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchText) ? '' : 'none';
     });
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchText) ? '' : 'none';
+    });
 });
+
+function openFCRModal() {
+    document.getElementById('fcrModal').style.display = 'block';
+    loadFCRRates();
+}
+
+function closeFCRModal() {
+    document.getElementById('fcrModal').style.display = 'none';
+}
+
+function addFCRRow() {
+    const tbody = document.getElementById('fcrTableBody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><input type="number" step="0.01" class="lower-limit" placeholder="Enter lower limit"></td>
+        <td><input type="number" step="0.01" class="upper-limit" placeholder="Leave blank for Max"></td>
+        <td><input type="number" step="0.01" class="rate" placeholder="Enter rate"></td>
+        <td>
+            <button class="delete-row-btn" onclick="deleteFCRRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+}
+
+function deleteFCRRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+}
+
+function loadFCRRates() {
+    // Fetch existing FCR rates from the server
+    fetch('/api/fcr-rates')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('fcrTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+            
+            data.forEach(rate => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="number" step="0.01" class="lower-limit" value="${rate.lower_limit}" placeholder="Enter lower limit"></td>
+                    <td><input type="number" step="0.01" class="upper-limit" value="${rate.upper_limit || ''}" placeholder="Leave blank for Max"></td>
+                    <td><input type="number" step="0.01" class="rate" value="${rate.rate}" placeholder="Enter rate"></td>
+                    <td>
+                        <button class="delete-row-btn" onclick="deleteFCRRow(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading FCR rates:', error);
+        });
+}
+
+function saveFCRRates() {
+    const rows = document.querySelectorAll('#fcrTableBody tr');
+    const rates = Array.from(rows).map(row => {
+        const lowerLimit = parseFloat(row.querySelector('.lower-limit').value);
+        const upperLimit = row.querySelector('.upper-limit').value ? parseFloat(row.querySelector('.upper-limit').value) : null;
+        const rate = parseFloat(row.querySelector('.rate').value);
+        
+        return {
+            lower_limit: lowerLimit,
+            upper_limit: upperLimit,
+            rate: rate
+        };
+    });
+
+    // Send the rates to the server
+    fetch('/api/fcr-rates', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rates: rates })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('FCR rates saved successfully!');
+            closeFCRModal();
+        } else {
+            alert('Error saving FCR rates: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving FCR rates');
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('fcrModal');
+    if (event.target == modal) {
+        closeFCRModal();
+    }
+}
 </script>
 {% endblock %} 

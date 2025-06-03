@@ -36,8 +36,11 @@ function toggleLoginForm() {
 // Initialize login box state
 document.addEventListener('DOMContentLoaded', function() {
     const loginBoxContent = document.getElementById('loginBoxContent');
-    // Start with collapsed state
-    loginBoxContent.classList.remove('expanded');
+    // Only proceed if the element exists
+    if (loginBoxContent) {
+        // Start with collapsed state
+        loginBoxContent.classList.remove('expanded');
+    }
 });
 
 // // Form submission handling

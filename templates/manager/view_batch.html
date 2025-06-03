@@ -171,10 +171,15 @@
                         </div>
                         {% endif %}
                         
-                        {% if update.notes %}
-                        <div class="update-notes">
-                            <h4>Notes</h4>
-                            <p>{{ update.notes }}</p>
+                        {% if update.remarks %}
+                        <div class="update-remarks">
+                            <h4>
+                                Remarks
+                                {% if update.remarks_priority %}
+                                <span class="priority-badge {{ update.remarks_priority }}">{{ update.remarks_priority }}</span>
+                                {% endif %}
+                            </h4>
+                            <p>{{ update.remarks }}</p>
                         </div>
                         {% endif %}
                     </div>
@@ -413,25 +418,48 @@
         border-radius: 4px;
     }
 
-    .update-notes {
-        margin-top: 20px;
-        padding: 16px;
-        background: white;
+    .update-remarks {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8f9fa;
         border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
-    .update-notes h4 {
-        color: #2d3748;
+    .update-remarks h4 {
+        color: #1a73e8;
         margin: 0 0 10px 0;
         font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .update-notes p {
+    .update-remarks p {
         color: #4a5568;
         margin: 0;
-        line-height: 1.6;
-        white-space: pre-line;
+        line-height: 1.5;
+    }
+
+    .priority-badge {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .priority-badge.low {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .priority-badge.medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .priority-badge.high {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
     .no-updates {

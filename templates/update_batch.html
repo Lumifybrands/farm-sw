@@ -34,10 +34,6 @@
                     <span>{{ batch.batch_number }}</span>
                 </div>
                 <div class="info-item">
-                    <label>Total Birds</label>
-                    <span>{{ batch.total_birds }}</span>
-                </div>
-                <div class="info-item">
                     <label>Available Birds</label>
                     <span>{{ batch.available_birds }}</span>
                 </div>
@@ -45,12 +41,20 @@
                     <label>Age</label>
                     <span>{{ batch.get_age_days() }} days</span>
                 </div>
+                <div class="info-item">
+                    <label>Feed Stock</label>
+                    <span>{{ batch.feed_stock }}</span>
+                </div>
             </div>
         </div>
 
         <div class="update-section">
             <h2>Today's Update</h2>
             <div class="form-grid">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="text" id="date" name="date" value="{{ selected_date.strftime('%Y-%m-%d') }}" class="flatpickr-input">
+                </div>
                 <div class="form-group">
                     <label for="mortality_count">Mortality Count</label>
                     <input type="number" id="mortality_count" name="mortality_count" min="0" value="0" required>
@@ -77,6 +81,151 @@
                 </button>
             </div>
 
+            <!-- Scheduled Items Section -->
+            <div class="dynamic-section" id="scheduledItemsSection">
+                <h3>Scheduled Items</h3>
+                <div class="scheduled-items-container">
+                    {% if medicine_schedules or health_material_schedules or vaccine_schedules %}
+                        <!-- Medicine Schedules -->
+                        {% if medicine_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-pills"></i> Medicine Schedules</h4>
+                            <div class="scheduled-items" id="medicineSchedules">
+                                {% for schedule in medicine_schedules %}
+                                <div class="scheduled-item {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[medicine][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'medicine_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.medicine.name }}</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.schedule_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="medicine_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[medicine][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'medicine')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Health Material Schedules -->
+                        {% if health_material_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-spray-can"></i> Health Material Schedules</h4>
+                            <div class="scheduled-items" id="healthMaterialSchedules">
+                                {% for schedule in health_material_schedules %}
+                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[health_material][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'health_material_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.health_material.name }}</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.scheduled_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="health_material_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[health_material][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'health_material')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Vaccine Schedules -->
+                        {% if vaccine_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-syringe"></i> Vaccine Schedules</h4>
+                            <div class="scheduled-items" id="vaccineSchedules">
+                                {% for schedule in vaccine_schedules %}
+                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[vaccine][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'vaccine_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.vaccine.name }} (Dose {{ schedule.dose_number }})</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.scheduled_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="vaccine_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[vaccine][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'vaccine')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="no-schedules-message">
+                            <i class="fas fa-calendar-check"></i>
+                            <p>No schedules for today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Other Items Section -->
             <div class="dynamic-section" id="otherItemsSection">
                 <h3>Other Items</h3>
@@ -84,13 +233,21 @@
                     <button type="button" onclick="addMedicineItem()">Add Medicine</button>
                     <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
                     <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                    <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
                 </div>
                 <div class="dynamic-items" id="otherItems"></div>
             </div>
 
             <div class="form-group full-width">
-                <label for="notes">Extra Notes</label>
-                <textarea id="notes" name="notes" rows="4" placeholder="Enter any additional notes or observations..."></textarea>
+                <label for="remarks">Remarks</label>
+                <div class="remarks-container">
+                    <select name="remarks_priority" id="remarks_priority" class="remarks-priority">
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                    <textarea id="remarks" name="remarks" rows="4" placeholder="Enter any additional remarks or observations..."></textarea>
+                </div>
             </div>
         </div>
 
@@ -101,6 +258,10 @@
     </form>
     {% endif %}
 </div>
+
+<!-- Add Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
 .form-container {
@@ -366,7 +527,7 @@ h2 {
 
 .dynamic-item {
     display: grid;
-    grid-template-columns: 2fr 1fr auto;
+    grid-template-columns: 2fr 1fr auto auto;
     gap: 10px;
     align-items: center;
     padding: 15px;
@@ -509,7 +670,7 @@ textarea:focus {
 }
 
 .dynamic-item.vaccine-item {
-    grid-template-columns: 2fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr auto auto;
 }
 
 @media (max-width: 480px) {
@@ -517,13 +678,367 @@ textarea:focus {
         grid-template-columns: 1fr;
     }
 }
+
+.scheduled-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.scheduled-category {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.scheduled-category h4 {
+    color: #1a73e8;
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scheduled-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scheduled-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.scheduled-item.selected {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+}
+
+.scheduled-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.item-name {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.schedule-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.schedule-notes {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+.unit-type {
+    font-size: 0.9rem;
+    color: #666;
+    margin-left: 8px;
+}
+
+.scheduled-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.scheduled-item-quantity input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .scheduled-item {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .scheduled-item-quantity {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+.no-schedules-message {
+    text-align: center;
+    padding: 30px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.no-schedules-message i {
+    font-size: 48px;
+    color: #1a73e8;
+    margin-bottom: 15px;
+}
+
+.no-schedules-message p {
+    color: #666;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .no-schedules-message {
+        padding: 20px 15px;
+    }
+
+    .no-schedules-message i {
+        font-size: 36px;
+    }
+
+    .no-schedules-message p {
+        font-size: 1rem;
+    }
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    padding-left: 35px;
+    user-select: none;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: #fff;
+    border: 2px solid #1a73e8;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+    background-color: #e8f0fe;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: #1a73e8;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.scheduled-item.overdue {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.scheduled-item.overdue .item-name {
+    color: #dc2626;
+}
+
+.scheduled-item.overdue .schedule-date {
+    color: #dc2626;
+}
+
+.overdue-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #dc2626;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 8px;
+}
+
+.scheduled-item.overdue.selected {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+
+.scheduled-item.overdue .checkmark {
+    border-color: #dc2626;
+}
+
+.scheduled-item.overdue input:checked ~ .checkmark {
+    background-color: #dc2626;
+}
+
+.remarks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.remarks-priority {
+    width: 200px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: white;
+}
+
+.remarks-priority:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+@media (max-width: 480px) {
+    .remarks-priority {
+        width: 100%;
+    }
+}
+
+.miscellaneous-item {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto auto;
+}
+
+@media (max-width: 768px) {
+    .miscellaneous-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Custom styles for Flatpickr */
+.flatpickr-calendar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.flatpickr-day.batch-start {
+    background: #1a73e8;
+    color: white;
+    border-color: #1a73e8;
+}
+
+.flatpickr-day.missing-update {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+.flatpickr-day.missing-update:hover {
+    background: #fecaca;
+    border-color: #dc2626;
+}
+
+.flatpickr-day.missing-update.selected {
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
+}
+
+.flatpickr-day.has-schedule {
+    position: relative;
+}
+
+.flatpickr-day.has-schedule::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #1a73e8;
+}
+
+.flatpickr-day.has-schedule:hover {
+    background: #e3f2fd;
+    border-color: #1a73e8;
+}
+
+.flatpickr-day.has-schedule.selected {
+    background: #1a73e8;
+    border-color: #1a73e8;
+}
+
+.flatpickr-day.has-schedule.selected::after {
+    background-color: white;
+}
 </style>
 
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
 <script>
+function toggleQuantityField(checkbox, quantityFieldId) {
+    const quantityField = document.getElementById(quantityFieldId);
+    const scheduledItem = checkbox.closest('.scheduled-item');
+    
+    if (checkbox.checked) {
+        quantityField.style.display = 'flex';
+        scheduledItem.classList.add('selected');
+        // Focus on the quantity input
+        quantityField.querySelector('input').focus();
+    } else {
+        quantityField.style.display = 'none';
+        scheduledItem.classList.remove('selected');
+        // Clear the quantity when unchecked
+        quantityField.querySelector('input').value = '0';
+    }
+}
+
+function validateScheduleQuantity(input, scheduleId, type) {
+    const quantity = parseFloat(input.value);
+    const checkbox = document.querySelector(`input[name="scheduled_items[${type}][${scheduleId}][selected]"]`);
+    const scheduledItem = input.closest('.scheduled-item');
+    
+    if (quantity > 0) {
+        scheduledItem.classList.add('selected');
+        checkbox.checked = true;
+    } else {
+        scheduledItem.classList.remove('selected');
+        checkbox.checked = false;
+        input.value = '0';
+        input.closest('.scheduled-item-quantity').style.display = 'none';
+    }
+}
+
 function removeItem(button) {
     button.closest('.dynamic-item').remove();
 }
@@ -538,6 +1053,7 @@ function addFeedItem() {
                 {% endfor %}
             </select>
             <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -546,16 +1062,42 @@ function addFeedItem() {
     document.getElementById('feedItems').insertAdjacentHTML('beforeend', template);
 }
 
+function addMiscellaneousItem() {
+    const template = `
+        <div class="dynamic-item miscellaneous-item">
+            <input type="text" name="misc_name[]" placeholder="Item Name" required>
+            <input type="number" name="misc_quantity_per_unit[]" placeholder="Quantity per Unit" min="0" step="0.01" required>
+            <select name="misc_unit_type[]" required>
+                <option value="">Select Unit</option>
+                <option value="piece">Piece</option>
+                <option value="kg">Kilogram</option>
+                <option value="g">Gram</option>
+                <option value="litre">Litre</option>
+                <option value="ml">Millilitre</option>
+                <option value="box">Box</option>
+                <option value="pack">Pack</option>
+            </select>
+            <input type="number" name="misc_price_per_unit[]" placeholder="Price per Unit" min="0" step="0.01" required>
+            <input type="number" name="misc_units_used[]" placeholder="Units Used" min="0" step="0.01" required>
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+}
+
 function addMedicineItem() {
+    const medicines = {{ medicines|tojson|safe }};
     const template = `
         <div class="dynamic-item">
-            <select name="medicine_id[]">
+            <select name="other_items[medicine][][id]">
                 <option value="">Select Medicine</option>
-                {% for medicine in medicines %}
-                <option value="{{ medicine.id }}">{{ medicine.name }}</option>
-                {% endfor %}
+                ${medicines.map(medicine => `<option value="${medicine.id}">${medicine.name}</option>`).join('')}
             </select>
-            <input type="number" name="medicine_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[medicine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -565,15 +1107,15 @@ function addMedicineItem() {
 }
 
 function addHealthMaterialItem() {
+    const healthMaterials = {{ health_materials|tojson|safe }};
     const template = `
         <div class="dynamic-item">
-            <select name="health_material_id[]">
+            <select name="other_items[health_material][][id]">
                 <option value="">Select Health Material</option>
-                {% for material in health_materials %}
-                <option value="{{ material.id }}">{{ material.name }} - {{ material.category }}</option>
-                {% endfor %}
+                ${healthMaterials.map(material => `<option value="${material.id}">${material.name}</option>`).join('')}
             </select>
-            <input type="number" name="health_material_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[health_material][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -583,23 +1125,16 @@ function addHealthMaterialItem() {
 }
 
 function addVaccineItem() {
+    const vaccines = {{ vaccines|tojson|safe }};
     const template = `
         <div class="dynamic-item vaccine-item">
-            <select name="vaccine_id[]">
+            <select name="other_items[vaccine][][id]">
                 <option value="">Select Vaccine</option>
-                {% for vaccine in vaccines %}
-                <option value="{{ vaccine.id }}">{{ vaccine.name }}</option>
-                {% endfor %}
+                ${vaccines.map(vaccine => `<option value="${vaccine.id}">${vaccine.name}</option>`).join('')}
             </select>
-            <select name="vaccine_dose[]">
-                <option value="">Select Dose</option>
-                <option value="1">Dose 1</option>
-                <option value="2">Dose 2</option>
-                <option value="3">Dose 3</option>
-                <option value="4">Dose 4</option>
-                <option value="5">Dose 5</option>
-            </select>
-            <input type="number" name="vaccine_quantity[]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[vaccine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[vaccine][][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
+            <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -608,11 +1143,48 @@ function addVaccineItem() {
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
 
-// Update form validation to include vaccines
+let datePicker;
+let scheduledDates = new Set();
+let missingUpdateDates = new Set();
+
+// Initialize Flatpickr
+document.addEventListener('DOMContentLoaded', function() {
+    datePicker = flatpickr("#date", {
+        dateFormat: "Y-m-d",
+        minDate: "{{ batch.created_at.strftime('%Y-%m-%d') }}",
+        disableMobile: true,
+        onChange: function(selectedDates, dateStr) {
+            // Update the hidden input value
+            document.getElementById('date').value = dateStr;
+        },
+        onMonthChange: function() {
+            setTimeout(updateDatePicker, 100);
+        },
+        onReady: function() {
+            setTimeout(updateDatePicker, 100);
+        },
+        onOpen: function() {
+            setTimeout(updateDatePicker, 100);
+        }
+    });
+
+    // Load scheduled dates and missing update dates
+    loadScheduledDates();
+    loadMissingUpdateDates();
+});
+
+// Form validation
 document.querySelector('.update-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    // Validate that selected feeds are unique and have valid quantities
+    // Get the selected date
+    const selectedDate = document.getElementById('date').value;
+    if (!selectedDate) {
+        alert('Please select a date for the update.');
+        return;
+    }
+    
+    // Validate feeds
     const feedItems = document.querySelectorAll('select[name="feed_id[]"]');
     const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
     const selectedFeeds = new Set();
@@ -625,88 +1197,146 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
             selectedFeeds.add(feedItems[i].value);
             
-            // Check quantity only if feed is selected
-            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) < 0) {
+            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) <= 0) {
                 alert('Please enter valid quantities for all selected feed items.');
                 return;
             }
         }
     }
     
-    // Validate medicines if added
-    const medicineItems = document.querySelectorAll('select[name="medicine_id[]"]');
-    const medicineQuantities = document.querySelectorAll('input[name="medicine_quantity[]"]');
-    const selectedMedicines = new Set();
+    // Validate miscellaneous items
+    const miscNames = document.querySelectorAll('input[name="misc_name[]"]');
+    const miscQuantities = document.querySelectorAll('input[name="misc_quantity_per_unit[]"]');
+    const miscUnits = document.querySelectorAll('select[name="misc_unit_type[]"]');
+    const miscPrices = document.querySelectorAll('input[name="misc_price_per_unit[]"]');
+    const miscUsed = document.querySelectorAll('input[name="misc_units_used[]"]');
     
-    for (let i = 0; i < medicineItems.length; i++) {
-        if (medicineItems[i].value) {
-            if (selectedMedicines.has(medicineItems[i].value)) {
-                alert('Please do not select the same medicine multiple times.');
-                return;
-            }
-            selectedMedicines.add(medicineItems[i].value);
-            
-            // Check quantity only if medicine is selected
-            if (!medicineQuantities[i].value || parseFloat(medicineQuantities[i].value) < 0) {
-                alert('Please enter valid quantities for all selected medicine items.');
-                return;
-            }
+    for (let i = 0; i < miscNames.length; i++) {
+        if (!miscNames[i].value || !miscQuantities[i].value || !miscUnits[i].value || 
+            !miscPrices[i].value || !miscUsed[i].value) {
+            alert('Please fill in all fields for miscellaneous items.');
+            return;
         }
-    }
-    
-    // Validate health materials if added
-    const healthItems = document.querySelectorAll('select[name="health_material_id[]"]');
-    const healthQuantities = document.querySelectorAll('input[name="health_material_quantity[]"]');
-    const selectedHealthMaterials = new Set();
-    
-    for (let i = 0; i < healthItems.length; i++) {
-        if (healthItems[i].value) {
-            if (selectedHealthMaterials.has(healthItems[i].value)) {
-                alert('Please do not select the same health material multiple times.');
-                return;
-            }
-            selectedHealthMaterials.add(healthItems[i].value);
-            
-            // Check quantity only if health material is selected
-            if (!healthQuantities[i].value || parseFloat(healthQuantities[i].value) < 0) {
-                alert('Please enter valid quantities for all selected health material items.');
-                return;
-            }
-        }
-    }
-    
-    // Validate vaccines if added
-    const vaccineItems = document.querySelectorAll('select[name="vaccine_id[]"]');
-    const vaccineDoses = document.querySelectorAll('select[name="vaccine_dose[]"]');
-    const vaccineQuantities = document.querySelectorAll('input[name="vaccine_quantity[]"]');
-    const selectedVaccines = new Set();
-    
-    for (let i = 0; i < vaccineItems.length; i++) {
-        if (vaccineItems[i].value) {
-            const vaccineKey = `${vaccineItems[i].value}-${vaccineDoses[i].value}`;
-            if (selectedVaccines.has(vaccineKey)) {
-                alert('Please do not select the same vaccine and dose combination multiple times.');
-                return;
-            }
-            if (!vaccineDoses[i].value) {
-                alert('Please select a dose number for all vaccines.');
-                return;
-            }
-            selectedVaccines.add(vaccineKey);
-            
-            // Check quantity only if vaccine is selected
-            if (!vaccineQuantities[i].value || parseFloat(vaccineQuantities[i].value) < 0) {
-                alert('Please enter valid quantities for all selected vaccines.');
-                return;
-            }
-        } else if (vaccineDoses[i].value) {
-            alert('Please select a vaccine when specifying a dose.');
+        
+        if (parseFloat(miscQuantities[i].value) <= 0 || parseFloat(miscPrices[i].value) <= 0 || 
+            parseFloat(miscUsed[i].value) <= 0) {
+            alert('Please enter valid quantities and prices for miscellaneous items.');
             return;
         }
     }
     
-    // If all validations pass, submit the form
+    // If everything passes, submit the form
     this.submit();
 });
+
+// Function to load scheduled dates
+function loadScheduledDates() {
+    fetch('/api/scheduled-dates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                scheduledDates = new Set(data.dates);
+                updateDatePicker();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scheduled dates:', error);
+        });
+}
+
+// Function to load missing update dates
+function loadMissingUpdateDates() {
+    const batchStartDate = new Date('{{ batch.created_at.strftime("%Y-%m-%d") }}');
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);  // End of today
+    
+    // Clear existing missing dates
+    missingUpdateDates.clear();
+    
+    // Get all dates between batch start and today
+    for (let d = new Date(batchStartDate); d <= today; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        missingUpdateDates.add(dateStr);
+    }
+    
+    // Remove dates that have updates
+    {% for update in batch.updates %}
+        missingUpdateDates.delete('{{ update.date.strftime("%Y-%m-%d") }}');
+    {% endfor %}
+    
+    // Update the date picker with the new indicators
+    updateDatePicker();
+}
+
+// Function to update date picker with indicators
+function updateDatePicker() {
+    if (!datePicker) return;
+
+    // Remove existing indicators
+    document.querySelectorAll('.flatpickr-day.has-schedule, .flatpickr-day.missing-update').forEach(day => {
+        day.classList.remove('has-schedule', 'missing-update');
+    });
+
+    // Add indicators for dates with schedules
+    scheduledDates.forEach(date => {
+        const formattedDate = new Date(date);
+        const dayElement = document.querySelector(
+            `.flatpickr-day[aria-label="${formattedDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            })}"]`
+        );
+        if (dayElement) {
+            dayElement.classList.add('has-schedule');
+        }
+    });
+
+    // Add indicators for missing update dates
+    missingUpdateDates.forEach(date => {
+        const formattedDate = new Date(date);
+        const dayElement = document.querySelector(
+            `.flatpickr-day[aria-label="${formattedDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            })}"]`
+        );
+        if (dayElement) {
+            dayElement.classList.add('missing-update');
+        }
+    });
+
+    // Mark batch start date
+    const batchStartDate = new Date('{{ batch.created_at.strftime("%Y-%m-%d") }}');
+    const startDayElement = document.querySelector(
+        `.flatpickr-day[aria-label="${batchStartDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        })}"]`
+    );
+    if (startDayElement) {
+        startDayElement.classList.add('batch-start');
+    }
+}
 </script>
-{% endblock %} 
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    // Initialize Flatpickr for the date input
+    flatpickr("#date", {
+        dateFormat: "Y-m-d",
+        // maxDate: "today",
+        onChange: function(selectedDates, dateStr) {
+            // Update the URL with the new date
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('date', dateStr);
+            window.location.href = currentUrl.toString();
+        }
+    });
+</script>
+{% endblock %}
