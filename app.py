@@ -1437,12 +1437,8 @@ def update_batch(batch_id):
                                     elif item_type == 'vaccine':
                                         schedule = VaccineSchedule.query.get(item_id)
                                         item = schedule.vaccine if schedule else None
-                                        item.unit_type = 'ml'
-
-                                    # if item.unit_type:
-                                    #     unit_type = item.unit_type
-                                    # else:
-                                    #     unit_type = 'ml'
+                                        if item:
+                                            item.unit_type = 'ml'
                                     
                                     if schedule and item:
                                         # Create batch update item with current price and schedule ID
@@ -1760,18 +1756,18 @@ def edit_batch_update(batch_id, date):
         
         # Get all scheduled items
         medicine_schedules = MedicineSchedule.query.filter(
-            MedicineSchedule.schedule_date == update_date,
-            MedicineSchedule.batches.contains(batch)
+            MedicineSchedule.schedule_date <= update_date,
+            MedicineSchedule.batches.contains(batch),
         ).all()
         
         health_material_schedules = HealthMaterialSchedule.query.filter(
-            HealthMaterialSchedule.scheduled_date == update_date,
-            HealthMaterialSchedule.batches.contains(batch)
+            HealthMaterialSchedule.scheduled_date <= update_date,
+            HealthMaterialSchedule.batches.contains(batch),
         ).all()
         
         vaccine_schedules = VaccineSchedule.query.filter(
-            VaccineSchedule.scheduled_date == update_date,
-            VaccineSchedule.batches.contains(batch)
+            VaccineSchedule.scheduled_date <= update_date,
+            VaccineSchedule.batches.contains(batch),
         ).all()
         
         # Get selected schedules
@@ -1861,16 +1857,18 @@ def edit_batch_update(batch_id, date):
                     if feed_id and quantity and float(quantity) > 0:
                         feed = Feed.query.get(int(feed_id))
                         if feed:
-                            db.session.execute(
-                                batch_update_feeds.insert().values(
-                                    batch_update_id=update.id,
-                                    feed_id=feed.id,
-                                    quantity=float(quantity),
-                                    quantity_per_unit_at_time=feed.weight,  # Store the weight per unit at time of update
-                                    price_at_time=feed.price,
-                                    total_cost=float(quantity) * feed.price
-                                )
+                            # Create BatchUpdateItem for feed instead of using the relationship
+                            stmt = batch_update_feeds.insert().values(
+                                batch_update_id=update.id,
+                                feed_id=feed_id,
+                                quantity=float(quantity),
+                                quantity_per_unit_at_time=feed.weight,
+                                price_at_time=feed.price,
+                                total_cost=float(quantity) * feed.price
                             )
+                            db.session.execute(stmt)
+                # Update batch feed stock
+                batch.feed_stock -= float(quantity)
 
                 # Process miscellaneous items
                 misc_names = request.form.getlist('misc_name[]')
@@ -1882,7 +1880,7 @@ def edit_batch_update(batch_id, date):
                 for name, qty_per_unit, unit, price, used in zip(misc_names, misc_quantities, misc_units, misc_prices, misc_used):
                     if name and qty_per_unit and unit and price and used:
                         misc_item = MiscellaneousItem(
-                                    batch_update_id=update.id,
+                            batch_update_id=update.id,
                             name=name,
                             quantity_per_unit=float(qty_per_unit),
                             unit_type=unit,
@@ -1935,7 +1933,7 @@ def edit_batch_update(batch_id, date):
                                             if item:
                                                 # Create batch update item with current price
                                                 update_item = BatchUpdateItem(
-                                    batch_update_id=update.id,
+                                                    batch_update_id=update.id,
                                                     item_id=item_id,
                                                     item_type=item_type,
                                                     quantity=quantity,
@@ -1947,7 +1945,7 @@ def edit_batch_update(batch_id, date):
                                                     dose_number=schedule.dose_number if item_type == 'vaccine' else None
                                                 )
                                                 db.session.add(update_item)
-                                schedule.completed = True
+                                                schedule.completed = True
                         except (ValueError, IndexError) as e:
                             print(f"Error processing scheduled item {key}: {str(e)}")
                             continue
@@ -2650,22 +2648,89 @@ def manager_harvest_batch(batch_id):
 @login_required
 def manager_schedules():
     try:
+        # Get selected date from query parameters, default to today
+        selected_date_str = request.args.get('date')
+        if selected_date_str:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        else:
+            selected_date = datetime.now().date()
+
         # Get current date and time
         today = datetime.now().date()
         end_date = today + timedelta(days=30)
         
         # Get schedules based on user type
         if session.get('user_type') == 'assistant_manager':
+            # Get batches assigned to this manager
+            manager_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
+            batch_ids = [batch.id for batch in manager_batches]
+            
+            # Health Material Schedules
+            health_material_schedules = HealthMaterialSchedule.query.join(
+                health_material_schedule_batches
+            ).filter(
+                health_material_schedule_batches.c.batch_id.in_(batch_ids),
+                HealthMaterialSchedule.scheduled_date == selected_date
+            ).order_by(HealthMaterialSchedule.scheduled_date).all()
+            
+            # Medical Schedules
+            medical_schedules = MedicineSchedule.query.join(
+                medicine_schedule_batches
+            ).filter(
+                medicine_schedule_batches.c.batch_id.in_(batch_ids),
+                MedicineSchedule.schedule_date == selected_date
+            ).order_by(MedicineSchedule.schedule_date).all()
+            
+            # Vaccine Schedules
+            vaccine_schedules = VaccineSchedule.query.join(
+                vaccine_schedule_batches
+            ).filter(
+                vaccine_schedule_batches.c.batch_id.in_(batch_ids),
+                VaccineSchedule.scheduled_date == selected_date
+            ).order_by(VaccineSchedule.scheduled_date).all()
+            
+            # Get all scheduled dates for the calendar
+            scheduled_dates = set()
+            
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
+                health_material_schedule_batches
+            ).filter(
+                health_material_schedule_batches.c.batch_id.in_(batch_ids),
+                HealthMaterialSchedule.scheduled_date >= today,
+                HealthMaterialSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).join(
+                medicine_schedule_batches
+            ).filter(
+                medicine_schedule_batches.c.batch_id.in_(batch_ids),
+                MedicineSchedule.schedule_date >= today,
+                MedicineSchedule.schedule_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).join(
+                vaccine_schedule_batches
+            ).filter(
+                vaccine_schedule_batches.c.batch_id.in_(batch_ids),
+                VaccineSchedule.scheduled_date >= today,
+                VaccineSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
+            
+        elif session.get('user_type') == 'senior_manager':
             # Health Material Schedules
             health_material_schedules = HealthMaterialSchedule.query.join(
                 health_material_schedule_batches
             ).join(
                 Batch
             ).filter(
-                Batch.manager_id == session.get('user_id'),
                 Batch.status.in_(['ongoing', 'closing']),
-                HealthMaterialSchedule.scheduled_date >= today,
-                HealthMaterialSchedule.scheduled_date <= end_date
+                HealthMaterialSchedule.scheduled_date == selected_date
             ).order_by(HealthMaterialSchedule.scheduled_date).all()
             
             # Medical Schedules
@@ -2674,10 +2739,8 @@ def manager_schedules():
             ).join(
                 Batch
             ).filter(
-                Batch.manager_id == session.get('user_id'),
                 Batch.status.in_(['ongoing', 'closing']),
-                MedicineSchedule.schedule_date >= today,
-                MedicineSchedule.schedule_date <= end_date
+                MedicineSchedule.schedule_date == selected_date
             ).order_by(MedicineSchedule.schedule_date).all()
             
             # Vaccine Schedules
@@ -2686,117 +2749,98 @@ def manager_schedules():
             ).join(
                 Batch
             ).filter(
-                Batch.manager_id == session.get('user_id'),
                 Batch.status.in_(['ongoing', 'closing']),
-                VaccineSchedule.scheduled_date >= today,
-                VaccineSchedule.scheduled_date <= end_date
-            ).order_by(VaccineSchedule.scheduled_date).all()
-        else:
-            # Senior managers see all schedules
-            health_material_schedules = HealthMaterialSchedule.query.join(
-                health_material_schedule_batches
-            ).join(
-                Batch
-            ).filter(
-                Batch.status.in_(['ongoing', 'closing']),
-                HealthMaterialSchedule.scheduled_date >= today,
-                HealthMaterialSchedule.scheduled_date <= end_date
-            ).order_by(HealthMaterialSchedule.scheduled_date).all()
-            
-            medical_schedules = MedicineSchedule.query.join(
-                medicine_schedule_batches
-            ).join(
-                Batch
-            ).filter(
-                Batch.status.in_(['ongoing', 'closing']),
-                MedicineSchedule.schedule_date >= today,
-                MedicineSchedule.schedule_date <= end_date
-            ).order_by(MedicineSchedule.schedule_date).all()
-            
-            vaccine_schedules = VaccineSchedule.query.join(
-                vaccine_schedule_batches
-            ).join(
-                Batch
-            ).filter(
-                Batch.status.in_(['ongoing', 'closing']),
-                VaccineSchedule.scheduled_date >= today,
-                VaccineSchedule.scheduled_date <= end_date
+                VaccineSchedule.scheduled_date == selected_date
             ).order_by(VaccineSchedule.scheduled_date).all()
         
-        # Get recent activities (last 5 activities)
-        recent_activities = []
+            # Get all scheduled dates for the calendar
+            scheduled_dates = set()
         
-        # Add health material activities
-        recent_health = HealthMaterialSchedule.query.join(
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
             health_material_schedule_batches
         ).join(
             Batch
         ).filter(
-            Batch.status.in_(['ongoing', 'closing'])
-        ).order_by(HealthMaterialSchedule.created_at.desc()).limit(2).all()
-        
-        for schedule in recent_health:
-            # Get the first batch for display
-            batch = schedule.batches[0] if schedule.batches else None
-            if batch:
-                recent_activities.append({
-                    'icon': 'fa-spray-can',
-                    'title': 'Health Material Scheduled',
-                    'description': f'{schedule.health_material.name} for Batch {batch.batch_number}',
-                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
-                })
-        
-        # Add medical activities
-        recent_medical = MedicineSchedule.query.join(
+                Batch.status.in_(['ongoing', 'closing']),
+                HealthMaterialSchedule.scheduled_date >= today,
+                HealthMaterialSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).join(
             medicine_schedule_batches
         ).join(
             Batch
         ).filter(
-            Batch.status.in_(['ongoing', 'closing'])
-        ).order_by(MedicineSchedule.created_at.desc()).limit(2).all()
-        
-        for schedule in recent_medical:
-            # Get the first batch for display
-            batch = schedule.batches[0] if schedule.batches else None
-            if batch:
-                recent_activities.append({
-                    'icon': 'fa-pills',
-                    'title': 'Medicine Scheduled',
-                    'description': f'{schedule.medicine.name} for Batch {batch.batch_number}',
-                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
-                })
-        
-        # Add vaccine activities
-        recent_vaccine = VaccineSchedule.query.join(
+                Batch.status.in_(['ongoing', 'closing']),
+                MedicineSchedule.schedule_date >= today,
+                MedicineSchedule.schedule_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).join(
             vaccine_schedule_batches
         ).join(
             Batch
         ).filter(
-            Batch.status.in_(['ongoing', 'closing'])
-        ).order_by(VaccineSchedule.created_at.desc()).limit(2).all()
-        
-        for schedule in recent_vaccine:
-            # Get the first batch for display
-            batch = schedule.batches[0] if schedule.batches else None
-            if batch:
-                recent_activities.append({
-                    'icon': 'fa-syringe',
-                    'title': 'Vaccine Scheduled',
-                    'description': f'{schedule.vaccine.name} (Dose {schedule.dose_number}) for Batch {batch.batch_number}',
-                    'time': schedule.created_at.strftime('%Y-%m-%d %H:%M')
-                })
-        
-        # Sort activities by time
-        recent_activities.sort(key=lambda x: x['time'], reverse=True)
+                Batch.status.in_(['ongoing', 'closing']),
+                VaccineSchedule.scheduled_date >= today,
+                VaccineSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
+        else:
+            # Admin sees all schedules
+            health_material_schedules = HealthMaterialSchedule.query.filter(
+                HealthMaterialSchedule.scheduled_date == selected_date
+            ).order_by(HealthMaterialSchedule.scheduled_date).all()
+            
+            medical_schedules = MedicineSchedule.query.filter(
+                MedicineSchedule.schedule_date == selected_date
+            ).order_by(MedicineSchedule.schedule_date).all()
+            
+            vaccine_schedules = VaccineSchedule.query.filter(
+                VaccineSchedule.scheduled_date == selected_date
+            ).order_by(VaccineSchedule.scheduled_date).all()
+            
+            # Get all scheduled dates for the calendar
+            scheduled_dates = set()
+            
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).filter(
+                HealthMaterialSchedule.scheduled_date >= today,
+                HealthMaterialSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).filter(
+                MedicineSchedule.schedule_date >= today,
+                MedicineSchedule.schedule_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).filter(
+                VaccineSchedule.scheduled_date >= today,
+                VaccineSchedule.scheduled_date <= end_date
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
+
+        # Get recent activities
+        recent_activities = Activity.query.order_by(Activity.timestamp.desc()).limit(5).all()
         
         return render_template('manager/schedules.html',
                              health_material_schedules=health_material_schedules,
                              medical_schedules=medical_schedules,
                              vaccine_schedules=vaccine_schedules,
                              recent_activities=recent_activities,
-                             today=today)
+                             selected_date=selected_date,
+                             scheduled_dates=list(scheduled_dates))
     except Exception as e:
-        flash('Error loading schedules', 'error')
+        flash(str(e), 'error')
         return redirect(url_for('manager_dashboard'))
 
 @app.route('/manager/schedule/<int:schedule_id>/complete', methods=['POST'])
@@ -3169,201 +3213,242 @@ def manager_view_batch(batch_id):
 @app.route('/manager/batches/<int:batch_id>/update', methods=['GET', 'POST'])
 @login_required
 def manager_update_batch(batch_id):
-    if session.get('user_type') not in ['assistant_manager', 'senior_manager']:
-        flash('Access denied. Managers only.', 'error')
-        return redirect(url_for('dashboard'))
-    
     batch = Batch.query.get_or_404(batch_id)
     
-    # Check if assistant manager has access to this batch
+    # Check if user has permission to update this batch
     if session.get('user_type') == 'assistant_manager' and batch.manager_id != session.get('user_id'):
-        flash('Access denied. You can only update batches assigned to you.', 'error')
+        flash('You do not have permission to update this batch.', 'error')
         return redirect(url_for('manager_batches'))
     
+    # Check if update already exists for today
     today = datetime.utcnow().date()
-    
-    # Get all available feeds, medicines, health materials, and vaccines
-    feeds = Feed.query.all()
-    medicines = Medicine.query.all()
-    health_materials = HealthMaterial.query.all()
-    vaccines = Vaccine.query.all()
-    
-    # Check if an update already exists for today
-    existing_update = BatchUpdate.query.filter(
-        BatchUpdate.batch_id == batch_id,
-        db.func.date(BatchUpdate.date) == today
-    ).first()
+    existing_update = BatchUpdate.query.filter_by(batch_id=batch_id, date=today).first()
     
     if request.method == 'POST':
-        if existing_update:
-            flash('An update for this batch has already been submitted today.', 'error')
-            return redirect(url_for('manager_batches'))
-            
         try:
-            # Get basic form data
-            mortality_count = int(request.form.get('mortality_count', 0))
-            feed_used = float(request.form.get('feed_used', 0))
-            avg_weight = float(request.form.get('avg_weight', 0))
-            notes = request.form.get('notes', '')
 
-            # Calculate total feed allocation from feed quantities
-            feed_data = request.form.getlist('feed_id[]')
-            feed_quantities = request.form.getlist('feed_quantity[]')
-            total_feed_allocation = 0
-            for quantity in feed_quantities:
-                if quantity and float(quantity) > 0:
-                    total_feed_allocation += float(quantity)
+            mortality_count = int(request.form.get('mortality_count', 0) or 0)
+            feed_used = float(request.form.get('feed_used', 0) or 0)
+            avg_weight = float(request.form.get('avg_weight', 0) or 0)
+            remarks = request.form.get('remarks', '')
+            remarks_priority = request.form.get('remarks_priority', 'low')
 
             # Create new batch update
-            update = BatchUpdate(
-                batch_id=batch.id,
+            batch_update = BatchUpdate(
+                batch_id=batch_id,
                 date=today,
-                mortality_count=mortality_count,
-                feed_used=feed_used,
-                avg_weight=avg_weight,
-                notes=notes
+                mortality_count=int(request.form.get('mortality_count', 0)),
+                feed_used=float(request.form.get('feed_used', 0)),
+                avg_weight=float(request.form.get('avg_weight', 0)),
+                remarks=request.form.get('remarks'),
+                remarks_priority=request.form.get('remarks_priority', 'low')
             )
+            db.session.add(batch_update)
+            db.session.flush()  # Get the batch_update.id
 
-            # Update batch's available birds and total mortality
-            batch.available_birds -= mortality_count
+            # Update batch statistics
             batch.total_mortality += mortality_count
-            batch.check_and_update_status()
-            
-            # Update feed stock and feed usage
-            batch.feed_stock = (batch.feed_stock - feed_used) + total_feed_allocation
+            batch.available_birds = batch.total_birds - batch.total_mortality
             batch.feed_usage += feed_used
-
-            # First save the batch update to get an ID
-            db.session.add(update)
-            db.session.flush()
-
-            # Process feeds
-            for feed_id, quantity in zip(feed_data, feed_quantities):
-                if feed_id and float(quantity) > 0:
-                    feed = Feed.query.get(int(feed_id))
+            total_quantity = 0
+            
+            # Process feed items
+            feed_ids = request.form.getlist('feed_id[]')
+            feed_quantities = request.form.getlist('feed_quantity[]')
+            
+            for feed_id, quantity in zip(feed_ids, feed_quantities):
+                if feed_id and quantity and float(quantity) > 0:
+                    feed = Feed.query.get(feed_id)
                     if feed:
-                        db.session.execute(
-                            batch_update_feeds.insert().values(
-                                batch_update_id=update.id,
-                                feed_id=feed.id,
-                                quantity=float(quantity),
+                        quantity_float = float(quantity)
+                        total_quantity += quantity_float
+                        price_at_time = feed.price
+                        total_cost = quantity_float * price_at_time
+                        # Insert directly into the association table with quantity and price
+                        stmt = batch_update_feeds.insert().values(
+                            batch_update_id=batch_update.id,
+                            feed_id=feed_id,
+                            quantity=quantity_float,
                                 quantity_per_unit_at_time=feed.weight,  # Store the weight per unit at time of update
-                                price_at_time=feed.price,
-                                total_cost=float(quantity) * feed.price
-                            )
+                            price_at_time=price_at_time,
+                            total_cost=total_cost
                         )
-
-            # Process medicines and check schedules
-            medicine_data = request.form.getlist('medicine_id[]')
-            medicine_quantities = request.form.getlist('medicine_quantity[]')
-            for medicine_id, quantity in zip(medicine_data, medicine_quantities):
-                if medicine_id and float(quantity) > 0:
-                    medicine_id = int(medicine_id)
-                    quantity = float(quantity)
-                    
-                    # Add to batch update
-                    db.session.execute(
-                        batch_update_medicines.insert().values(
-                            batch_update_id=update.id,
-                            medicine_id=medicine_id,
-                            quantity=quantity
-                        )
+                        db.session.execute(stmt)
+            
+            batch.feed_stock = max(0, batch.feed_stock + total_quantity - feed_used)  # Ensure feed stock doesn't go negative
+            
+            # Process miscellaneous items
+            misc_names = request.form.getlist('misc_name[]')
+            misc_quantities = request.form.getlist('misc_quantity_per_unit[]')
+            misc_units = request.form.getlist('misc_unit_type[]')
+            misc_prices = request.form.getlist('misc_price_per_unit[]')
+            misc_used = request.form.getlist('misc_units_used[]')
+            
+            for name, qty_per_unit, unit, price, used in zip(misc_names, misc_quantities, misc_units, misc_prices, misc_used):
+                if name and qty_per_unit and unit and price and used:
+                    misc_item = MiscellaneousItem(
+                        batch_update_id=batch_update.id,
+                        name=name,
+                        quantity_per_unit=float(qty_per_unit),
+                        unit_type=unit,
+                        price_per_unit=float(price),
+                        units_used=float(used),
+                        total_cost=float(price) * float(used)
                     )
-                    
-                    # Check and complete any matching medicine schedules
-                    schedules = MedicineSchedule.query.join(
-                        medicine_schedule_batches
-                    ).filter(
-                        medicine_schedule_batches.c.batch_id == batch.id,
-                        MedicineSchedule.medicine_id == medicine_id,
-                        MedicineSchedule.schedule_date == today,
-                        MedicineSchedule.completed == False
-                    ).all()
-                    
-                    for schedule in schedules:
-                        schedule.completed = True
+                    db.session.add(misc_item)
+            
+            # Process scheduled items
+            for key, value in request.form.items():
+                if key.startswith('scheduled_items['):
+                    try:
+                        # Extract type, id, and field from the key
+                        # Format: scheduled_items[type][id][field]
+                        key_parts = key.replace('scheduled_items[', '').replace(']', '').split('[')
+                        if len(key_parts) == 3:
+                            item_type, item_id, field = key_parts
+                            item_id = int(item_id)
+                            
+                            # Only process selected items with quantity
+                            if field == 'selected' and value == '1':
+                                quantity_key = f'scheduled_items[{item_type}][{item_id}][quantity]'
+                                quantity = float(request.form.get(quantity_key, 0) or 0)
+                                
+                                if quantity > 0:
+                                    # Get the appropriate schedule and item
+                                    schedule = None
+                                    item = None
+                                    if item_type == 'medicine':
+                                        schedule = MedicineSchedule.query.get(item_id)
+                                        item = schedule.medicine if schedule else None
+                                    elif item_type == 'health_material':
+                                        schedule = HealthMaterialSchedule.query.get(item_id)
+                                        item = schedule.health_material if schedule else None
+                                    elif item_type == 'vaccine':
+                                        schedule = VaccineSchedule.query.get(item_id)
+                                        item = schedule.vaccine if schedule else None
+                                        item.unit_type = 'ml'
 
-            # Process health materials and check schedules
-            health_material_data = request.form.getlist('health_material_id[]')
-            health_material_quantities = request.form.getlist('health_material_quantity[]')
-            for health_material_id, quantity in zip(health_material_data, health_material_quantities):
-                if health_material_id and float(quantity) > 0:
-                    health_material_id = int(health_material_id)
-                    quantity = float(quantity)
-                    
-                    # Add to batch update
-                    db.session.execute(
-                        batch_update_health_materials.insert().values(
-                            batch_update_id=update.id,
-                            health_material_id=health_material_id,
-                            quantity=quantity
-                        )
-                    )
-                    
-                    # Check and complete any matching health material schedules
-                    schedules = HealthMaterialSchedule.query.join(
-                        health_material_schedule_batches
-                    ).filter(
-                        health_material_schedule_batches.c.batch_id == batch.id,
-                        HealthMaterialSchedule.health_material_id == health_material_id,
-                        HealthMaterialSchedule.scheduled_date == today,
-                        HealthMaterialSchedule.completed == False
-                    ).all()
-                    
-                    for schedule in schedules:
-                        schedule.completed = True
+                                    # if item.unit_type:
+                                    #     unit_type = item.unit_type
+                                    # else:
+                                    #     unit_type = 'ml'
+                                    
+                                    if schedule and item:
+                                        # Create batch update item with current price and schedule ID
+                                        update_item = BatchUpdateItem(
+                                            batch_update_id=batch_update.id,
+                                            item_id=item.id,
+                                            item_type=item_type,
+                                            quantity=quantity,
+                                            quantity_per_unit_at_time=item.quantity_per_unit,  # Use item's quantity_per_unit
+                                            unit_type=item.unit_type,  # Add unit_type from item
+                                            price_at_time=item.price,
+                                            total_cost=item.price * quantity,
+                                            schedule_id=schedule.id,
+                                            dose_number=schedule.dose_number if item_type == 'vaccine' else None
+                                        )
+                                        db.session.add(update_item)
+                                        
+                                        # Mark schedule as completed
+                                        schedule.completed = True
 
-            # Process vaccines and check schedules
-            vaccine_ids = request.form.getlist('vaccine_id[]')
-            vaccine_doses = request.form.getlist('vaccine_dose[]')
-            vaccine_quantities = request.form.getlist('vaccine_quantity[]')
-            if vaccine_ids and vaccine_doses and vaccine_quantities:
-                for vaccine_id, dose, quantity in zip(vaccine_ids, vaccine_doses, vaccine_quantities):
-                    if vaccine_id and dose and float(quantity) > 0:
-                        vaccine_id = int(vaccine_id)
-                        dose = int(dose)
-                        quantity = float(quantity)
+                                    # Add batch to schedule's batches if not already present
+                                    if batch not in schedule.batches:
+                                        schedule.batches.append(batch)
+                                    else:
+                                        print(f"Warning: Could not find schedule or item for {item_type} with ID {item_id}")
+                    except (ValueError, IndexError) as e:
+                        print(f"Error processing scheduled item {key}: {str(e)}")
+                        continue
 
-                        # Add to batch update
-                        db.session.execute(
-                            batch_update_vaccines.insert().values(
-                                batch_update_id=update.id,
-                                vaccine_id=vaccine_id,
-                                dose_number=dose,
-                                quantity=quantity
-                            )
-                        )
-                        
-                        # Check and complete any matching vaccine schedules
-                        schedules = VaccineSchedule.query.join(
-                            vaccine_schedule_batches
-                        ).filter(
-                            vaccine_schedule_batches.c.batch_id == batch.id,
-                            VaccineSchedule.vaccine_id == vaccine_id,
-                            VaccineSchedule.dose_number == dose,
-                            VaccineSchedule.scheduled_date == today,
-                            VaccineSchedule.completed == False
-                        ).all()
-                        
-                        for schedule in schedules:
-                            schedule.completed = True
+            # Process other items (medicines, health materials, vaccines)
+            for key, value in request.form.items():
+                if key.startswith('other_items['):
+                    try:
+                        # Extract type, index, and field from the key
+                        # Format: other_items[type][index][field]
+                        key_parts = key.replace('other_items[', '').replace(']', '').split('[')
+                        if len(key_parts) == 3:
+                            item_type, index, field = key_parts
+                            
+                            if field == 'id' and value:
+                                item_id = int(value)
+                                quantity_key = f'other_items[{item_type}][{index}][quantity]'
+                                quantity = float(request.form.get(quantity_key, 0) or 0)
+                                
+                                if quantity > 0:
+                                    # Get the appropriate item
+                                    item = None
+                                    if item_type == 'medicine':
+                                        item = Medicine.query.get(item_id)
+                                    elif item_type == 'health_material':
+                                        item = HealthMaterial.query.get(item_id)
+                                    elif item_type == 'vaccine':
+                                        item = Vaccine.query.get(item_id)
+                                        dose_number_key = f'other_items[{item_type}][{index}][dose_number]'
+                                        dose_number = int(request.form.get(dose_number_key, 1) or 1)
+                                        item.unit_type = 'ml'
+                                    
+                                    if item:
+                                        # Create batch update item without schedule ID
+                                        update_item = BatchUpdateItem(
+                                            batch_update_id=batch_update.id,
+                                            item_id=item.id,
+                                            item_type=item_type,
+                                            quantity=quantity,
+                                            quantity_per_unit_at_time=item.quantity_per_unit,  # Use item's quantity_per_unit
+                                            unit_type=item.unit_type,  # Add unit_type from item
+                                            price_at_time=item.price,
+                                            total_cost=item.price * quantity,
+                                            schedule_id=None,  # No schedule ID for other items
+                                            dose_number=dose_number if item_type == 'vaccine' else None
+                                        )
+                                        db.session.add(update_item)
+                                    else:
+                                        print(f"Warning: Could not find item for {item_type} with ID {item_id}")
+                    except (ValueError, IndexError) as e:
+                        print(f"Error processing other item {key}: {str(e)}")
+                        continue
 
-            # Now commit everything
             db.session.commit()
-            flash('Batch update saved successfully!', 'success')
+            flash('Batch update recorded successfully!', 'success')
             return redirect(url_for('manager_view_batch', batch_id=batch.id))
+            
         except Exception as e:
             db.session.rollback()
-            flash('Error saving batch update. Please try again.', 'error')
-            print(f"Error: {str(e)}")
+            flash(f'Error recording batch update: {str(e)}', 'error')
+            return redirect(url_for('update_batch', batch_id=batch.id))
+    
+    # Get scheduled items for today
+    medicine_schedules = MedicineSchedule.query.filter(
+        MedicineSchedule.batches.contains(batch),
+        MedicineSchedule.schedule_date <= today,
+        MedicineSchedule.completed == False
+    ).all()
+    
+    health_material_schedules = HealthMaterialSchedule.query.filter(
+        HealthMaterialSchedule.batches.contains(batch),
+        HealthMaterialSchedule.scheduled_date <= today,
+        HealthMaterialSchedule.completed == False
+    ).all()
+    
+    vaccine_schedules = VaccineSchedule.query.filter(
+        VaccineSchedule.batches.contains(batch),
+        VaccineSchedule.scheduled_date <= today,
+        VaccineSchedule.completed == False
+    ).all()
 
     return render_template('manager/update_batch.html', 
                          batch=batch, 
                          existing_update=existing_update,
-                         feeds=feeds,
-                         medicines=medicines,
-                         health_materials=health_materials,
-                         vaccines=vaccines)
+                         feeds=Feed.query.all(),
+                         medicines=Medicine.query.all(),
+                         health_materials=HealthMaterial.query.all(),
+                         vaccines=Vaccine.query.all(),
+                         medicine_schedules=medicine_schedules,
+                         health_material_schedules=health_material_schedules,
+                         vaccine_schedules=vaccine_schedules,
+                         today=today)
 
 @app.route('/batches/<int:batch_id>/harvest')
 @login_required
@@ -3833,25 +3918,97 @@ def save_fcr_rates():
 @login_required
 def get_scheduled_dates():
     try:
-        # Get all dates with medicine schedules
-        medicine_dates = db.session.query(MedicineSchedule.schedule_date).distinct().all()
-        # Get all dates with vaccine schedules
-        vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).distinct().all()
-        # Get all dates with health material schedules
-        health_material_dates = db.session.query(HealthMaterialSchedule.scheduled_date).distinct().all()
+        # Get all scheduled dates for the calendar
+        scheduled_dates = set()
         
-        # Combine all dates and remove duplicates
-        all_dates = set()
-        for date in medicine_dates:
-            all_dates.add(date[0].strftime('%Y-%m-%d'))
-        for date in vaccine_dates:
-            all_dates.add(date[0].strftime('%Y-%m-%d'))
-        for date in health_material_dates:
-            all_dates.add(date[0].strftime('%Y-%m-%d'))
+        if session.get('user_type') == 'assistant_manager':
+            # Get batches assigned to this manager
+            manager_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
+            batch_ids = [batch.id for batch in manager_batches]
+            
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
+                health_material_schedule_batches
+            ).filter(
+                health_material_schedule_batches.c.batch_id.in_(batch_ids)
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).join(
+                medicine_schedule_batches
+            ).filter(
+                medicine_schedule_batches.c.batch_id.in_(batch_ids)
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).join(
+                vaccine_schedule_batches
+            ).filter(
+                vaccine_schedule_batches.c.batch_id.in_(batch_ids)
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
+        elif session.get('user_type') == 'senior_manager':
+            # Senior managers see all dates
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
+                health_material_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing'])
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).join(
+                medicine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing'])
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).join(
+                vaccine_schedule_batches
+            ).join(
+                Batch
+            ).filter(
+                Batch.status.in_(['ongoing', 'closing'])
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
+        else:
+            # Senior managers see all dates
+            # Get health material schedule dates
+            health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
+                health_material_schedule_batches
+            ).join(
+                Batch
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in health_dates)
+            
+            # Get medical schedule dates
+            medical_dates = db.session.query(MedicineSchedule.schedule_date).join(
+                medicine_schedule_batches
+            ).join(
+                Batch
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in medical_dates)
+            
+            # Get vaccine schedule dates
+            vaccine_dates = db.session.query(VaccineSchedule.scheduled_date).join(
+                vaccine_schedule_batches
+            ).join(
+                Batch
+            ).all()
+            scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
         
         return jsonify({
             'success': True,
-            'dates': list(all_dates)
+            'dates': list(scheduled_dates)
         })
     except Exception as e:
         return jsonify({

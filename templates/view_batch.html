@@ -1222,6 +1222,7 @@
         <label><i class="fas fa-warehouse"></i> Shed Distribution</label>
         <div class="shed-capacities">
             {% for shed_birds in batch.get_shed_birds() %}
+            {% if shed_birds > 0 %}
             <div class="shed-capacity">
                 <div class="shed-info">
                     <span class="shed-number">Shed {{ loop.index }}</span>
@@ -1231,6 +1232,7 @@
                     <div class="capacity-fill" style="width: {{ (shed_birds / batch.farm.get_shed_capacities()[loop.index0] * 100)|round }}%"></div>
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>
@@ -1504,10 +1506,12 @@
                                         </div>
                                     </div>
                                     <div class="item-details">
+                                        {% if item.schedule_id %}
                                         <div class="detail-row">
                                             <label>Dose Number</label>
                                             <span>{{ item.dose_number }}</span>
                                         </div>
+                                        {% endif %}
                                         <div class="detail-row">
                                             <label>Units Used</label>
                                             <span>{{ "%.2f"|format(item.quantity) }} units</span>

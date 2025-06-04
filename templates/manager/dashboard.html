@@ -498,6 +498,178 @@
             flex-direction: column;
             gap: 0.5rem;
         }
+
+        .welcome-text h2 {
+            font-size: 1.5rem;
+        }
+
+        .welcome-text p {
+            font-size: 1rem;
+        }
+
+        .date-box {
+            padding: 0.75rem;
+        }
+
+        .date {
+            font-size: 1.75rem;
+        }
+
+        .month, .year {
+            font-size: 0.85rem;
+        }
+
+        .time {
+            font-size: 1rem;
+        }
+
+        .stat-card {
+            padding: 1.25rem;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.25rem;
+        }
+
+        .stat-number {
+            font-size: 1.25rem;
+        }
+
+        .action-card {
+            padding: 1.25rem;
+        }
+
+        .action-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .content-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .breadcrumb {
+            font-size: 0.85rem;
+        }
+
+        .welcome-text h2 {
+            font-size: 1.25rem;
+        }
+
+        .welcome-text p {
+            font-size: 0.95rem;
+        }
+
+        .date-box {
+            padding: 0.5rem;
+        }
+
+        .date {
+            font-size: 1.5rem;
+        }
+
+        .month, .year {
+            font-size: 0.8rem;
+        }
+
+        .time {
+            font-size: 0.95rem;
+        }
+
+        .section-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+        }
+
+        .stat-info h4 {
+            font-size: 0.85rem;
+        }
+
+        .stat-number {
+            font-size: 1.1rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+        }
+
+        .action-card {
+            padding: 1rem;
+        }
+
+        .action-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+        }
+
+        .action-content h4 {
+            font-size: 0.95rem;
+        }
+
+        .action-content p {
+            font-size: 0.85rem;
+        }
+
+        .activity-item {
+            padding: 0.75rem;
+        }
+
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+        }
+
+        .activity-header h4 {
+            font-size: 0.95rem;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+        }
+
+        .activity-details p {
+            font-size: 0.85rem;
+        }
+    }
+
+    /* Improve touch targets */
+    @media (max-width: 768px) {
+        .action-card {
+            min-height: 44px;
+        }
+
+        .stat-card {
+            cursor: pointer;
+        }
+
+        .stat-card:active {
+            transform: scale(0.98);
+        }
+
+        .activity-item {
+            cursor: pointer;
+        }
+
+        .activity-item:active {
+            background-color: #f0f4f8;
+        }
     }
 </style>
 {% endblock %}

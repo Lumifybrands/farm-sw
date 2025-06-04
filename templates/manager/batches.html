@@ -310,6 +310,93 @@
             width: 100%;
             justify-content: center;
         }
+
+        .batch-details {
+            gap: 8px;
+        }
+
+        .detail-item {
+            font-size: 0.95rem;
+        }
+
+        .detail-item i {
+            font-size: 1rem;
+        }
+
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 4px 8px;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .batches-container {
+            padding: 10px;
+        }
+
+        .batch-card {
+            padding: 15px;
+        }
+
+        .batch-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .detail-item {
+            font-size: 0.9rem;
+        }
+
+        .detail-item i {
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 3px 6px;
+        }
+
+        .btn {
+            padding: 10px;
+            font-size: 0.95rem;
+        }
+
+        .user-type-message {
+            padding: 10px 15px;
+            font-size: 0.95rem;
+        }
+
+        .no-batches-message {
+            padding: 30px 15px;
+        }
+
+        .no-batches-message i {
+            font-size: 1.75rem;
+        }
+
+        .no-batches-message p {
+            font-size: 1rem;
+        }
+    }
+
+    /* Improve touch targets */
+    @media (max-width: 768px) {
+        .btn {
+            min-height: 44px;
+        }
+
+        .batch-card {
+            cursor: pointer;
+        }
+
+        .batch-card:active {
+            transform: scale(0.98);
+        }
+
+        .search-bar input {
+            height: 44px;
+            font-size: 16px;
+        }
     }
 </style>
 

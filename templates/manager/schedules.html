@@ -10,9 +10,36 @@
     </div>
 </div>
 
-<div class="schedules-container">
-    
+<div class="date-selector">
+    <input type="text" id="scheduleDate" value="{{ selected_date.strftime('%Y-%m-%d') }}" readonly>
+    <button onclick="setToday()" class="today-btn">
+        <i class="fas fa-calendar-day"></i> Today
+    </button>
+    <button onclick="showPendingSchedules()" class="pending-btn" id="pendingBtn">
+        <i class="fas fa-clock"></i> <span id="pendingCount">No pending</span>
+    </button>
+</div>
 
+<!-- Add Flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Pending Schedules Modal -->
+<div id="pendingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Pending Schedules</h2>
+            <span class="close" onclick="closePendingModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="pendingSchedulesList">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="schedules-container">
     <!-- Health Material Schedules Card -->
     <div class="schedule-card">
         <div class="card-header">
@@ -21,7 +48,7 @@
         <div class="card-content">
             {% if health_material_schedules %}
                 {% for schedule in health_material_schedules %}
-                <div class="schedule-item {% if schedule.scheduled_date == today %}urgent{% elif schedule.scheduled_date < today %}overdue{% elif (schedule.scheduled_date - today).days <= 3 %}upcoming{% endif %}">
+                <div class="schedule-item {% if schedule.scheduled_date == selected_date %}urgent{% elif schedule.scheduled_date < selected_date %}overdue{% elif (schedule.scheduled_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.health_material.name }}</h4>
                         <p>Batches: 
@@ -36,9 +63,9 @@
                             <span class="status-badge completed">Completed</span>
                         {% else %}
                             <span class="status-badge pending">Pending</span>
-                            <button class="complete-btn" onclick="completeSchedule('health-material', {{ schedule.id }})">
+                            <!-- <button class="complete-btn" onclick="completeSchedule('health-material', {{ schedule.id }})">
                                 <i class="fas fa-check"></i>
-                            </button>
+                            </button> -->
                         {% endif %}
                     </div>
                 </div>
@@ -46,7 +73,7 @@
             {% else %}
                 <div class="no-schedules">
                     <i class="fas fa-info-circle"></i>
-                    <p>No health material schedules</p>
+                    <p>No health material schedules for {{ selected_date.strftime('%d-%m-%Y') }}</p>
                 </div>
             {% endif %}
         </div>
@@ -60,7 +87,7 @@
         <div class="card-content">
             {% if medical_schedules %}
                 {% for schedule in medical_schedules %}
-                <div class="schedule-item {% if schedule.schedule_date == today %}urgent{% elif schedule.schedule_date < today %}overdue{% elif (schedule.schedule_date - today).days <= 3 %}upcoming{% endif %}">
+                <div class="schedule-item {% if schedule.schedule_date == selected_date %}urgent{% elif schedule.schedule_date < selected_date %}overdue{% elif (schedule.schedule_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.medicine.name }}</h4>
                         <p>Batches: 
@@ -75,9 +102,9 @@
                             <span class="status-badge completed">Completed</span>
                         {% else %}
                             <span class="status-badge pending">Pending</span>
-                            <button class="complete-btn" onclick="completeSchedule('medicine', {{ schedule.id }})">
+                            <!-- <button class="complete-btn" onclick="completeSchedule('medicine', {{ schedule.id }})">
                                 <i class="fas fa-check"></i>
-                            </button>
+                            </button> -->
                         {% endif %}
                     </div>
                 </div>
@@ -85,7 +112,7 @@
             {% else %}
                 <div class="no-schedules">
                     <i class="fas fa-info-circle"></i>
-                    <p>No medical schedules</p>
+                    <p>No medical schedules for {{ selected_date.strftime('%d-%m-%Y') }}</p>
                 </div>
             {% endif %}
         </div>
@@ -99,7 +126,7 @@
         <div class="card-content">
             {% if vaccine_schedules %}
                 {% for schedule in vaccine_schedules %}
-                <div class="schedule-item {% if schedule.scheduled_date == today %}urgent{% elif schedule.scheduled_date < today %}overdue{% elif (schedule.scheduled_date - today).days <= 3 %}upcoming{% endif %}">
+                <div class="schedule-item {% if schedule.scheduled_date == selected_date %}urgent{% elif schedule.scheduled_date < selected_date %}overdue{% elif (schedule.scheduled_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.vaccine.name }}</h4>
                         <p>Batches: 
@@ -115,9 +142,9 @@
                             <span class="status-badge completed">Completed</span>
                         {% else %}
                             <span class="status-badge pending">Pending</span>
-                            <button class="complete-btn" onclick="completeSchedule('vaccine', {{ schedule.id }})">
+                            <!-- <button class="complete-btn" onclick="completeSchedule('vaccine', {{ schedule.id }})">
                                 <i class="fas fa-check"></i>
-                            </button>
+                            </button> -->
                         {% endif %}
                     </div>
                 </div>
@@ -125,7 +152,7 @@
             {% else %}
                 <div class="no-schedules">
                     <i class="fas fa-info-circle"></i>
-                    <p>No vaccine schedules</p>
+                    <p>No vaccine schedules for {{ selected_date.strftime('%d-%m-%Y') }}</p>
                 </div>
             {% endif %}
         </div>
@@ -161,9 +188,134 @@
 </div>
 
 <style>
+    .date-selector {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+    }
+
+    .date-selector input[type="text"] {
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #2d3748;
+        background: white;
+        width: 150px;
+        transition: all 0.3s ease;
+    }
+
+    .date-selector input[type="text"]:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+        outline: none;
+    }
+
+    /* Custom styles for Flatpickr */
+    .flatpickr-calendar {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        border: none;
+        font-family: inherit;
+    }
+
+    .flatpickr-months {
+        padding: 8px 0;
+        background: #f8f9fa;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .flatpickr-month {
+        height: 40px;
+    }
+
+    .flatpickr-current-month {
+        padding: 4px 0;
+        font-size: 1.1rem;
+    }
+
+    .flatpickr-weekday {
+        height: 35px;
+        font-size: 0.9rem;
+        color: #4a5568;
+    }
+
+    .flatpickr-day {
+        height: 40px;
+        line-height: 40px;
+        border-radius: 8px;
+        margin: 2px;
+        transition: all 0.2s ease;
+    }
+
+    .flatpickr-day:hover {
+        background: #e3f2fd;
+        border-color: #1a73e8;
+    }
+
+    .flatpickr-day.selected {
+        background: #1a73e8;
+        border-color: #1a73e8;
+        color: white;
+    }
+
+    .flatpickr-day.has-schedule {
+        position: relative;
+        font-weight: 500;
+    }
+
+    .flatpickr-day.has-schedule::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+    }
+
+    .flatpickr-day.has-schedule.selected::after {
+        background-color: white;
+    }
+
+    .today-btn {
+        padding: 12px 24px;
+        background: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .today-btn:hover {
+        background: #1557b0;
+        transform: translateY(-1px);
+    }
+
+    .today-btn:active {
+        transform: translateY(0);
+    }
+
+    .today-btn i {
+        font-size: 1rem;
+    }
+
     .schedules-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 20px;
         padding: 20px;
     }
@@ -176,6 +328,12 @@
         height: 500px;
         display: flex;
         flex-direction: column;
+        transition: all 0.3s ease;
+    }
+
+    .schedule-card:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
     }
 
     .recent-activities {
@@ -193,22 +351,24 @@
     .card-header h3 {
         margin: 0;
         color: #2d3748;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+    }
+
+    .card-header h3 i {
+        color: #1a73e8;
     }
 
     .card-content {
         padding: 20px;
         overflow-y: auto;
         flex-grow: 1;
-        /* For Firefox */
         scrollbar-width: thin;
         scrollbar-color: #cbd5e0 #f8f9fa;
     }
 
-    /* For Webkit browsers like Chrome/Safari */
     .card-content::-webkit-scrollbar {
         width: 8px;
     }
@@ -230,6 +390,11 @@
         gap: 15px;
         padding: 15px;
         border-bottom: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .activity-item:hover, .schedule-item:hover {
+        background: #f8f9fa;
     }
 
     .activity-item:last-child, .schedule-item:last-child {
@@ -241,11 +406,12 @@
         color: #1a73e8;
         width: 40px;
         height: 40px;
-        border-radius: 8px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.2rem;
+        flex-shrink: 0;
     }
 
     .activity-details, .schedule-info {
@@ -255,17 +421,19 @@
     .activity-details h4, .schedule-info h4 {
         margin: 0 0 5px 0;
         color: #2d3748;
-        font-size: 1rem;
+        font-size: 1.1rem;
+        font-weight: 500;
     }
 
     .activity-details p, .schedule-info p {
         margin: 0;
         color: #4a5568;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
     }
 
     .activity-time {
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         color: #718096;
         margin-top: 5px;
         display: block;
@@ -274,13 +442,15 @@
     .schedule-status {
         display: flex;
         align-items: center;
+        gap: 10px;
     }
 
     .status-badge {
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
         font-weight: 500;
+        white-space: nowrap;
     }
 
     .status-badge.completed {
@@ -293,61 +463,34 @@
         color: #f57c00;
     }
 
-    .no-activities, .no-schedules {
-        text-align: center;
-        padding: 30px;
-        color: #718096;
-    }
-
-    .no-activities i, .no-schedules i {
-        font-size: 2rem;
-        margin-bottom: 10px;
-        color: #a0aec0;
-    }
-
-    @media (max-width: 768px) {
-        .schedules-container {
-            grid-template-columns: 1fr;
-        }
-
-        .schedule-card {
-            height: 400px;
-        }
-
-        .recent-activities {
-            grid-column: auto;
-        }
-    }
-
     .complete-btn {
         background: #4CAF50;
         color: white;
         border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        margin-left: 10px;
-        transition: background-color 0.3s;
+        transition: all 0.3s ease;
     }
 
     .complete-btn:hover {
         background: #45a049;
+        transform: translateY(-1px);
+    }
+
+    .complete-btn:active {
+        transform: translateY(0);
     }
 
     .complete-btn i {
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .schedule-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 15px;
-        padding: 15px;
-        border-bottom: 1px solid #e2e8f0;
         border-left: 4px solid transparent;
         transition: all 0.3s ease;
     }
@@ -367,33 +510,611 @@
         background-color: #fffdf0;
     }
 
-    .schedule-item:hover {
-        transform: translateX(5px);
+    .no-schedules, .no-activities {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
+        color: #718096;
     }
 
-    .schedule-item.urgent .status-badge.pending {
-        background: #ffe5e5;
-        color: #dc3545;
+    .no-schedules i, .no-activities i {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        color: #cbd5e0;
     }
 
-    .schedule-item.overdue .status-badge.pending {
-        background: #fff0e5;
-        color: #fd7e14;
+    .no-schedules p, .no-activities p {
+        margin: 0;
+        font-size: 1rem;
     }
 
-    .schedule-item.upcoming .status-badge.pending {
-        background: #fff8e5;
-        color: #ffc107;
+    .pending-btn {
+        padding: 12px 24px;
+        background: #f8f9fa;
+        color: #2d3748;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-left: auto;
+    }
+
+    .pending-btn:hover {
+        background: #e2e8f0;
+        transform: translateY(-1px);
+    }
+
+    .pending-btn:active {
+        transform: translateY(0);
+    }
+
+    .pending-btn.has-pending {
+        background: #fff3e0;
+        color: #f57c00;
+        border-color: #f57c00;
+    }
+
+    .pending-btn i {
+        font-size: 1rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 800px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .close {
+        color: #718096;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    .close:hover {
+        color: #2d3748;
+    }
+
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .pending-schedule-item {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0;
+        gap: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .pending-schedule-item:hover {
+        background: #f8f9fa;
+    }
+
+    .pending-schedule-item:last-child {
+        border-bottom: none;
+    }
+
+    .pending-schedule-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .pending-schedule-icon.health {
+        background: #e3f2fd;
+        color: #1a73e8;
+    }
+
+    .pending-schedule-icon.medicine {
+        background: #e8f5e9;
+        color: #34a853;
+    }
+
+    .pending-schedule-icon.vaccine {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .pending-schedule-details {
+        flex: 1;
+    }
+
+    .pending-schedule-details h4 {
+        margin: 0 0 5px 0;
+        color: #2d3748;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .pending-schedule-details p {
+        margin: 0;
+        color: #718096;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .pending-schedule-date {
+        color: #e53e3e;
+        font-weight: 500;
+    }
+
+    .pending-schedule-action {
+        padding: 10px 20px;
+        background: #1a73e8;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .pending-schedule-action:hover {
+        background: #1557b0;
+        transform: translateY(-1px);
+    }
+
+    .pending-schedule-action:active {
+        transform: translateY(0);
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 1200px) {
+        .schedules-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .schedules-container {
+            grid-template-columns: 1fr;
+        }
+
+        .schedule-card {
+            height: auto;
+            min-height: 300px;
+            max-height: 500px;
+        }
+
+        .recent-activities {
+            grid-column: auto;
+            height: auto;
+            min-height: 300px;
+            max-height: 400px;
+        }
+
+        .card-header {
+            padding: 15px;
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .card-content {
+            padding: 15px;
+        }
+
+        .schedule-item {
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .schedule-status {
+            width: 100%;
+            justify-content: flex-start;
+            margin-top: 5px;
+        }
+
+        .activity-item {
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .activity-icon {
+            width: 35px;
+            height: 35px;
+            font-size: 1rem;
+        }
+
+        .date-selector {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .date-selector input[type="text"] {
+            width: 100%;
+            height: 44px;
+            font-size: 16px;
+        }
+
+        .today-btn, .pending-btn {
+            width: 100%;
+            justify-content: center;
+            height: 44px;
+        }
+
+        .modal-content {
+            width: 95%;
+            margin: 10% auto;
+            max-height: 90vh;
+        }
+
+        .modal-header {
+            padding: 15px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 15px;
+        }
+
+        .pending-schedule-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        .pending-schedule-icon {
+            width: 35px;
+            height: 35px;
+            font-size: 1rem;
+        }
+
+        .pending-schedule-action {
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            height: 44px;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .date-selector {
+            margin: 5px;
+            padding: 10px;
+        }
+
+        .schedule-card {
+            min-height: 250px;
+        }
+
+        .card-header h3 {
+            font-size: 1rem;
+        }
+
+        .schedule-info h4, .activity-details h4 {
+            font-size: 1rem;
+        }
+
+        .schedule-info p, .activity-details p {
+            font-size: 0.9rem;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        .schedule-item {
+            padding: 10px;
+        }
+
+        .activity-item {
+            padding: 10px;
+        }
+
+        .modal-content {
+            width: 100%;
+            margin: 0;
+            border-radius: 0;
+            height: 100vh;
+            max-height: 100vh;
+        }
+
+        .modal-header {
+            padding: 12px;
+        }
+
+        .modal-body {
+            padding: 12px;
+        }
+
+        .pending-schedule-item {
+            padding: 10px;
+        }
+    }
+
+    /* Improve touch targets and interactions */
+    @media (max-width: 768px) {
+        .schedule-item, .activity-item {
+            cursor: pointer;
+        }
+
+        .schedule-item:active, .activity-item:active {
+            background-color: #f0f4f8;
+        }
+
+        .complete-btn {
+            width: 44px;
+            height: 44px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            font-size: 0.95rem;
+        }
+
+        /* Optimize flatpickr for mobile */
+        .flatpickr-calendar {
+            width: auto !important;
+            max-width: 100%;
+        }
+
+        .flatpickr-months {
+            height: 40px;
+        }
+
+        .flatpickr-month {
+            height: 40px;
+        }
+
+        .flatpickr-current-month {
+            padding: 4px 0;
+        }
+
+        .flatpickr-weekday {
+            height: 30px;
+        }
+
+        .flatpickr-day {
+            height: 40px;
+            line-height: 40px;
+        }
+    }
+
+    /* Improve scrolling performance */
+    .card-content {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    /* Optimize animations for mobile */
+    @media (max-width: 768px) {
+        .schedule-item:hover {
+            transform: none;
+        }
+
+        .schedule-item:active {
+            background-color: #f8f9fa;
+        }
+
+        .complete-btn:active {
+            transform: scale(0.95);
+        }
     }
 </style>
 
 <script>
+let scheduledDates = new Set();
+let datePicker;
+
+function updateSchedules() {
+    const date = document.getElementById('scheduleDate').value;
+    window.location.href = `/manager/schedules?date=${date}`;
+}
+
+function setToday() {
+    const today = new Date().toISOString().split('T')[0];
+    datePicker.setDate(today);
+    updateSchedules();
+}
+
+// Function to load scheduled dates
+function loadScheduledDates() {
+    fetch('/api/scheduled-dates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                scheduledDates = new Set(data.dates);
+                updateDatePicker();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scheduled dates:', error);
+        });
+}
+
+// Function to update date picker with indicators
+function updateDatePicker() {
+    // Remove existing indicators
+    document.querySelectorAll('.flatpickr-day.has-schedule').forEach(day => {
+        day.classList.remove('has-schedule');
+    });
+
+    // Add indicators for dates with schedules
+    scheduledDates.forEach(date => {
+        // Format the date to match Flatpickr's format
+        const formattedDate = new Date(date);
+        const dayElement = document.querySelector(
+            `.flatpickr-day[aria-label="${formattedDate.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            })}"]`
+        );
+        if (dayElement) {
+            dayElement.classList.add('has-schedule');
+        }
+    });
+}
+
+// Initialize Flatpickr
+document.addEventListener('DOMContentLoaded', function() {
+    datePicker = flatpickr("#scheduleDate", {
+        dateFormat: "Y-m-d",
+        disableMobile: true,
+        onChange: function(selectedDates, dateStr) {
+            updateSchedules();
+        },
+        onMonthChange: function() {
+            // Update indicators when month changes
+            setTimeout(updateDatePicker, 100);
+        },
+        onReady: function() {
+            // Update indicators when calendar is ready
+            setTimeout(updateDatePicker, 100);
+        },
+        onOpen: function() {
+            // Update indicators when calendar opens
+            setTimeout(updateDatePicker, 100);
+        }
+    });
+
+    // Load scheduled dates
+    loadScheduledDates();
+
+    // Update pending count
+    fetch('/pending-schedules-count')
+        .then(response => response.json())
+        .then(data => {
+            const pendingBtn = document.getElementById('pendingBtn');
+            const pendingCount = document.getElementById('pendingCount');
+            
+            if (data.count > 0) {
+                pendingBtn.classList.add('has-pending');
+                pendingCount.textContent = `${data.count} pending`;
+            } else {
+                pendingBtn.classList.remove('has-pending');
+                pendingCount.textContent = 'No pending';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+    // Improve touch handling for mobile
+    if ('ontouchstart' in window) {
+        document.querySelectorAll('.schedule-item, .activity-item').forEach(item => {
+            item.addEventListener('touchstart', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            item.addEventListener('touchend', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    }
+
+    // Optimize modal for mobile
+    const modal = document.getElementById('pendingModal');
+    if (modal) {
+        modal.addEventListener('touchmove', function(e) {
+            if (e.target === this) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    }
+});
+
 function completeSchedule(type, scheduleId) {
     if (!confirm('Are you sure you want to mark this schedule as completed?')) {
         return;
     }
 
-    fetch(`/manager/schedule/${type}/${scheduleId}/complete`, {
+    let url;
+    switch(type) {
+        case 'health-material':
+            url = `/manager/schedule/health-material/${scheduleId}/complete`;
+            break;
+        case 'medicine':
+            url = `/manager/schedule/medicine/${scheduleId}/complete`;
+            break;
+        case 'vaccine':
+            url = `/manager/schedule/vaccine/${scheduleId}/complete`;
+            break;
+        default:
+            alert('Invalid schedule type');
+            return;
+    }
+
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -402,7 +1123,6 @@ function completeSchedule(type, scheduleId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Reload the page to show updated status
             window.location.reload();
         } else {
             alert(data.message || 'Error completing schedule');
@@ -412,6 +1132,71 @@ function completeSchedule(type, scheduleId) {
         console.error('Error:', error);
         alert('Error completing schedule');
     });
+}
+
+function showPendingSchedules() {
+    fetch('/pending-schedules')
+        .then(response => response.json())
+        .then(data => {
+            const modal = document.getElementById('pendingModal');
+            const listContainer = document.getElementById('pendingSchedulesList');
+            listContainer.innerHTML = '';
+
+            if (data.schedules.length === 0) {
+                listContainer.innerHTML = '<p class="no-schedules">No pending schedules found.</p>';
+            } else {
+                data.schedules.forEach(schedule => {
+                    const item = document.createElement('div');
+                    item.className = 'pending-schedule-item';
+                    
+                    let iconClass = '';
+                    let type = '';
+                    switch(schedule.type) {
+                        case 'health-material':
+                            iconClass = 'health';
+                            type = 'Health Material';
+                            break;
+                        case 'medicine':
+                            iconClass = 'medicine';
+                            type = 'Medicine';
+                            break;
+                        case 'vaccine':
+                            iconClass = 'vaccine';
+                            type = 'Vaccine';
+                            break;
+                    }
+
+                    item.innerHTML = `
+                        <div class="pending-schedule-icon ${iconClass}">
+                            <i class="fas ${schedule.icon}"></i>
+                        </div>
+                        <div class="pending-schedule-details">
+                            <h4>${schedule.name}</h4>
+                            <p>${type} for Batch ${schedule.batch_number}</p>
+                            <p class="pending-schedule-date">Scheduled for: ${schedule.scheduled_date}</p>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            }
+            modal.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading pending schedules');
+        });
+}
+
+function closePendingModal() {
+    document.getElementById('pendingModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('pendingModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
 }
 </script>
 {% endblock %} 

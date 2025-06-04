@@ -109,7 +109,7 @@
                 {% for update in batch.updates|sort(attribute='date', reverse=true) %}
                 <div class="timeline-item">
                     <div class="timeline-date">
-                        <span class="date">{{ update.date.strftime('%d %b %Y') }}</span>
+                        <span class="date"><strong>{{ update.date.strftime('%d %b %Y') }}</strong></span>
                         {% if update.date == now.date() %}
                         <span class="badge today-badge">Today</span>
                         {% endif %}
@@ -129,42 +129,233 @@
                                 <span>{{ "%.2f"|format(update.feed_used) }} kg</span>
                             </div>
                         </div>
+
                         {% if update.feeds %}
-                        <div class="update-section">
-                            <h4>Feeds Allocated</h4>
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-wheat"></i>
+                                <h4>Feeds Used</h4>
+                            </div>
                             <div class="items-grid">
                                 {% for feed in update.feeds %}
-                                <div class="item">
-                                    <span class="item-name">{{ feed.brand }} ({{ feed.category }})</span>
-                                    <span class="item-quantity">{{ update.get_feed_quantity(feed.id) }} kg</span>
+                                <div class="item-card feed-card">
+                                    <div class="item-header">
+                                        <span class="item-name">{{ feed.brand }} - {{ feed.category }}</span>
+                                    </div>
+                                    <div class="item-details">
+                                        <div class="detail-row">
+                                            <label>Units Used</label>
+                                            <span>{{ "%.2f"|format(update.get_feed_quantity(feed.id)) }} packets</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Quantity Per Unit</label>
+                                            <span>{{ "%.2f"|format(update.get_feed_quantity_per_unit(feed.id)) }} kg</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Price at Time</label>
+                                            <span>₹{{ "%.2f"|format(update.get_feed_price(feed.id)) }}</span>
+                                        </div>
+                                        <div class="detail-row highlight">
+                                            <label>Total Cost</label>
+                                            <span>₹{{ "%.2f"|format(update.get_feed_quantity(feed.id) * update.get_feed_price(feed.id)) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
                         {% endif %}
                         
-                        {% if update.medicines %}
-                        <div class="update-section">
-                            <h4>Medicines Used</h4>
+                        {% if update.items %}
+                        {% set medicine_items = update.items | selectattr('item_type', 'equalto', 'medicine') | list %}
+                        {% if medicine_items %}
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-pills"></i>
+                                <h4>Medicines</h4>
+                            </div>
                             <div class="items-grid">
-                                {% for medicine in update.medicines %}
-                                <div class="item">
+                                {% for item in medicine_items %}
+                                {% set medicine = item.get_item() %}
+                                <div class="item-card medicine-card">
+                                    <div class="item-header">
                                     <span class="item-name">{{ medicine.name }}</span>
-                                    <span class="item-quantity">{{ update.get_medicine_quantity(medicine.id) }} {{ medicine.unit_type }}</span>
+                                        <div class="item-badges">
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">
+                                                <i class="fas fa-calendar-check"></i> Scheduled
+                                            </span>
+                                            {% else %}
+                                            <span class="extra-badge">
+                                                <i class="fas fa-plus-circle"></i> Extra
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="item-details">
+                                        <div class="detail-row">
+                                            <label>Units Used</label>
+                                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Quantity Per Unit</label>
+                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Price at Time</label>
+                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                        </div>
+                                        <div class="detail-row highlight">
+                                            <label>Total Cost</label>
+                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
                         {% endif %}
                         
-                        {% if update.health_materials %}
-                        <div class="update-section">
-                            <h4>Health Materials Used</h4>
+                        {% set health_items = update.items | selectattr('item_type', 'equalto', 'health_material') | list %}
+                        {% if health_items %}
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-medkit"></i>
+                                <h4>Health Materials</h4>
+                            </div>
                             <div class="items-grid">
-                                {% for material in update.health_materials %}
-                                <div class="item">
+                                {% for item in health_items %}
+                                {% set material = item.get_item() %}
+                                <div class="item-card health-material-card">
+                                    <div class="item-header">
                                     <span class="item-name">{{ material.name }}</span>
-                                    <span class="item-quantity">{{ update.get_health_material_quantity(material.id) }} {{ material.unit_type }}</span>
+                                        <div class="item-badges">
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">
+                                                <i class="fas fa-calendar-check"></i> Scheduled
+                                            </span>
+                                            {% else %}
+                                            <span class="extra-badge">
+                                                <i class="fas fa-plus-circle"></i> Extra
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="item-details">
+                                        <div class="detail-row">
+                                            <label>Units Used</label>
+                                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Quantity Per Unit</label>
+                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Price at Time</label>
+                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                        </div>
+                                        <div class="detail-row highlight">
+                                            <label>Total Cost</label>
+                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% set vaccine_items = update.items | selectattr('item_type', 'equalto', 'vaccine') | list %}
+                        {% if vaccine_items %}
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-syringe"></i>
+                                <h4>Vaccines</h4>
+                            </div>
+                            <div class="items-grid">
+                                {% for item in vaccine_items %}
+                                {% set vaccine = item.get_item() %}
+                                <div class="item-card vaccine-card">
+                                    <div class="item-header">
+                                        <span class="item-name">{{ vaccine.name }}</span>
+                                        <div class="item-badges">
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">
+                                                <i class="fas fa-calendar-check"></i> Scheduled
+                                            </span>
+                                            {% else %}
+                                            <span class="extra-badge">
+                                                <i class="fas fa-plus-circle"></i> Extra
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="item-details">
+                                        {% if item.schedule_id %}
+                                        <div class="detail-row">
+                                            <label>Dose Number</label>
+                                            <span>{{ item.dose_number }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="detail-row">
+                                            <label>Units Used</label>
+                                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Quantity Per Unit</label>
+                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Price at Time</label>
+                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                        </div>
+                                        <div class="detail-row highlight">
+                                            <label>Total Cost</label>
+                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+
+                        {% if update.miscellaneous_items %}
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-box-open"></i>
+                                <h4>Miscellaneous Items</h4>
+                            </div>
+                            <div class="items-grid">
+                                {% for item in update.miscellaneous_items %}
+                                <div class="item-card misc-card">
+                                    <div class="item-header">
+                                        <span class="item-name">{{ item.name }}</span>
+                                        <div class="item-badges">
+                                            <span class="extra-badge">
+                                                <i class="fas fa-plus-circle"></i> Extra
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="item-details">
+                                        <div class="detail-row">
+                                            <label>Quantity Used</label>
+                                            <span>{{ "%.2f"|format(item.units_used) }} Units</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Quantity Per Unit</label>
+                                            <span>{{ "%.2f"|format(item.quantity_per_unit) }} {{ item.unit_type }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <label>Price at Time</label>
+                                            <span>₹{{ "%.2f"|format(item.price_per_unit) }}</span>
+                                        </div>
+                                        <div class="detail-row highlight">
+                                            <label>Total Cost</label>
+                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -172,14 +363,19 @@
                         {% endif %}
                         
                         {% if update.remarks %}
-                        <div class="update-remarks">
-                            <h4>
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-sticky-note"></i>
                                 Remarks
                                 {% if update.remarks_priority %}
-                                <span class="priority-badge {{ update.remarks_priority }}">{{ update.remarks_priority }}</span>
+                                <span class="priority-badge priority-{{ update.remarks_priority }}">
+                                    {{ update.remarks_priority|title }}
+                                </span>
                                 {% endif %}
-                            </h4>
-                            <p>{{ update.remarks }}</p>
+                            </div>
+                            <div class="remarks-content">
+                                {{ update.remarks }}
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -235,6 +431,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: #f8fafc;
     }
 
     .card-header h2 {
@@ -266,15 +463,22 @@
         align-items: center;
         text-align: center;
         gap: 12px;
-        padding: 8px;
+        padding: 12px;
         background: #f8fafc;
-        border-radius: 6px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .info-item:hover {
+        background: #f1f5f9;
+        transform: translateY(-1px);
     }
 
     .info-item i {
         color: #1a73e8;
         width: 24px;
         text-align: center;
+        font-size: 1.1rem;
     }
 
     .info-item label {
@@ -322,8 +526,15 @@
         gap: 20px;
         padding: 20px;
         background: #f8fafc;
-        border-radius: 8px;
+        border-radius: 12px;
         align-items: flex-start;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+
+    .timeline-item:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
     }
 
     .timeline-date {
@@ -334,8 +545,9 @@
 
     .timeline-date .date {
         display: block;
-        color: #64748b;
+        color: #000000;
         font-size: 0.9rem;
+        font-weight: 500;
     }
 
     .today-badge {
@@ -346,6 +558,7 @@
         border-radius: 12px;
         font-size: 0.75rem;
         margin-top: 4px;
+        font-weight: 500;
     }
 
     .timeline-content {
@@ -361,103 +574,212 @@
 
     .stat-item {
         background: white;
-        padding: 12px 16px;
+        padding: 15px;
         border-radius: 8px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .stat-item label {
         display: block;
         color: #64748b;
         font-size: 0.875rem;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
 
     .stat-item span {
         color: #2d3748;
-        font-weight: 500;
+        font-weight: 600;
         font-size: 1.1rem;
     }
 
-    .update-section {
+    .category-section {
         margin-top: 20px;
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .update-section h4 {
+    .category-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .category-header i {
+        color: #1a73e8;
+        font-size: 1.2rem;
+    }
+
+    .category-header h4 {
+        margin: 0;
         color: #2d3748;
-        margin: 0 0 12px 0;
-        font-size: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
     }
 
     .items-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
     }
 
-    .item {
-        background: white;
-        padding: 12px 16px;
-        border-radius: 6px;
+    .item-card {
+        background: #f8fafc;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+
+    .item-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .item-header {
+        padding: 12px 15px;
+        background: #f1f5f9;
+        border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .item-name {
-        color: #4a5568;
-        font-weight: 500;
-    }
-
-    .item-quantity {
         color: #2d3748;
         font-weight: 600;
-        background: #f1f5f9;
-        padding: 4px 8px;
-        border-radius: 4px;
-    }
-
-    .update-remarks {
-        margin-top: 15px;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-
-    .update-remarks h4 {
-        color: #1a73e8;
-        margin: 0 0 10px 0;
         font-size: 1rem;
+    }
+
+    .item-badges {
         display: flex;
-        align-items: center;
         gap: 8px;
     }
 
-    .update-remarks p {
-        color: #4a5568;
-        margin: 0;
-        line-height: 1.5;
-    }
-
-    .priority-badge {
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
+    .scheduled-badge, .extra-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
         font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
-    .priority-badge.low {
-        background: #e2e8f0;
-        color: #4a5568;
+    .scheduled-badge {
+        background: #e3f2fd;
+        color: #1976d2;
     }
 
-    .priority-badge.medium {
+    .extra-badge {
         background: #fef3c7;
         color: #92400e;
     }
 
-    .priority-badge.high {
+    .item-details {
+        padding: 15px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-row label {
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    .detail-row span {
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+    .detail-row.highlight {
+        background: #f8fafc;
+        margin: 8px -15px;
+        padding: 8px 15px;
+        border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-row.highlight label {
+        color: #1a73e8;
+        font-weight: 600;
+    }
+
+    .detail-row.highlight span {
+        color: #1a73e8;
+        font-weight: 600;
+    }
+
+    .info-section {
+        margin-top: 20px;
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .info-section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .info-section-title i {
+        color: #1a73e8;
+    }
+
+    .remarks-content {
+        color: #4a5568;
+        line-height: 1.6;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-left: 8px;
+    }
+
+    .priority-badge.priority-low {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .priority-badge.priority-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .priority-badge.priority-high {
         background: #fee2e2;
         color: #991b1b;
     }
@@ -466,12 +788,20 @@
         text-align: center;
         padding: 40px 20px;
         color: #64748b;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px dashed #e2e8f0;
     }
 
     .no-updates i {
-        font-size: 2rem;
-        margin-bottom: 10px;
+        font-size: 2.5rem;
+        margin-bottom: 15px;
         color: #94a3b8;
+    }
+
+    .no-updates p {
+        font-size: 1.1rem;
+        margin: 0;
     }
 
     .btn {
@@ -485,6 +815,7 @@
         transition: all 0.2s;
         border: none;
         cursor: pointer;
+        font-size: 0.9rem;
     }
 
     .btn-primary {
@@ -494,6 +825,7 @@
 
     .btn-primary:hover {
         background: #1557b0;
+        transform: translateY(-1px);
     }
 
     .btn-secondary {
@@ -505,10 +837,12 @@
     @media (max-width: 768px) {
         .batch-details-container {
             flex-direction: column;
+            padding: 10px;
         }
 
         .detail-card {
             width: 100%;
+            min-width: 100%;
         }
 
         .overview-card,
@@ -523,10 +857,26 @@
 
         .timeline-date {
             text-align: left;
+            width: 100%;
         }
 
         .update-stats {
             grid-template-columns: 1fr;
+        }
+
+        .items-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .item-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .item-badges {
+            width: 100%;
+            justify-content: flex-start;
         }
     }
 </style>
