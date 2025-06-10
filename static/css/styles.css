@@ -239,7 +239,7 @@ body {
 }
 
 .content-header {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
 }
 
 .content-header h1 {
@@ -371,6 +371,10 @@ body {
 
     .section-container {
         padding: 15px;
+    }
+
+    .content-header {
+        margin-bottom: 0px;
     }
 
     .table-container {

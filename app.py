@@ -67,8 +67,8 @@ class Employee(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
     phone_number = db.Column(db.String(20), unique=True, nullable=True)  # Primary phone number
     alternate_phone_number = db.Column(db.String(20), nullable=True)  # Alternate phone number
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
 class Farm(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,8 +80,8 @@ class Farm(db.Model):
     owner_name = db.Column(db.String(100), nullable=False)
     contact_number = db.Column(db.String(20), nullable=False)  # Contact number as string to preserve leading zeros
     farm_condition = db.Column(db.String(20), nullable=False, default='average')  # 'average', 'medium', 'good'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def get_shed_capacities(self):
         return json.loads(self.shed_capacities)
@@ -137,7 +137,7 @@ class Batch(db.Model):
     feed_usage = db.Column(db.Float, nullable=False, default=0.0)  # Total feed used in kg
     status = db.Column(db.String(20), nullable=False, default='ongoing')  # 'ongoing', 'closing', 'closed'
     created_at = db.Column(db.DateTime, nullable=False)  # Remove default to make it editable
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     farm = db.relationship('Farm', backref=db.backref('batches', lazy=True))
@@ -156,9 +156,10 @@ class Batch(db.Model):
             self.shed_birds = '[]'
 
     def get_age_days(self):
-        today = datetime.utcnow().date()
+        # Use local timezone instead of UTC
+        today = datetime.now().date()
         created_date = self.created_at.date()
-        return (today - created_date).days
+        return (today - created_date).days 
 
     def check_and_update_status(self):
         """Check if batch should be marked as closed based on available birds"""
@@ -246,8 +247,8 @@ class Feed(db.Model):
     category = db.Column(db.String(50), nullable=False)  # pre-starter, starter, finisher
     weight = db.Column(db.Float, nullable=False)  # in kg
     price = db.Column(db.Float, nullable=False)  # per kg
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f'<Feed {self.brand} - {self.category}>'
@@ -259,8 +260,8 @@ class Medicine(db.Model):
     unit_type = db.Column(db.String(20), nullable=False)  # 'litre' or 'gram'
     price = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def convert_to_kg(self, quantity):
         """Convert the given quantity to kilograms if needed"""
@@ -282,8 +283,8 @@ class Vaccine(db.Model):
     doses_required = db.Column(db.Integer, nullable=False)  # Number of times vaccine should be given
     dose_ages = db.Column(db.Text, nullable=False)  # JSON string of ages for each dose in days
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def get_dose_ages(self):
         return json.loads(self.dose_ages)
@@ -297,8 +298,8 @@ class MedicineSchedule(db.Model):
     schedule_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.Text)
     completed = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     medicine = db.relationship('Medicine', backref='schedules')
     batches = db.relationship('Batch', secondary='medicine_schedule_batches', backref='medicine_schedules')
@@ -328,8 +329,8 @@ class VaccineSchedule(db.Model):
     scheduled_date = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     vaccine = db.relationship('Vaccine', backref='schedules')
     batches = db.relationship('Batch', secondary=vaccine_schedule_batches, backref='vaccine_schedules')
@@ -342,8 +343,8 @@ class HealthMaterial(db.Model):
     unit_type = db.Column(db.String(20), nullable=False)  # e.g., 'litre', 'piece', 'box'
     price = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
 class HealthMaterialSchedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -351,8 +352,8 @@ class HealthMaterialSchedule(db.Model):
     scheduled_date = db.Column(db.Date, nullable=False)
     completed = db.Column(db.Boolean, default=False)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     health_material = db.relationship('HealthMaterial', backref='schedules')
     batches = db.relationship('Batch', secondary=health_material_schedule_batches, backref='health_material_schedules')
@@ -379,13 +380,13 @@ batch_update_items = db.Table('batch_update_items',
 class BatchUpdate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    date = db.Column(db.Date, nullable=False, default=datetime.now().date)
     mortality_count = db.Column(db.Integer, nullable=False, default=0)
     feed_used = db.Column(db.Float, nullable=False, default=0)  # Feed used in packets
     avg_weight = db.Column(db.Float, nullable=False, default=0)  # Average weight in kg
     remarks = db.Column(db.Text, nullable=True)  # Changed from notes to remarks
     remarks_priority = db.Column(db.String(20), nullable=True, default='low')  # 'low', 'medium', 'high'
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
 
     # Relationships
     batch = db.relationship('Batch', backref=db.backref('updates', lazy=True))
@@ -443,7 +444,7 @@ class BatchUpdateItem(db.Model):
     total_cost = db.Column(db.Float, nullable=False)  # Total cost (quantity * price_at_time)
     schedule_id = db.Column(db.Integer, nullable=True)  # ID of the schedule if it's a scheduled item
     dose_number = db.Column(db.Integer, nullable=True)  # For vaccines only
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
 
     def get_item(self):
         """Get the actual item object based on item_type and item_id"""
@@ -458,14 +459,14 @@ class BatchUpdateItem(db.Model):
 class Harvest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    date = db.Column(db.Date, nullable=False, default=datetime.now().date)
     quantity = db.Column(db.Integer, nullable=False)
     weight = db.Column(db.Float, nullable=False)  # Weight in kg
     selling_price = db.Column(db.Float, nullable=False)  # Price per kg
     total_value = db.Column(db.Float, nullable=False)  # Total value (weight * selling_price)
     notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationship
     batch = db.relationship('Batch', backref=db.backref('harvests', lazy=True))
@@ -475,9 +476,9 @@ class Activity(db.Model):
     icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(255), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f'<Activity {self.title}>'
@@ -491,8 +492,8 @@ class MiscellaneousItem(db.Model):
     price_per_unit = db.Column(db.Float, nullable=False)
     units_used = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f'<MiscellaneousItem {self.name}>'
@@ -511,8 +512,8 @@ class FinancialSummary(db.Model):
     fcr_value = db.Column(db.Float, nullable=True)  # Store the calculated FCR value
     fcr_rate = db.Column(db.Float, nullable=True)  # Store the determined FCR rate
     fcr_price = db.Column(db.Float, nullable=True)  # Store the determined FCR price
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationship
     batch = db.relationship('Batch', backref=db.backref('financial_summary', uselist=False, cascade='all, delete-orphan'))
@@ -644,8 +645,8 @@ class FCRRate(db.Model):
     lower_limit = db.Column(db.Float, nullable=False)
     upper_limit = db.Column(db.Float, nullable=True)  # Null means no upper limit (Max)
     rate = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f'<FCRRate {self.lower_limit}-{self.upper_limit or "Max"}: {self.rate}>'
@@ -813,10 +814,10 @@ def farms():
     farms = Farm.query.all()
     farm_stats = {}
     for farm in farms:
-        # Get ongoing batches
-        ongoing_batches = Batch.query.filter(
+        # Get active batches (ongoing and closing)
+        active_batches = Batch.query.filter(
             Batch.farm_id == farm.id,
-            Batch.status == 'ongoing'
+            Batch.status.in_(['ongoing', 'closing'])
         ).count()
         
         # Get completely available sheds
@@ -825,7 +826,7 @@ def farms():
         completely_available_sheds = sum(1 for available, capacity in zip(shed_available, shed_capacities) if available == capacity)
         
         farm_stats[farm.id] = {
-            'ongoing_batches': ongoing_batches,
+            'ongoing_batches': active_batches,
             'completely_available_sheds': completely_available_sheds
         }
     
@@ -987,7 +988,7 @@ def batches():
     batches = Batch.query.all()
     return render_template('batches.html', 
                          batches=batches,
-                         now=datetime.utcnow(),
+                         now=datetime.now(),
                          timedelta=timedelta)  # Add timedelta to template context
 
 def generate_batch_number():
@@ -1324,9 +1325,9 @@ def update_batch(batch_id):
         try:
             selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
         except ValueError:
-            selected_date = datetime.utcnow().date()
+            selected_date = datetime.now().date()
     else:
-        selected_date = datetime.utcnow().date()
+        selected_date = datetime.now().date()
 
     # Check if an update already exists for the selected date
     existing_update = BatchUpdate.query.filter(
@@ -1686,7 +1687,7 @@ def get_batch_update(batch_id, date):
                     if vaccine:
                         item_data.update({
                             'name': vaccine.name,
-                            'unit_type': vaccine.unit_type,
+                            'unit_type': 'ml',
                             'notes': vaccine.notes
                         })
                 
@@ -1867,8 +1868,6 @@ def edit_batch_update(batch_id, date):
                                 total_cost=float(quantity) * feed.price
                             )
                             db.session.execute(stmt)
-                # Update batch feed stock
-                batch.feed_stock -= float(quantity)
 
                 # Process miscellaneous items
                 misc_names = request.form.getlist('misc_name[]')
@@ -2030,7 +2029,7 @@ def edit_batch_update(batch_id, date):
                             health_materials=health_materials,
                              vaccines=vaccines,
                              feeds=feeds,
-                             today=datetime.utcnow().date())  # Add today to template context
+                             today=datetime.now().date())  # Add today to template context
     except Exception as e:
         flash(f'Error: {str(e)}', 'error')
         return redirect(url_for('view_batch', batch_id=batch.id))
@@ -3169,7 +3168,7 @@ def manager_batches():
     
     return render_template('manager/batches.html', 
                          batches=batches,
-                         now=datetime.utcnow(),
+                         now=datetime.now(),
                          timedelta=timedelta)  # Add timedelta to template context
 
 @app.route('/manager/medicines')
@@ -3208,7 +3207,7 @@ def manager_view_batch(batch_id):
     batch = Batch.query.get_or_404(batch_id)
     return render_template('manager/view_batch.html', 
                          batch=batch,
-                         now=datetime.utcnow())
+                         now=datetime.now())
 
 @app.route('/manager/batches/<int:batch_id>/update', methods=['GET', 'POST'])
 @login_required
@@ -3221,7 +3220,7 @@ def manager_update_batch(batch_id):
         return redirect(url_for('manager_batches'))
     
     # Check if update already exists for today
-    today = datetime.utcnow().date()
+    today = datetime.now().date()
     existing_update = BatchUpdate.query.filter_by(batch_id=batch_id, date=today).first()
     
     if request.method == 'POST':
@@ -3484,7 +3483,7 @@ def add_harvest(batch_id):
             
             harvest = Harvest(
                 batch_id=batch_id,
-                date=datetime.utcnow().date(),
+                date=datetime.now().date(),
                 quantity=quantity,
                 weight=weight,
                 selling_price=selling_price,

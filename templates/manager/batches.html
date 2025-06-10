@@ -33,8 +33,13 @@
             {% for batch in batches %}
                 <div class="batch-card">
                     <div class="batch-header">
-                        <h3>Batch #{{ batch.batch_number }}</h3>
-                        <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+                        <div class="batch-title">
+                            <h3>{{ batch.batch_number }}</h3>
+                            <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+                        </div>
+                        <div class="farm-info">
+                            <h3>{{ batch.farm.name }} - {{ batch.farm_batch_number }}</h3>
+                        </div>
                     </div>
                     <div class="batch-details">
                         <div class="detail-item">
@@ -201,17 +206,23 @@
         transform: translateY(-2px);
     }
 
-    .batch-header {
+    .batch-title {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        
     }
 
-    .batch-header h3 {
-        margin: 0;
+    .batch-title h3 {
+        
+        font-size: 0.9rem;
+        color: #4a5568;
+    }
+
+    .farm-info {
         color: #2d3748;
-        font-size: 1.25rem;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
     }
 
     .status-badge {
@@ -339,10 +350,6 @@
             padding: 15px;
         }
 
-        .batch-header h3 {
-            font-size: 1.1rem;
-        }
-
         .detail-item {
             font-size: 0.9rem;
         }
@@ -402,6 +409,26 @@
 
 {% block scripts %}
 <script>
+// Function to sort batches by batch number
+function sortBatches() {
+    const grid = document.querySelector('.batches-grid');
+    const cards = Array.from(grid.querySelectorAll('.batch-card'));
+    
+    cards.sort((a, b) => {
+        const batchNumberA = a.querySelector('.batch-title h3').textContent;
+        const batchNumberB = b.querySelector('.batch-title h3').textContent;
+        return batchNumberB.localeCompare(batchNumberA); // Descending order
+    });
+    
+    // Remove all cards and reappend in sorted order
+    cards.forEach(card => card.remove());
+    cards.forEach(card => grid.appendChild(card));
+}
+
+// Sort batches when page loads
+document.addEventListener('DOMContentLoaded', sortBatches);
+
+// Modify search to maintain sorting
 document.getElementById('batchSearch').addEventListener('input', function(e) {
     const searchText = e.target.value.toLowerCase();
     const cards = document.querySelectorAll('.batch-card');
@@ -410,6 +437,9 @@ document.getElementById('batchSearch').addEventListener('input', function(e) {
         const text = card.textContent.toLowerCase();
         card.style.display = text.includes(searchText) ? '' : 'none';
     });
+    
+    // Re-sort visible cards
+    sortBatches();
 });
 </script>
 {% endblock %}

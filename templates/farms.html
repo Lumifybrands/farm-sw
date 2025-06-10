@@ -35,7 +35,7 @@
                     <th>Total Capacity</th>
                     <!-- <th>No. of Sheds</th> -->
                     <!-- <th>Total Area (m²)</th> -->
-                    <th>Ongoing Batches</th>
+                    <th>Active Batches</th>
                     <th>Available Sheds</th>
                     <th>Farm Condition</th>
                     <th>Owner Name</th>
@@ -93,7 +93,7 @@
                         <span>{{ farm.total_capacity }}</span>
                     </div>
                     <div class="info-group">
-                        <label>Ongoing Batches</label>
+                        <label>Active Batches</label>
                         <span class="batch-count {% if farm_stats[farm.id].ongoing_batches > 0 %}active{% endif %}">
                             {{ farm_stats[farm.id].ongoing_batches }}
                         </span>

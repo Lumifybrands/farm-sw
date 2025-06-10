@@ -34,7 +34,7 @@
                 {% if batch.status == 'closing' %}
                 <div class="batch-card">
                     <div class="batch-header">
-                        <h3>Batch #{{ batch.batch_number }}</h3>
+                        <h3>{{ batch.batch_number }}</h3>
                         <span class="status-badge status-closing">{{ batch.status|title }}</span>
                     </div>
                     <div class="batch-details">

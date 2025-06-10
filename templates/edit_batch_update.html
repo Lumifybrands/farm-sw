@@ -248,12 +248,6 @@
         <!-- Other Items Section -->
         <div class="dynamic-section" id="otherItemsSection">
             <h3>Other Items</h3>
-            <div class="item-type-selector">
-                <button type="button" onclick="addMedicineItem()">Add Medicine</button>
-                <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
-                <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
-                <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
-            </div>
             <div class="dynamic-items" id="otherItems">
                 <!-- Medicine Updates -->
                 {% for item in update.items %}
@@ -344,6 +338,12 @@
                     </button>
                 </div>
                 {% endfor %}
+            </div>
+            <div class="item-type-selector">
+                <button type="button" onclick="addMedicineItem()">Add Medicine</button>
+                <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
             </div>
         </div>
 
@@ -1076,6 +1076,7 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
     const feedItems = document.querySelectorAll('select[name="feed_id[]"]');
     const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
     const selectedFeeds = new Set();
+    let totalFeedQuantity = 0;
     
     for (let i = 0; i < feedItems.length; i++) {
         if (feedItems[i].value) {
@@ -1085,11 +1086,34 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
             selectedFeeds.add(feedItems[i].value);
             
-            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) <= 0) {
+            const quantity = parseFloat(feedQuantities[i].value) || 0;
+            if (quantity < 0) {
                 alert('Please enter valid quantities for all selected feed items.');
                 return;
             }
+            totalFeedQuantity += quantity;
         }
+    }
+    
+    // Validate feed used
+    const feedUsed = parseFloat(document.getElementById('feed_used').value) || 0;
+    if (feedUsed < 0) {
+        alert('Feed used cannot be negative.');
+        return;
+    }
+    
+    // Validate mortality count
+    const mortalityCount = parseInt(document.getElementById('mortality_count').value) || 0;
+    if (mortalityCount < 0) {
+        alert('Mortality count cannot be negative.');
+        return;
+    }
+    
+    // Validate average weight
+    const avgWeight = parseFloat(document.getElementById('avg_weight').value) || 0;
+    if (avgWeight < 0) {
+        alert('Average weight cannot be negative.');
+        return;
     }
     
     // Validate scheduled items
@@ -1103,7 +1127,7 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
         const quantityInput = document.querySelector(
             `input[name="scheduled_items[medicine][${scheduleId}][quantity]"]`
         );
-        if (!quantityInput || !quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+        if (!quantityInput || parseFloat(quantityInput.value) < 0) {
             alert('Please enter valid quantities for all selected medicine schedules.');
             return;
         }
@@ -1119,7 +1143,7 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
         const quantityInput = document.querySelector(
             `input[name="scheduled_items[health_material][${scheduleId}][quantity]"]`
         );
-        if (!quantityInput || !quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+        if (!quantityInput || parseFloat(quantityInput.value) < 0) {
             alert('Please enter valid quantities for all selected health material schedules.');
             return;
         }
@@ -1135,7 +1159,7 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
         const quantityInput = document.querySelector(
             `input[name="scheduled_items[vaccine][${scheduleId}][quantity]"]`
         );
-        if (!quantityInput || !quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+        if (!quantityInput || parseFloat(quantityInput.value) < 0) {
             alert('Please enter valid quantities for all selected vaccine schedules.');
             return;
         }
@@ -1154,7 +1178,8 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
             selectedMedicines.add(medicineItems[i].value);
             
-            if (!medicineQuantities[i].value || parseFloat(medicineQuantities[i].value) < 0) {
+            const quantity = parseFloat(medicineQuantities[i].value) || 0;
+            if (quantity < 0) {
                 alert('Please enter valid quantities for all selected medicine items.');
                 return;
             }
@@ -1173,7 +1198,8 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
             selectedHealthMaterials.add(healthItems[i].value);
             
-            if (!healthQuantities[i].value || parseFloat(healthQuantities[i].value) < 0) {
+            const quantity = parseFloat(healthQuantities[i].value) || 0;
+            if (quantity < 0) {
                 alert('Please enter valid quantities for all selected health material items.');
                 return;
             }
@@ -1198,7 +1224,8 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
             selectedVaccines.add(vaccineKey);
             
-            if (!vaccineQuantities[i].value || parseFloat(vaccineQuantities[i].value) < 0) {
+            const quantity = parseFloat(vaccineQuantities[i].value) || 0;
+            if (quantity < 0) {
                 alert('Please enter valid quantities for all selected vaccines.');
                 return;
             }
@@ -1222,8 +1249,11 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             return;
         }
         
-        if (parseFloat(miscQuantities[i].value) <= 0 || parseFloat(miscPrices[i].value) <= 0 || 
-            parseFloat(miscUsed[i].value) <= 0) {
+        const quantity = parseFloat(miscQuantities[i].value) || 0;
+        const price = parseFloat(miscPrices[i].value) || 0;
+        const used = parseFloat(miscUsed[i].value) || 0;
+        
+        if (quantity <= 0 || price <= 0 || used <= 0) {
             alert('Please enter valid quantities and prices for miscellaneous items.');
             return;
         }

@@ -17,10 +17,12 @@
             <i class="fas fa-search"></i>
         </div>
         <div class="status-filter">
-            <button class="filter-btn active" data-status="all">All</button>
+            <button class="filter-btn active" data-status="active">Active</button>
             <button class="filter-btn" data-status="ongoing">Ongoing</button>
             <button class="filter-btn" data-status="closing">Closing</button>
             <button class="filter-btn" data-status="closed">Closed</button>
+            <button class="filter-btn" data-status="all">All</button>
+            <button class="filter-btn" data-status="risk">Risk</button>
         </div>
         <button class="add-batch-btn" onclick="location.href='{{ url_for('add_batch') }}'">
             <i class="fas fa-plus"></i> Add Batch
@@ -472,11 +474,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
         }
 
         .batch-title h3 {
-            margin: 0;
+            
             font-size: 0.9rem;
             color: #4a5568;
         }
@@ -702,26 +703,164 @@ function deleteBatch(batchId) {
 function filterBatches(searchText, status) {
     // Filter table rows
     const rows = document.querySelectorAll('.batches-table tbody tr');
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const rowStatus = row.getAttribute('data-status');
+    const sortedRows = Array.from(rows);
+    
+    if (status === 'active') {
+        // Show only ongoing and closing batches
+        sortedRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = rowStatus === 'ongoing' || rowStatus === 'closing';
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
         
-        const matchesSearch = text.includes(searchText.toLowerCase());
-        const matchesStatus = status === 'all' || rowStatus === status;
+        // Sort by batch number in descending order
+        sortedRows.sort((a, b) => {
+            const aBatchNumber = a.querySelector('td:first-child').textContent;
+            const bBatchNumber = b.querySelector('td:first-child').textContent;
+            return bBatchNumber.localeCompare(aBatchNumber);
+        });
+    } else if (status === 'risk') {
+        // Sort by priority and show only ongoing and closing batches
+        sortedRows.sort((a, b) => {
+            const aStatus = a.getAttribute('data-status');
+            const bStatus = b.getAttribute('data-status');
+            
+            // Only consider ongoing and closing batches
+            if ((aStatus !== 'ongoing' && aStatus !== 'closing') || 
+                (bStatus !== 'ongoing' && bStatus !== 'closing')) {
+                return 0;
+            }
+            
+            const aRemarks = a.querySelector('.remarks-badge');
+            const bRemarks = b.querySelector('.remarks-badge');
+            
+            // Priority order: high > medium > low > no remarks
+            const getPriority = (badge) => {
+                if (!badge) return 4;
+                if (badge.classList.contains('priority-high')) return 1;
+                if (badge.classList.contains('priority-medium')) return 2;
+                if (badge.classList.contains('priority-low')) return 3;
+                return 4;
+            };
+            
+            const aPriority = getPriority(aRemarks);
+            const bPriority = getPriority(bRemarks);
+            
+            return aPriority - bPriority;
+        });
         
-        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        // Apply search filter and show/hide rows
+        sortedRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = rowStatus === 'ongoing' || rowStatus === 'closing';
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    } else {
+        // Original filtering logic for other statuses
+        sortedRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = status === 'all' || rowStatus === status;
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+        
+        // Sort by batch number in descending order
+        sortedRows.sort((a, b) => {
+            const aBatchNumber = a.querySelector('td:first-child').textContent;
+            const bBatchNumber = b.querySelector('td:first-child').textContent;
+            return bBatchNumber.localeCompare(aBatchNumber);
+        });
+    }
+    
+    // Reorder the rows in the table
+    const tbody = document.querySelector('.batches-table tbody');
+    sortedRows.forEach(row => {
+        if (row.style.display !== 'none') {
+            tbody.appendChild(row);
+        }
     });
 
-    // Filter cards
+    // Filter cards with the same logic
     const cards = document.querySelectorAll('.batch-card');
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        const cardStatus = card.getAttribute('data-status');
+    const sortedCards = Array.from(cards);
+    
+    if (status === 'active') {
+        sortedCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const cardStatus = card.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = cardStatus === 'ongoing' || cardStatus === 'closing';
+            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
         
-        const matchesSearch = text.includes(searchText.toLowerCase());
-        const matchesStatus = status === 'all' || cardStatus === status;
+        // Sort by batch number in descending order
+        sortedCards.sort((a, b) => {
+            const aBatchNumber = a.querySelector('.batch-title h3').textContent;
+            const bBatchNumber = b.querySelector('.batch-title h3').textContent;
+            return bBatchNumber.localeCompare(aBatchNumber);
+        });
+    } else if (status === 'risk') {
+        sortedCards.sort((a, b) => {
+            const aStatus = a.getAttribute('data-status');
+            const bStatus = b.getAttribute('data-status');
+            
+            if ((aStatus !== 'ongoing' && aStatus !== 'closing') || 
+                (bStatus !== 'ongoing' && bStatus !== 'closing')) {
+                return 0;
+            }
+            
+            const aRemarks = a.querySelector('.remarks-badge');
+            const bRemarks = b.querySelector('.remarks-badge');
+            
+            const getPriority = (badge) => {
+                if (!badge) return 4;
+                if (badge.classList.contains('priority-high')) return 1;
+                if (badge.classList.contains('priority-medium')) return 2;
+                if (badge.classList.contains('priority-low')) return 3;
+                return 4;
+            };
+            
+            const aPriority = getPriority(aRemarks);
+            const bPriority = getPriority(bRemarks);
+            
+            return aPriority - bPriority;
+        });
         
-        card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        sortedCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const cardStatus = card.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = cardStatus === 'ongoing' || cardStatus === 'closing';
+            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    } else {
+        sortedCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            const cardStatus = card.getAttribute('data-status');
+            const matchesSearch = text.includes(searchText.toLowerCase());
+            const matchesStatus = status === 'all' || cardStatus === status;
+            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+        
+        // Sort by batch number in descending order
+        sortedCards.sort((a, b) => {
+            const aBatchNumber = a.querySelector('.batch-title h3').textContent;
+            const bBatchNumber = b.querySelector('.batch-title h3').textContent;
+            return bBatchNumber.localeCompare(aBatchNumber);
+        });
+    }
+    
+    // Reorder the cards
+    const cardsContainer = document.querySelector('.batches-cards');
+    sortedCards.forEach(card => {
+        if (card.style.display !== 'none') {
+            cardsContainer.appendChild(card);
+        }
     });
 }
 
@@ -748,6 +887,12 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 // Add mobile-specific event handlers
 document.addEventListener('DOMContentLoaded', function() {
+    // Trigger the active filter by default
+    const activeFilter = document.querySelector('.filter-btn[data-status="active"]');
+    if (activeFilter) {
+        activeFilter.click();
+    }
+
     if ('ontouchstart' in window) {
         // Improve touch feedback for cards
         document.querySelectorAll('.batch-card').forEach(card => {
