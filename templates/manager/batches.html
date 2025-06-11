@@ -52,7 +52,7 @@
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Age: {{ (now.date() - batch.created_at.date()).days }} days</span>
+                            <span>Age: {{ batch.get_age_days() }} days</span>
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-map-marker-alt"></i>

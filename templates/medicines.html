@@ -34,6 +34,7 @@
                     <th>Name</th>
                     <th>Quantity Per Unit</th>
                     <th>Price Per Unit</th>
+                    <th>Auto Schedule</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -43,6 +44,19 @@
                     <td>{{ medicine.name }}</td>
                     <td>{{ medicine.quantity_per_unit }} {{ medicine.unit_type }}</td>
                     <td>₹{{ "%.2f"|format(medicine.price) }}</td>
+                    <td>
+                        <div class="auto-schedule-toggle">
+                            <input type="checkbox" id="autoSchedule{{ medicine.id }}" 
+                                   class="auto-schedule-checkbox" 
+                                   {% if medicine.auto_schedule or medicine.auto_schedule_id %}checked{% endif %}
+                                   onchange="toggleAutoSchedule('medicine', {{ medicine.id }}, this)">
+                            <label for="autoSchedule{{ medicine.id }}" class="auto-schedule-label">
+                                <span class="auto-schedule-text">
+                                    {% if medicine.auto_schedule or medicine.auto_schedule_id %}Auto Scheduled{% else %}Set Auto Schedule{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                    </td>
                     <td class="action-buttons">
                         <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view" title="View">
                             <i class="fas fa-eye"></i> View Details
@@ -77,283 +91,567 @@
                         <label>Price</label>
                         <span>₹{{ "%.2f"|format(medicine.price) }}</span>
                     </div>
+                    <div class="info-group">
+                        <label>Auto Schedule</label>
+                        <div class="auto-schedule-toggle">
+                            <input type="checkbox" id="autoScheduleMobile{{ medicine.id }}" 
+                                   class="auto-schedule-checkbox" 
+                                   {% if medicine.auto_schedule or medicine.auto_schedule_id %}checked{% endif %}
+                                   onchange="toggleAutoSchedule('medicine', {{ medicine.id }}, this)">
+                            <label for="autoScheduleMobile{{ medicine.id }}" class="auto-schedule-label">
+                                <span class="auto-schedule-text">
+                                    {% if medicine.auto_schedule or medicine.auto_schedule_id %}Auto Scheduled{% else %}Set Auto Schedule{% endif %}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="medicine-actions">
-                    <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view">
-                        <i class="fas fa-eye"></i> View
+                    <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view" title="View">
+                        <i class="fas fa-eye"></i> View Details
                     </a>
-                    <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit">
-                        <i class="fas fa-edit"></i> Edit
+                    <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit" title="Edit">
+                        <i class="fas fa-edit"></i> Edit Details
                     </a>
-                    <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete">
-                        <i class="fas fa-trash"></i> Delete
+                    <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete" title="Delete">
+                        <i class="fas fa-trash"></i> Delete Medicine
                     </button>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
-</div>
 
-<!-- Schedule Modal -->
-<div id="scheduleModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Schedule Medicine</h2>
-            <span class="close">&times;</span>
-        </div>
-        <form id="scheduleForm" action="{{ url_for('schedule_medicine') }}" method="POST">
-            <input type="hidden" name="medicine_id" id="scheduleMedicineId">
-            <div class="form-group">
-                <label>Select Batches</label>
-                <div class="batch-selection">
-                    {% for batch in batches %}
-                    <div class="batch-checkbox">
-                        <input type="checkbox" id="batch_{{ batch.id }}" name="batch_ids" value="{{ batch.id }}">
-                        <label for="batch_{{ batch.id }}">Batch {{ batch.batch_number }} - {{ batch.farm.name }} ({{ batch.total_birds }} birds)</label>
+    <!-- Auto Schedule Modal -->
+    <div id="autoScheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configure Auto Schedule</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="autoScheduleForm" action="{{ url_for('set_auto_schedule') }}" method="POST">
+                <input type="hidden" name="item_type" id="autoScheduleItemType">
+                <input type="hidden" name="item_id" id="autoScheduleItemId">
+                <div class="form-group">
+                    <label>Schedule Ages (in days)</label>
+                    <div class="age-inputs">
+                        <div class="age-input-group">
+                            <input type="number" name="ages[]" min="1" placeholder="Age in days" required>
+                            <button type="button" class="remove-age-btn" onclick="removeAgeInput(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
-                    {% endfor %}
+                    <button type="button" class="add-age-btn" onclick="addAgeInput()">
+                        <i class="fas fa-plus"></i> Add Another Age
+                    </button>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Schedule Date</label>
-                <input type="date" name="schedule_date" required>
-            </div>
-            <div class="form-group">
-                <label>Notes</label>
-                <textarea name="notes" rows="3"></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="cancel-btn" onclick="closeScheduleModal()">Cancel</button>
-                <button type="submit" class="submit-btn">Schedule</button>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label>Notes (Optional)</label>
+                    <textarea name="notes" rows="3" placeholder="Add any specific instructions for this schedule"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeAutoScheduleModal()">Cancel</button>
+                    <button type="submit" class="submit-btn">Save Auto Schedule</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<style>
-/* Existing styles */
-.content-header h1 {
-    color: #1a73e8;
-}
-
-.section-container {
-    padding: 20px;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 15px;
-}
-
-.search-bar {
-    position: relative;
-    flex: 1;
-}
-
-.search-bar input {
-    width: 100%;
-    padding: 10px 15px;
-    padding-left: 40px;
-    border: 1px solid #1a73e8;
-    border-radius: 8px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.search-bar i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #1a73e8;
-}
-
-.search-bar input:focus {
-    border-color: #1557b0;
-    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
-    outline: none;
-}
-
-.add-btn {
-    background-color: #1a73e8;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.add-btn:hover {
-    background-color: #1557b0;
-}
-
-/* Mobile Card View Styles */
-.medicines-cards {
-    display: none;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    padding: 10px 0;
-}
-
-.medicine-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: transform 0.2s ease;
-}
-
-.medicine-card:active {
-    transform: scale(0.98);
-}
-
-.medicine-card-header {
-    padding: 15px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #eee;
-}
-
-.medicine-card-header h3 {
-    margin: 0;
-    color: #1a73e8;
-    font-size: 18px;
-}
-
-.medicine-card-body {
-    padding: 15px;
-}
-
-.medicine-info {
-    display: grid;
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.info-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.info-group label {
-    font-size: 12px;
-    color: #666;
-    font-weight: 500;
-}
-
-.info-group span {
-    font-size: 14px;
-    color: #2c3e50;
-}
-
-.medicine-actions {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.medicine-actions .action-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 10px;
-    font-size: 14px;
-}
-
-/* Mobile Optimizations */
-@media (max-width: 768px) {
-    .table-container {
-        display: none;
+    <style>
+    /* Existing styles */
+    .content-header h1 {
+        color: #1a73e8;
     }
 
-    .medicines-cards {
-        display: grid;
+    .section-container {
+        padding: 20px;
     }
 
     .section-header {
-        flex-direction: column;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 15px;
     }
 
     .search-bar {
+        position: relative;
+        flex: 1;
+    }
+
+    .search-bar input {
         width: 100%;
+        padding: 10px 15px;
+        padding-left: 40px;
+        border: 1px solid #1a73e8;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #1a73e8;
+    }
+
+    .search-bar input:focus {
+        border-color: #1557b0;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
     }
 
     .add-btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* Improve touch targets */
-    .medicine-card {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
     }
 
-    .action-btn {
-        min-height: 44px;
+    .add-btn:hover {
+        background-color: #1557b0;
     }
 
-    /* Modal optimizations for mobile */
-    .modal-content {
-        width: 90%;
-        margin: 20px auto;
-        max-height: 80vh;
-        overflow-y: auto;
+    /* Mobile Card View Styles */
+    .medicines-cards {
+        display: none;
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px 0;
     }
 
-    .batch-selection {
-        max-height: 200px;
-        overflow-y: auto;
+    .medicine-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease;
     }
-}
 
-/* Additional optimizations for very small screens */
-@media (max-width: 480px) {
-    .section-container {
-        padding: 10px;
+    .medicine-card:active {
+        transform: scale(0.98);
+    }
+
+    .medicine-card-header {
+        padding: 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
     }
 
     .medicine-card-header h3 {
-        font-size: 16px;
+        margin: 0;
+        color: #1a73e8;
+        font-size: 18px;
+    }
+
+    .medicine-card-body {
+        padding: 15px;
+    }
+
+    .medicine-info {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .info-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .info-group label {
-        font-size: 11px;
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
     }
 
     .info-group span {
-        font-size: 13px;
+        font-size: 14px;
+        color: #2c3e50;
+    }
+
+    .medicine-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
     }
 
     .medicine-actions .action-btn {
-        font-size: 13px;
-        padding: 8px;
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+        font-size: 14px;
     }
-}
-</style>
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .table-container {
+            display: none;
+        }
+
+        .medicines-cards {
+            display: grid;
+        }
+
+        .section-header {
+            flex-direction: column;
+        }
+
+        .search-bar {
+            width: 100%;
+        }
+
+        .add-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Improve touch targets */
+        .medicine-card {
+            cursor: pointer;
+        }
+
+        .action-btn {
+            min-height: 44px;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .section-container {
+            padding: 10px;
+        }
+
+        .medicine-card-header h3 {
+            font-size: 16px;
+        }
+
+        .info-group label {
+            font-size: 11px;
+        }
+
+        .info-group span {
+            font-size: 13px;
+        }
+
+        .medicine-actions .action-btn {
+            font-size: 13px;
+            padding: 8px;
+        }
+    }
+
+    /* Auto Schedule Toggle Styles */
+    .auto-schedule-toggle {
+        position: relative;
+        display: inline-block;
+    }
+
+    .auto-schedule-checkbox {
+        display: none;
+    }
+
+    .auto-schedule-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        padding: 6px 12px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .auto-schedule-checkbox:checked + .auto-schedule-label {
+        background: #e8f0fe;
+        border-color: #1a73e8;
+    }
+
+    .auto-schedule-label::before {
+        content: '';
+        width: 36px;
+        height: 20px;
+        background: #dee2e6;
+        border-radius: 20px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .auto-schedule-label::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .auto-schedule-checkbox:checked + .auto-schedule-label::before {
+        background: #1a73e8;
+    }
+
+    .auto-schedule-checkbox:checked + .auto-schedule-label::after {
+        left: 28px;
+    }
+
+    .auto-schedule-text {
+        font-size: 14px;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+
+    .auto-schedule-checkbox:checked + .auto-schedule-label .auto-schedule-text {
+        color: #1a73e8;
+    }
+
+    /* Loading State */
+    .auto-schedule-toggle.loading .auto-schedule-label {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .auto-schedule-toggle.loading .auto-schedule-label::after {
+        animation: loading 1s infinite linear;
+    }
+
+    @keyframes loading {
+        0% { transform: translateY(-50%) rotate(0deg); }
+        100% { transform: translateY(-50%) rotate(360deg); }
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        position: relative;
+        background: white;
+        margin: 50px auto;
+        padding: 0;
+        width: 90%;
+        max-width: 500px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        animation: slideIn 0.3s ease;
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        color: #1a73e8;
+        font-size: 20px;
+    }
+
+    .close {
+        color: #666;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    .close:hover {
+        color: #1a73e8;
+    }
+
+    .form-group {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .form-group:last-child {
+        border-bottom: none;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .age-inputs {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .age-input-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .age-input-group input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .age-input-group input:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
+    }
+
+    .remove-age-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .remove-age-btn:hover {
+        background: #fff5f5;
+    }
+
+    .add-age-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+    }
+
+    .add-age-btn:hover {
+        background: #e9ecef;
+        border-color: #ced4da;
+    }
+
+    textarea {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        resize: vertical;
+        transition: all 0.3s ease;
+    }
+
+    textarea:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
+    }
+
+    .form-actions {
+        padding: 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f8f9fa;
+        border-top: 1px solid #eee;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .cancel-btn {
+        padding: 8px 16px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .cancel-btn:hover {
+        background: #e9ecef;
+        border-color: #ced4da;
+    }
+
+    .submit-btn {
+        padding: 8px 16px;
+        background: #1a73e8;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+        background: #1557b0;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .modal-content {
+            margin: 20px;
+            width: auto;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions button {
+            width: 100%;
+        }
+    }
+    </style>
 
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
-function openScheduleModal(medicineId) {
-    document.getElementById('scheduleModal').style.display = 'block';
-    document.getElementById('scheduleMedicineId').value = medicineId;
-}
-
-function closeScheduleModal() {
-    document.getElementById('scheduleModal').style.display = 'none';
-    document.getElementById('scheduleForm').reset();
-}
-
 function deleteMedicine(id) {
     if (confirm('Are you sure you want to delete this medicine? This action cannot be undone.')) {
         fetch(`/medicine/${id}/delete`, {
@@ -392,37 +690,6 @@ function deleteMedicine(id) {
     }
 }
 
-// Close modal when clicking outside or on close button
-window.onclick = function(event) {
-    const modal = document.getElementById('scheduleModal');
-    if (event.target == modal) {
-        closeScheduleModal();
-    }
-}
-
-// Add event listener for close button
-document.addEventListener('DOMContentLoaded', function() {
-    const closeBtn = document.querySelector('.close');
-    if (closeBtn) {
-        closeBtn.onclick = function() {
-            closeScheduleModal();
-        }
-    }
-
-    // Add touch feedback for mobile
-    if ('ontouchstart' in window) {
-        const buttons = document.querySelectorAll('.action-btn');
-        buttons.forEach(button => {
-            button.addEventListener('touchstart', function() {
-                this.style.opacity = '0.8';
-            });
-            button.addEventListener('touchend', function() {
-                this.style.opacity = '';
-            });
-        });
-    }
-});
-
 // Search functionality
 document.getElementById('medicineSearch').addEventListener('input', function(e) {
     const searchText = e.target.value.toLowerCase();
@@ -441,5 +708,271 @@ document.getElementById('medicineSearch').addEventListener('input', function(e) 
         card.style.display = text.includes(searchText) ? '' : 'none';
     });
 });
+
+// Add touch feedback for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    if ('ontouchstart' in window) {
+        const buttons = document.querySelectorAll('.action-btn');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.opacity = '0.8';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.opacity = '';
+            });
+        });
+    }
+});
+
+function toggleAutoSchedule(itemType, itemId, checkbox) {
+    const toggle = checkbox.closest('.auto-schedule-toggle');
+    const text = toggle.querySelector('.auto-schedule-text');
+    
+    // Add loading state
+    toggle.classList.add('loading');
+    
+    if (checkbox.checked) {
+        // Open modal to configure auto-schedule
+        openAutoScheduleModal(itemType, itemId, function(success) {
+            if (!success) {
+                // If configuration was cancelled or failed, uncheck the toggle
+                checkbox.checked = false;
+                text.textContent = 'Set Auto Schedule';
+            } else {
+                text.textContent = 'Auto Scheduled';
+            }
+            toggle.classList.remove('loading');
+        });
+    } else {
+        // Remove auto-schedule
+        fetch('/set_auto_schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                item_type: itemType,
+                item_id: itemId,
+                remove: true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                text.textContent = 'Set Auto Schedule';
+            } else {
+                // If removal failed, check the toggle back
+                checkbox.checked = true;
+                text.textContent = 'Auto Scheduled';
+                alert('Error removing auto-schedule: ' + data.message);
+            }
+            toggle.classList.remove('loading');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            checkbox.checked = true;
+            text.textContent = 'Auto Scheduled';
+            alert('An error occurred while updating auto-schedule. Please try again.');
+            toggle.classList.remove('loading');
+        });
+    }
+}
+
+function openAutoScheduleModal(itemType, itemId, callback) {
+    document.getElementById('autoScheduleModal').style.display = 'block';
+    document.getElementById('autoScheduleItemType').value = itemType;
+    document.getElementById('autoScheduleItemId').value = itemId;
+    
+    // Reset form and handlers
+    const form = document.getElementById('autoScheduleForm');
+    form.reset();
+    
+    // Reset age inputs to one
+    const ageInputs = document.querySelector('.age-inputs');
+    ageInputs.innerHTML = `
+        <div class="age-input-group">
+            <input type="number" name="ages[]" min="1" placeholder="Age in days" required>
+            <button type="button" class="remove-age-btn" onclick="removeAgeInput(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Fetch existing auto-schedule if any
+    fetch(`/get_auto_schedule/${itemType}/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add age inputs for each age
+                data.ages.forEach(age => {
+                    addAgeInput(age);
+                });
+                
+                // Set notes
+                document.querySelector('textarea[name="notes"]').value = data.notes || '';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching auto-schedule:', error);
+        });
+
+    // Update form submission to handle callback
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        
+        // Check if there are any ages added
+        const ageInputs = form.querySelectorAll('input[name="ages[]"]');
+        const hasAges = Array.from(ageInputs).some(input => input.value.trim() !== '');
+        
+        if (!hasAges) {
+            // If no ages are added, remove the auto-schedule
+            fetch('/set_auto_schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    item_type: itemType,
+                    item_id: itemId,
+                    remove: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeAutoScheduleModal();
+                    if (callback) callback(false);
+                } else {
+                    alert('Error removing auto-schedule: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while removing auto-schedule. Please try again.');
+            });
+            return;
+        }
+        
+        // If ages are added, save the auto-schedule
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAutoScheduleModal();
+                if (callback) callback(true);
+            } else {
+                alert('Error saving auto-schedule: ' + data.message);
+                if (callback) callback(false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while saving auto-schedule. Please try again.');
+            if (callback) callback(false);
+        });
+    };
+}
+
+function closeAutoScheduleModal() {
+    document.getElementById('autoScheduleModal').style.display = 'none';
+    
+    // Get the current item type and ID
+    const itemType = document.getElementById('autoScheduleItemType').value;
+    const itemId = document.getElementById('autoScheduleItemId').value;
+
+    // Check if there's an existing schedule
+    fetch(`/get_auto_schedule/${itemType}/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success || !data.ages || data.ages.length === 0) {
+                // If no schedule exists, turn off the toggle
+                const toggles = document.querySelectorAll(`input[id^="autoSchedule"][id$="${itemId}"]`);
+                toggles.forEach(toggle => {
+                    toggle.checked = false;
+                    const text = toggle.nextElementSibling.querySelector('.auto-schedule-text');
+                    text.textContent = 'Set Auto Schedule';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // On error, turn off the toggle to be safe
+            const toggles = document.querySelectorAll(`input[id^="autoSchedule"][id$="${itemId}"]`);
+            toggles.forEach(toggle => {
+                toggle.checked = false;
+                const text = toggle.nextElementSibling.querySelector('.auto-schedule-text');
+                text.textContent = 'Set Auto Schedule';
+            });
+        });
+}
+
+function addAgeInput(value = '') {
+    const ageInputs = document.querySelector('.age-inputs');
+    const newGroup = document.createElement('div');
+    newGroup.className = 'age-input-group';
+    newGroup.innerHTML = 
+        '<input type="number" name="ages[]" min="1" placeholder="Age in days" required value="' + value + '">' +
+        '<button type="button" class="remove-age-btn" onclick="removeAgeInput(this)">' +
+            '<i class="fas fa-times"></i>' +
+        '</button>';
+    ageInputs.appendChild(newGroup);
+}
+
+function removeAgeInput(button) {
+    const ageInputs = document.querySelector('.age-inputs');
+    if (ageInputs.children.length > 1) {
+        button.parentElement.remove();
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('autoScheduleModal');
+    if (event.target == modal) {
+        closeAutoScheduleModal();
+    }
+}
+
+// Add event listener for close button
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.onclick = function() {
+            closeAutoScheduleModal();
+        }
+    }
+
+    const cancelBtn = document.querySelector('.cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.onclick = function() {
+            closeAutoScheduleModal();
+        }
+    }
+
+    // Check for auto-schedules on page load
+    const toggles = document.querySelectorAll('.auto-schedule-checkbox');
+    toggles.forEach(toggle => {
+        const itemId = toggle.id.replace('autoSchedule', '').replace('Mobile', '');
+        const itemType = toggle.id.includes('Mobile') ? 'medicine' : 'medicine';
+        
+        fetch(`/get_auto_schedule/${itemType}/${itemId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.ages && data.ages.length > 0) {
+                    toggle.checked = true;
+                    const text = toggle.nextElementSibling.querySelector('.auto-schedule-text');
+                    text.textContent = 'Auto Scheduled';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking auto-schedule:', error);
+            });
+    });
+});
 </script>
-{% endblock %} 
+{% endblock %}

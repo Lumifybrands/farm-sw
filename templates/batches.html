@@ -669,9 +669,14 @@ function deleteBatch(batchId) {
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
+            if (data && data.success) {
                 // Show success message
                 const row = document.querySelector(`tr[data-batch-id="${batchId}"]`);
                 const card = document.querySelector(`.batch-card[data-batch-id="${batchId}"]`);
@@ -689,7 +694,7 @@ function deleteBatch(batchId) {
                     location.reload();
                 }
             } else {
-                alert('Error deleting batch: ' + data.message);
+                alert('Error deleting batch: ' + (data?.message || 'Unknown error occurred'));
             }
         })
         .catch(error => {

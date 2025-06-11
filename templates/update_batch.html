@@ -53,7 +53,9 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label for="date">Date</label>
+                    <div class="date-picker-container">
                     <input type="text" id="date" name="date" value="{{ selected_date.strftime('%Y-%m-%d') }}" class="flatpickr-input">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="mortality_count">Mortality Count</label>
@@ -1003,6 +1005,31 @@ textarea:focus {
 .flatpickr-day.has-schedule.selected::after {
     background-color: white;
 }
+
+/* Date Picker Styles */
+.date-picker-container {
+    position: relative;
+    width: 100%;
+}
+
+.flatpickr-calendar {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    margin-top: 5px !important;
+    z-index: 1000 !important;
+}
+
+/* Ensure the calendar is above other elements */
+.flatpickr-calendar.open {
+    display: inline-block;
+    z-index: 1000;
+}
+
+/* Add some spacing between the input and calendar */
+.flatpickr-input {
+    margin-bottom: 5px;
+}
 </style>
 
 <script>
@@ -1152,20 +1179,14 @@ document.addEventListener('DOMContentLoaded', function() {
     datePicker = flatpickr("#date", {
         dateFormat: "Y-m-d",
         minDate: "{{ batch.created_at.strftime('%Y-%m-%d') }}",
-        disableMobile: true,
         onChange: function(selectedDates, dateStr) {
-            // Update the hidden input value
-            document.getElementById('date').value = dateStr;
+            // Update URL with selected date
+            const url = new URL(window.location.href);
+            url.searchParams.set('date', dateStr);
+            window.location.href = url.toString();
         },
-        onMonthChange: function() {
-            setTimeout(updateDatePicker, 100);
-        },
-        onReady: function() {
-            setTimeout(updateDatePicker, 100);
-        },
-        onOpen: function() {
-            setTimeout(updateDatePicker, 100);
-        }
+        position: "auto",
+        appendTo: document.querySelector('.date-picker-container')
     });
 
     // Load scheduled dates and missing update dates
@@ -1173,153 +1194,161 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMissingUpdateDates();
 });
 
-// Form validation
-document.querySelector('.update-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+// Function to load schedules for a specific date
+function loadSchedulesForDate(dateStr) {
+    const batchId = {{ batch.id }};
     
-    // Get the selected date
-    const selectedDate = document.getElementById('date').value;
-    if (!selectedDate) {
-        alert('Please select a date for the update.');
-        return;
-    }
+    // Show loading state
+    const scheduledItemsContainer = document.querySelector('.scheduled-items-container');
+    scheduledItemsContainer.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading schedules...</div>';
     
-    // Validate feeds
-    const feedItems = document.querySelectorAll('select[name="feed_id[]"]');
-    const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
-    const selectedFeeds = new Set();
-    
-    for (let i = 0; i < feedItems.length; i++) {
-        if (feedItems[i].value) {
-            if (selectedFeeds.has(feedItems[i].value)) {
-                alert('Please do not select the same feed multiple times.');
-                return;
-            }
-            selectedFeeds.add(feedItems[i].value);
-            
-            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) <= 0) {
-                alert('Please enter valid quantities for all selected feed items.');
-                return;
-            }
-        }
-    }
-    
-    // Validate miscellaneous items
-    const miscNames = document.querySelectorAll('input[name="misc_name[]"]');
-    const miscQuantities = document.querySelectorAll('input[name="misc_quantity_per_unit[]"]');
-    const miscUnits = document.querySelectorAll('select[name="misc_unit_type[]"]');
-    const miscPrices = document.querySelectorAll('input[name="misc_price_per_unit[]"]');
-    const miscUsed = document.querySelectorAll('input[name="misc_units_used[]"]');
-    
-    for (let i = 0; i < miscNames.length; i++) {
-        if (!miscNames[i].value || !miscQuantities[i].value || !miscUnits[i].value || 
-            !miscPrices[i].value || !miscUsed[i].value) {
-            alert('Please fill in all fields for miscellaneous items.');
-            return;
-        }
-        
-        if (parseFloat(miscQuantities[i].value) <= 0 || parseFloat(miscPrices[i].value) <= 0 || 
-            parseFloat(miscUsed[i].value) <= 0) {
-            alert('Please enter valid quantities and prices for miscellaneous items.');
-            return;
-        }
-    }
-    
-    // If everything passes, submit the form
-    this.submit();
-});
-
-// Function to load scheduled dates
-function loadScheduledDates() {
-    fetch('/api/scheduled-dates')
+    // Fetch schedules for the selected date
+    fetch(`/api/batch/${batchId}/schedules/${dateStr}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                scheduledDates = new Set(data.dates);
-                updateDatePicker();
+                updateScheduledItems(data.schedules);
+            } else {
+                scheduledItemsContainer.innerHTML = '<div class="no-schedules-message"><i class="fas fa-calendar-check"></i><p>No schedules for this date</p></div>';
             }
         })
         .catch(error => {
-            console.error('Error loading scheduled dates:', error);
+            console.error('Error loading schedules:', error);
+            scheduledItemsContainer.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i><p>Error loading schedules</p></div>';
         });
 }
 
-// Function to load missing update dates
-function loadMissingUpdateDates() {
-    const batchStartDate = new Date('{{ batch.created_at.strftime("%Y-%m-%d") }}');
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);  // End of today
+// Function to update the scheduled items display
+function updateScheduledItems(schedules) {
+    const container = document.querySelector('.scheduled-items-container');
+    container.innerHTML = '';
     
-    // Clear existing missing dates
-    missingUpdateDates.clear();
+    if (!schedules || Object.keys(schedules).length === 0) {
+        container.innerHTML = '<div class="no-schedules-message"><i class="fas fa-calendar-check"></i><p>No schedules for this date</p></div>';
+                return;
+            }
     
-    // Get all dates between batch start and today
-    for (let d = new Date(batchStartDate); d <= today; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
-        missingUpdateDates.add(dateStr);
+    // Process medicine schedules
+    if (schedules.medicine && schedules.medicine.length > 0) {
+        const medicineSection = createScheduleSection('Medicine Schedules', 'pills');
+        schedules.medicine.forEach(schedule => {
+            medicineSection.appendChild(createScheduleItem(schedule, 'medicine'));
+        });
+        container.appendChild(medicineSection);
     }
     
-    // Remove dates that have updates
-    {% for update in batch.updates %}
-        missingUpdateDates.delete('{{ update.date.strftime("%Y-%m-%d") }}');
-    {% endfor %}
-    
-    // Update the date picker with the new indicators
-    updateDatePicker();
-}
-
-// Function to update date picker with indicators
-function updateDatePicker() {
-    if (!datePicker) return;
-
-    // Remove existing indicators
-    document.querySelectorAll('.flatpickr-day.has-schedule, .flatpickr-day.missing-update').forEach(day => {
-        day.classList.remove('has-schedule', 'missing-update');
-    });
-
-    // Add indicators for dates with schedules
-    scheduledDates.forEach(date => {
-        const formattedDate = new Date(date);
-        const dayElement = document.querySelector(
-            `.flatpickr-day[aria-label="${formattedDate.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            })}"]`
-        );
-        if (dayElement) {
-            dayElement.classList.add('has-schedule');
+    // Process vaccine schedules
+    if (schedules.vaccine && schedules.vaccine.length > 0) {
+        const vaccineSection = createScheduleSection('Vaccine Schedules', 'syringe');
+        schedules.vaccine.forEach(schedule => {
+            vaccineSection.appendChild(createScheduleItem(schedule, 'vaccine'));
+        });
+        container.appendChild(vaccineSection);
         }
-    });
-
-    // Add indicators for missing update dates
-    missingUpdateDates.forEach(date => {
-        const formattedDate = new Date(date);
-        const dayElement = document.querySelector(
-            `.flatpickr-day[aria-label="${formattedDate.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            })}"]`
-        );
-        if (dayElement) {
-            dayElement.classList.add('missing-update');
-        }
-    });
-
-    // Mark batch start date
-    const batchStartDate = new Date('{{ batch.created_at.strftime("%Y-%m-%d") }}');
-    const startDayElement = document.querySelector(
-        `.flatpickr-day[aria-label="${batchStartDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        })}"]`
-    );
-    if (startDayElement) {
-        startDayElement.classList.add('batch-start');
+        
+    // Process health material schedules
+    if (schedules.health_material && schedules.health_material.length > 0) {
+        const healthMaterialSection = createScheduleSection('Health Material Schedules', 'spray-can');
+        schedules.health_material.forEach(schedule => {
+            healthMaterialSection.appendChild(createScheduleItem(schedule, 'health_material'));
+        });
+        container.appendChild(healthMaterialSection);
     }
 }
+
+// Helper function to create a schedule section
+function createScheduleSection(title, icon) {
+    const section = document.createElement('div');
+    section.className = 'scheduled-category';
+    section.innerHTML = `
+        <h4><i class="fas fa-${icon}"></i> ${title}</h4>
+        <div class="scheduled-items"></div>
+    `;
+    return section;
+}
+
+// Helper function to create a schedule item
+function createScheduleItem(schedule, type) {
+    const item = document.createElement('div');
+    item.className = 'scheduled-item';
+    if (schedule.is_overdue) {
+        item.classList.add('overdue');
+    }
+    
+    const itemName = type === 'vaccine' ? 
+        `${schedule.name} (Dose ${schedule.dose_number})` : 
+        schedule.name;
+    
+    item.innerHTML = `
+        <div class="scheduled-item-info">
+            <label class="checkbox-container">
+                <input type="checkbox" 
+                       name="scheduled_items[${type}][${schedule.id}][selected]" 
+                       value="1"
+                       onchange="toggleQuantityField(this, '${type}_quantity_${schedule.id}')">
+                <span class="checkmark"></span>
+                <span class="item-name">${itemName}</span>
+            </label>
+            <div class="schedule-details">
+                <span class="schedule-date ${schedule.is_overdue ? 'overdue' : ''}">
+                    Scheduled: ${schedule.scheduled_date}
+                    ${schedule.is_overdue ? '<span class="overdue-badge">Overdue</span>' : ''}
+                </span>
+                ${schedule.notes ? `<span class="schedule-notes">${schedule.notes}</span>` : ''}
+            </div>
+        </div>
+        <div class="scheduled-item-quantity" id="${type}_quantity_${schedule.id}" style="display: none;">
+            <input type="number" 
+                   name="scheduled_items[${type}][${schedule.id}][quantity]" 
+                   placeholder="Quantity" 
+                   min="0" 
+                   step="0.01" 
+                   value="0"
+                   onchange="validateScheduleQuantity(this, '${schedule.id}', '${type}')">
+            <span class="unit-type">units</span>
+        </div>
+    `;
+    
+    return item;
+        }
+
+// Add loading message styles
+const style = document.createElement('style');
+style.textContent = `
+    .loading-message {
+        text-align: center;
+        padding: 30px 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .loading-message i {
+        font-size: 24px;
+        color: #1a73e8;
+        margin-bottom: 10px;
+    }
+    
+    .error-message {
+        text-align: center;
+        padding: 30px 20px;
+        background: #fee2e2;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .error-message i {
+        font-size: 24px;
+        color: #dc2626;
+        margin-bottom: 10px;
+    }
+    
+    .error-message p {
+        color: #dc2626;
+        margin: 0;
+    }
+`;
+document.head.appendChild(style);
 </script>
 
 {% endblock %}
@@ -1330,12 +1359,12 @@ function updateDatePicker() {
     // Initialize Flatpickr for the date input
     flatpickr("#date", {
         dateFormat: "Y-m-d",
-        // maxDate: "today",
+        minDate: "{{ batch.created_at.strftime('%Y-%m-%d') }}",
         onChange: function(selectedDates, dateStr) {
-            // Update the URL with the new date
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('date', dateStr);
-            window.location.href = currentUrl.toString();
+            // Update URL with selected date
+            const url = new URL(window.location.href);
+            url.searchParams.set('date', dateStr);
+            window.location.href = url.toString();
         }
     });
 </script>

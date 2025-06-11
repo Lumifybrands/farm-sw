@@ -3,10 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Bismi Farms{% endblock %}</title>
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="description" content="Farm Management System for Bismi Farms">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192x192.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Bismi Farms">
+    
+    <title>{% block title %}Bismi Farms{% endblock %} - Bismi Farms</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         /* Additional styles for base template */
         .sidebar {
@@ -471,6 +482,7 @@
 
     {% block scripts %}
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Mobile Navigation Toggle
         document.getElementById('mobileNavToggle').addEventListener('click', function() {
@@ -547,5 +559,33 @@
         });
     </script>
     {% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/static/sw.js', {
+                        scope: '/'
+                    });
+                    console.log('ServiceWorker registration successful with scope:', registration.scope);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('Service Worker update found!');
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            console.log('Service Worker state:', newWorker.state);
+                        });
+                    });
+                } catch (error) {
+                    console.error('ServiceWorker registration failed:', error);
+                }
+            });
+        } else {
+            console.log('Service Workers are not supported in this browser');
+        }
+    </script>
 </body>
 </html> 

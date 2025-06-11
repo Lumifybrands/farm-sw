@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -159,7 +159,7 @@ class Batch(db.Model):
         # Use local timezone instead of UTC
         today = datetime.now().date()
         created_date = self.created_at.date()
-        return (today - created_date).days 
+        return (today - created_date).days + 1
 
     def check_and_update_status(self):
         """Check if batch should be marked as closed based on available birds"""
@@ -651,6 +651,28 @@ class FCRRate(db.Model):
     def __repr__(self):
         return f'<FCRRate {self.lower_limit}-{self.upper_limit or "Max"}: {self.rate}>'
 
+class AutoSchedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_type = db.Column(db.String(20), nullable=False)  # 'medicine', 'vaccine', or 'health_material'
+    item_id = db.Column(db.Integer, nullable=False)
+    schedule_ages = db.Column(db.Text, nullable=False)  # JSON string of ages in days
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    def get_schedule_ages(self):
+        try:
+            ages = json.loads(self.schedule_ages)
+            # Ensure all ages are integers
+            return [int(age) for age in ages if age is not None]
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return []
+
+    def set_schedule_ages(self, ages):
+        # Ensure all ages are integers and filter out None values
+        valid_ages = [int(age) for age in ages if age is not None]
+        self.schedule_ages = json.dumps(valid_ages)
+
 def init_db():
     with app.app_context():
         try:
@@ -727,9 +749,58 @@ def login():
 @login_required
 @admin_required
 def dashboard():
-    return render_template('dashboard.html', 
-                         username=session.get('username'),
-                         user_type=session.get('user_type'))
+    # Get total farms
+    farms = Farm.query.all()
+    
+    # Get active batches
+    active_batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
+    
+    # Calculate total birds
+    total_birds = sum(batch.available_birds for batch in active_batches)
+    
+    # Get pending schedules count
+    pending_schedules_count = (
+        MedicineSchedule.query.filter_by(completed=False).count() +
+        VaccineSchedule.query.filter_by(completed=False).count() +
+        HealthMaterialSchedule.query.filter_by(completed=False).count()
+    )
+    
+    # Get upcoming schedules (next 7 days)
+    today = datetime.now().date()
+    next_week = today + timedelta(days=7)
+    
+    upcoming_schedules = []
+    
+    # Get medicine schedules
+    medicine_schedules = MedicineSchedule.query.filter(
+        MedicineSchedule.schedule_date >= today,
+        MedicineSchedule.schedule_date <= next_week
+    ).all()
+    upcoming_schedules.extend(medicine_schedules)
+    
+    # Get vaccine schedules
+    vaccine_schedules = VaccineSchedule.query.filter(
+        VaccineSchedule.scheduled_date >= today,
+        VaccineSchedule.scheduled_date <= next_week
+    ).all()
+    upcoming_schedules.extend(vaccine_schedules)
+    
+    # Get health material schedules
+    health_schedules = HealthMaterialSchedule.query.filter(
+        HealthMaterialSchedule.scheduled_date >= today,
+        HealthMaterialSchedule.scheduled_date <= next_week
+    ).all()
+    upcoming_schedules.extend(health_schedules)
+    
+    # Sort all schedules by date
+    upcoming_schedules.sort(key=lambda x: x.schedule_date if hasattr(x, 'schedule_date') else x.scheduled_date)
+    
+    return render_template('dashboard.html',
+                         farms=farms,
+                         active_batches=active_batches,
+                         total_birds=total_birds,
+                         pending_schedules_count=pending_schedules_count,
+                         upcoming_schedules=upcoming_schedules)
 
 @app.route('/settings')
 @login_required
@@ -1077,42 +1148,48 @@ def add_batch():
             db.session.add(batch)
             db.session.flush()  # Get the batch ID without committing
 
-            # Get all vaccines and create schedules based on their dose ages
-            vaccines = Vaccine.query.all()
-            for vaccine in vaccines:
-                dose_ages = vaccine.get_dose_ages()
-                for dose_number, age_days in enumerate(dose_ages, 1):
-                    # Calculate schedule date based on batch creation date and age in days
-                    schedule_date = created_at.date() + timedelta(days=age_days)
-                    
-                    # Create vaccine schedule
-                    schedule = VaccineSchedule(
-                        vaccine_id=vaccine.id,
-                        dose_number=dose_number,
-                        scheduled_date=schedule_date,
-                        notes=f"Automatically scheduled for {vaccine.name} dose {dose_number}"
-                    )
-                    schedule.batches.append(batch)
-                    db.session.add(schedule)
+            # Create schedules for the batch
+            create_schedules_for_batch(batch)
 
             db.session.commit()
-            flash('Batch added successfully', 'success')
+            flash('Batch added successfully!', 'success')
             return redirect(url_for('batches'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Error adding batch: {str(e)}', 'error')
+            flash('Error adding batch: ' + str(e), 'error')
             return redirect(url_for('add_batch'))
-
+    
     # GET request - show form
     farms = Farm.query.all()
     managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
-    farm_sheds = {farm.id: {
-        'num_sheds': farm.num_sheds,
-        'shed_capacities': farm.get_shed_capacities(),
-        'shed_available': farm.get_shed_available_capacities(),
-        'shed_status': [{'is_partially_allocated': cap > avail} for cap, avail in zip(farm.get_shed_capacities(), farm.get_shed_available_capacities())]
-    } for farm in farms}
-    return render_template('add_batch.html', farms=farms, managers=managers, farm_sheds=farm_sheds)
+    
+    # Create farm_sheds dictionary with proper JSON serializable values
+    farm_sheds = {}
+    for farm in farms:
+        try:
+            shed_capacities = farm.get_shed_capacities()
+            shed_available = farm.get_shed_available_capacities()
+            shed_status = []
+            
+            for cap, avail in zip(shed_capacities, shed_available):
+                shed_status.append({
+                    'is_partially_allocated': bool(cap > avail)
+                })
+            
+            farm_sheds[str(farm.id)] = {
+                'num_sheds': int(farm.num_sheds),
+                'shed_capacities': [int(cap) for cap in shed_capacities],
+                'shed_available': [int(avail) for avail in shed_available],
+                'shed_status': shed_status
+            }
+        except Exception as e:
+            print(f"Error processing farm {farm.id}: {str(e)}")
+            continue
+    
+    return render_template('add_batch.html', 
+                         farms=farms, 
+                         managers=managers, 
+                         farm_sheds=farm_sheds)
 
 @app.route('/batches/edit/<int:batch_id>', methods=['GET', 'POST'])
 @login_required
@@ -4014,6 +4091,241 @@ def get_scheduled_dates():
             'success': False,
             'message': str(e)
         }), 500
+
+# Auto Schedule Routes
+@app.route('/set_auto_schedule', methods=['POST'])
+@login_required
+def set_auto_schedule():
+    try:
+        # Check if this is a removal request
+        if request.is_json and request.json.get('remove'):
+            item_type = request.json.get('item_type')
+            item_id = request.json.get('item_id')
+            
+            # Find and delete the auto schedule
+            auto_schedule = AutoSchedule.query.filter_by(
+                item_type=item_type,
+                item_id=item_id
+            ).first()
+            
+            if auto_schedule:
+                db.session.delete(auto_schedule)
+                db.session.commit()
+                flash('Auto schedule has been removed successfully!', 'success')
+                return jsonify({'success': True})
+            else:
+                return jsonify({'success': False, 'message': 'No auto schedule found to remove'})
+        
+        # Handle normal auto schedule creation/update
+        item_type = request.form.get('item_type')
+        item_id = request.form.get('item_id')
+        ages = request.form.getlist('ages[]')
+        notes = request.form.get('notes')
+
+        # Convert ages to integers and sort them
+        ages = sorted([int(age) for age in ages])
+        
+        # Check if auto-schedule already exists
+        auto_schedule = AutoSchedule.query.filter_by(
+            item_type=item_type,
+            item_id=item_id
+        ).first()
+
+        if auto_schedule:
+            # Update existing auto-schedule
+            auto_schedule.set_schedule_ages(ages)
+            auto_schedule.notes = notes
+        else:
+            # Create new auto-schedule
+            auto_schedule = AutoSchedule(
+                item_type=item_type,
+                item_id=item_id,
+                schedule_ages=json.dumps(ages),
+                notes=notes
+            )
+            db.session.add(auto_schedule)
+
+        db.session.commit()
+        flash('Auto schedule has been set successfully!', 'success')
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        flash('Error setting auto schedule: ' + str(e), 'error')
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/get_auto_schedule/<item_type>/<int:item_id>')
+@login_required
+def get_auto_schedule(item_type, item_id):
+    auto_schedule = AutoSchedule.query.filter_by(
+        item_type=item_type,
+        item_id=item_id
+    ).first()
+
+    if auto_schedule:
+        return jsonify({
+            'success': True,
+            'ages': auto_schedule.get_schedule_ages(),
+            'notes': auto_schedule.notes
+        })
+    return jsonify({'success': False, 'message': 'No auto schedule found'})
+
+def create_schedules_for_batch(batch):
+    """Create schedules for a new batch based on auto-schedules"""
+    try:
+        # Get all auto-schedules
+        auto_schedules = AutoSchedule.query.all()
+        
+        for auto_schedule in auto_schedules:
+            try:
+                # Get schedule ages and ensure they are integers
+                ages = [int(age) for age in auto_schedule.get_schedule_ages() if age is not None]
+                batch_created_date = batch.created_at.date()
+                
+                for age in ages:
+                    schedule_date = batch_created_date + timedelta(days=age)
+                    
+                    if auto_schedule.item_type == 'medicine':
+                        medicine = Medicine.query.get(auto_schedule.item_id)
+                        if medicine:
+                            schedule = MedicineSchedule(
+                                medicine_id=medicine.id,
+                                schedule_date=schedule_date,
+                                notes=auto_schedule.notes or '',
+                                completed=False
+                            )
+                            schedule.batches.append(batch)
+                            db.session.add(schedule)
+                    
+                    elif auto_schedule.item_type == 'vaccine':
+                        vaccine = Vaccine.query.get(auto_schedule.item_id)
+                        if vaccine:
+                            # Find the appropriate dose number based on age
+                            dose_ages = vaccine.get_dose_ages()
+                            if isinstance(dose_ages, list) and age in dose_ages:
+                                dose_number = dose_ages.index(age) + 1
+                            else:
+                                dose_number = 1
+                                
+                            schedule = VaccineSchedule(
+                                vaccine_id=vaccine.id,
+                                dose_number=dose_number,
+                                scheduled_date=schedule_date,
+                                notes=auto_schedule.notes or '',
+                                completed=False
+                            )
+                            schedule.batches.append(batch)
+                            db.session.add(schedule)
+                    
+                    elif auto_schedule.item_type == 'health_material':
+                        material = HealthMaterial.query.get(auto_schedule.item_id)
+                        if material:
+                            schedule = HealthMaterialSchedule(
+                                health_material_id=material.id,
+                                scheduled_date=schedule_date,
+                                notes=auto_schedule.notes or '',
+                                completed=False
+                            )
+                            schedule.batches.append(batch)
+                            db.session.add(schedule)
+            except Exception as e:
+                print(f"Error processing auto schedule {auto_schedule.id}: {str(e)}")
+                continue
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating schedules for batch: {str(e)}")
+        raise
+
+# # Modify the add_batch route to include auto-scheduling
+# @app.route('/batches/add', methods=['GET', 'POST'])
+# @login_required
+# def add_batch():
+#     if request.method == 'POST':
+#         try:
+#             farm_id = request.form.get('farm_id')
+#             manager_id = request.form.get('manager_id')
+#             brand = request.form.get('brand')
+#             total_birds = int(request.form.get('total_birds'))
+#             extra_chicks = int(request.form.get('extra_chicks', 0))
+#             created_at = datetime.strptime(request.form.get('created_at'), '%Y-%m-%dT%H:%M')
+#             cost_per_chicken = float(request.form.get('cost_per_chicken'))
+
+#             # Generate batch number
+#             batch_number = generate_batch_number()
+#             farm_batch_number = get_next_farm_batch_number(farm_id)
+
+#             # Get shed distribution
+#             shed_birds = []
+#             farm = Farm.query.get(farm_id)
+#             for i in range(farm.num_sheds):
+#                 birds = int(request.form.get(f'shed_{i+1}_birds', 0))
+#                 shed_birds.append(birds)
+
+#             # Create new batch
+#             batch = Batch(
+#                 farm_id=farm_id,
+#                 manager_id=manager_id if manager_id else None,
+#                 batch_number=batch_number,
+#                 farm_batch_number=farm_batch_number,
+#                 brand=brand,
+#                 total_birds=total_birds,
+#                 extra_chicks=extra_chicks,
+#                 available_birds=total_birds,
+#                 shed_birds=json.dumps(shed_birds),
+#                 cost_per_chicken=cost_per_chicken,
+#                 created_at=created_at
+#             )
+
+#             db.session.add(batch)
+#             db.session.flush()  # Get the batch ID without committing
+
+#             # Get all vaccines and create schedules based on their dose ages
+#             vaccines = Vaccine.query.all()
+#             for vaccine in vaccines:
+#                 dose_ages = vaccine.get_dose_ages()
+#                 for dose_number, age_days in enumerate(dose_ages, 1):
+#                     # Calculate schedule date based on batch creation date and age in days
+#                     schedule_date = created_at.date() + timedelta(days=age_days)
+                    
+#                     # Create vaccine schedule
+#                     schedule = VaccineSchedule(
+#                         vaccine_id=vaccine.id,
+#                         dose_number=dose_number,
+#                         scheduled_date=schedule_date,
+#                         notes=f"Automatically scheduled for {vaccine.name} dose {dose_number}"
+#                     )
+#                     schedule.batches.append(batch)
+#                     db.session.add(schedule)
+
+#             db.session.commit()
+            
+            
+            
+#             flash('Batch added successfully!', 'success')
+#             return redirect(url_for('batches'))
+#         except Exception as e:
+#             db.session.rollback()
+#             flash('Error adding batch: ' + str(e), 'error')
+    
+#     # GET request - show form
+#     farms = Farm.query.all()
+#     managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+#     farm_sheds = {farm.id: {
+#         'num_sheds': farm.num_sheds,
+#         'shed_capacities': farm.get_shed_capacities(),
+#         'shed_available': farm.get_shed_available_capacities(),
+#         'shed_status': [{'is_partially_allocated': cap > avail} for cap, avail in zip(farm.get_shed_capacities(), farm.get_shed_available_capacities())]
+#     } for farm in farms}
+#     return render_template('add_batch.html', farms=farms, managers=managers, farm_sheds=farm_sheds)
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+
+@app.route('/offline.html')
+def offline():
+    return render_template('offline.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
