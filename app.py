@@ -546,19 +546,19 @@ class FinancialSummary(db.Model):
         if total_weight_sold > 0:
             self.fcr_value = total_feed_used / total_weight_sold
         else:
-            self.fcr_value = None
+            self.fcr_value = 0.0
 
         # Determine FCR rate based on the calculated FCR value
-        if self.fcr_value is not None:
+        if self.fcr_value > 0:
             fcr_rates = FCRRate.query.order_by(FCRRate.lower_limit).all()
             for rate in fcr_rates:
                 if self.fcr_value >= rate.lower_limit and (rate.upper_limit is None or self.fcr_value < rate.upper_limit):
                     self.fcr_rate = rate.rate
                     break
-            self.fcr_price = total_weight_sold * self.fcr_rate
+            self.fcr_price = total_weight_sold * (self.fcr_rate or 0.0)
         else:
-            self.fcr_rate = None
-            self.fcr_price = None        
+            self.fcr_rate = 0.0
+            self.fcr_price = 0.0
 
     def calculate_summary(self, batch):
         """Calculate financial summary for a batch"""
@@ -576,17 +576,25 @@ class FinancialSummary(db.Model):
                 
         # Subtract feed stock cost from total feed costs
         feed_stock_cost = 0
-        if batch.feed_stock > 0:
-            # Get the latest feed price for each feed type
-            for feed in update.feeds:
-                latest_price = db.session.query(batch_update_feeds.c.price_at_time).filter(
-                    batch_update_feeds.c.feed_id == feed.id
-                ).order_by(batch_update_feeds.c.batch_update_id.desc()).first()
-                
-                if latest_price:
-                    # Calculate cost of feed stock for this feed type
-                    feed_stock_cost += latest_price[0] * batch.feed_stock
-                    break  # Since we only need one feed price for the stock
+        if batch.feed_stock > 0 and batch.updates:
+            # Get the latest update with feeds
+            latest_update = None
+            for update in reversed(batch.updates):
+                if update.feeds:
+                    latest_update = update
+                    break
+            
+            if latest_update:
+                # Get the latest feed price for each feed type
+                for feed in latest_update.feeds:
+                    latest_price = db.session.query(batch_update_feeds.c.price_at_time).filter(
+                        batch_update_feeds.c.feed_id == feed.id
+                    ).order_by(batch_update_feeds.c.batch_update_id.desc()).first()
+                    
+                    if latest_price:
+                        # Calculate cost of feed stock for this feed type
+                        feed_stock_cost += latest_price[0] * batch.feed_stock
+                        break  # Since we only need one feed price for the stock
         
         feed_costs -= feed_stock_cost
 
@@ -628,7 +636,7 @@ class FinancialSummary(db.Model):
 
         # Calculate total profit
         total_profit = total_revenue - (feed_costs + medicine_costs + vaccine_costs + 
-                                      health_material_costs + misc_costs + bird_cost + self.fcr_price)
+                                      health_material_costs + misc_costs + bird_cost + (self.fcr_price or 0))
 
         # Update the summary
         self.total_feed_cost = feed_costs
@@ -1003,18 +1011,10 @@ def delete_farm(farm_id):
                         batch_update_feeds.c.batch_update_id == update.id
                     )
                 )
-                # Delete medicine associations
-                db.session.execute(
-                    batch_update_medicines.delete().where(
-                        batch_update_medicines.c.batch_update_id == update.id
-                    )
-                )
-                # Delete health material associations
-                db.session.execute(
-                    batch_update_health_materials.delete().where(
-                        batch_update_health_materials.c.batch_update_id == update.id
-                    )
-                )
+                # Delete items (medicines, health materials, vaccines)
+                BatchUpdateItem.query.filter_by(batch_update_id=update.id).delete()
+                # Delete miscellaneous items
+                MiscellaneousItem.query.filter_by(batch_update_id=update.id).delete()
                 db.session.delete(update)
             
             # Delete vaccine schedule associations
