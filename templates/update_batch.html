@@ -1115,15 +1115,19 @@ function addMiscellaneousItem() {
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
 
+let medicineIndex = 0;
+let healthMaterialIndex = 0;
+let vaccineIndex = 0;
+
 function addMedicineItem() {
     const medicines = {{ medicines|tojson|safe }};
     const template = `
         <div class="dynamic-item">
-            <select name="other_items[medicine][][id]">
+            <select name="other_items[medicine][${medicineIndex}][id]">
                 <option value="">Select Medicine</option>
                 ${medicines.map(medicine => `<option value="${medicine.id}">${medicine.name}</option>`).join('')}
             </select>
-            <input type="number" name="other_items[medicine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[medicine][${medicineIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
             <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
@@ -1131,17 +1135,18 @@ function addMedicineItem() {
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    medicineIndex++;
 }
 
 function addHealthMaterialItem() {
     const healthMaterials = {{ health_materials|tojson|safe }};
     const template = `
         <div class="dynamic-item">
-            <select name="other_items[health_material][][id]">
+            <select name="other_items[health_material][${healthMaterialIndex}][id]">
                 <option value="">Select Health Material</option>
                 ${healthMaterials.map(material => `<option value="${material.id}">${material.name}</option>`).join('')}
             </select>
-            <input type="number" name="other_items[health_material][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[health_material][${healthMaterialIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
             <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
@@ -1149,18 +1154,19 @@ function addHealthMaterialItem() {
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    healthMaterialIndex++;
 }
 
 function addVaccineItem() {
     const vaccines = {{ vaccines|tojson|safe }};
     const template = `
         <div class="dynamic-item vaccine-item">
-            <select name="other_items[vaccine][][id]">
+            <select name="other_items[vaccine][${vaccineIndex}][id]">
                 <option value="">Select Vaccine</option>
                 ${vaccines.map(vaccine => `<option value="${vaccine.id}">${vaccine.name}</option>`).join('')}
             </select>
-            <input type="number" name="other_items[vaccine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
-            <input type="number" name="other_items[vaccine][][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
+            <input type="number" name="other_items[vaccine][${vaccineIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[vaccine][${vaccineIndex}][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
             <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
@@ -1168,6 +1174,7 @@ function addVaccineItem() {
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    vaccineIndex++;
 }
 
 let datePicker;

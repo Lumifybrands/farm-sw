@@ -250,70 +250,52 @@
             <h3>Other Items</h3>
             <div class="dynamic-items" id="otherItems">
                 <!-- Medicine Updates -->
-                {% for item in update.items %}
-                    {% if item.item_type == 'medicine' and not item.schedule_id %}
-                    <div class="dynamic-item">
-                        <select name="other_items[medicine][][id]">
-                            <option value="">Select Medicine</option>
-                            {% for med in medicines %}
-                            <option value="{{ med.id }}" {% if med.id == item.item_id %}selected{% endif %}>
-                                {{ med.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="other_items[medicine][][quantity]" placeholder="Quantity" 
-                               min="0" step="0.01" value="{{ item.quantity }}">
-                        <span class="unit-type">units</span>
-                        <button type="button" class="remove-item" onclick="removeItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    {% endif %}
+                {% set medicine_items = update.items | selectattr('item_type', 'equalto', 'medicine') | selectattr('schedule_id', 'equalto', None) | list %}
+                {% for item in medicine_items %}
+                <div class="dynamic-item">
+                    <select name="other_items[medicine][{{ loop.index0 }}][id]">
+                        <option value="">Select Medicine</option>
+                        {% for med in medicines %}
+                        <option value="{{ med.id }}" {% if med.id == item.item_id %}selected{% endif %}>{{ med.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" name="other_items[medicine][{{ loop.index0 }}][quantity]" placeholder="Quantity" min="0" step="0.01" value="{{ item.quantity }}">
+                    <span class="unit-type">units</span>
+                    <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+                </div>
                 {% endfor %}
 
                 <!-- Health Material Updates -->
-                {% for item in update.items %}
-                    {% if item.item_type == 'health_material' and not item.schedule_id %}
-                    <div class="dynamic-item">
-                        <select name="other_items[health_material][][id]">
-                            <option value="">Select Health Material</option>
-                            {% for mat in health_materials %}
-                            <option value="{{ mat.id }}" {% if mat.id == item.item_id %}selected{% endif %}>
-                                {{ mat.name }} - {{ mat.category }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="other_items[health_material][][quantity]" placeholder="Quantity" 
-                               min="0" step="0.01" value="{{ item.quantity }}">
-                        <span class="unit-type">units</span>
-                        <button type="button" class="remove-item" onclick="removeItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    {% endif %}
+                {% set health_material_items = update.items | selectattr('item_type', 'equalto', 'health_material') | selectattr('schedule_id', 'equalto', None) | list %}
+                {% for item in health_material_items %}
+                <div class="dynamic-item">
+                    <select name="other_items[health_material][{{ loop.index0 }}][id]">
+                        <option value="">Select Health Material</option>
+                        {% for mat in health_materials %}
+                        <option value="{{ mat.id }}" {% if mat.id == item.item_id %}selected{% endif %}>{{ mat.name }} - {{ mat.category }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" name="other_items[health_material][{{ loop.index0 }}][quantity]" placeholder="Quantity" min="0" step="0.01" value="{{ item.quantity }}">
+                    <span class="unit-type">units</span>
+                    <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+                </div>
                 {% endfor %}
 
                 <!-- Vaccine Updates -->
-                {% for item in update.items %}
-                    {% if item.item_type == 'vaccine' and not item.schedule_id %}
-                    <div class="dynamic-item vaccine-item">
-                        <select name="other_items[vaccine][][id]">
-                            <option value="">Select Vaccine</option>
-                            {% for vac in vaccines %}
-                            <option value="{{ vac.id }}" {% if vac.id == item.item_id %}selected{% endif %}>
-                                {{ vac.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="other_items[vaccine][][quantity]" placeholder="Quantity" 
-                               min="0" step="0.01" value="{{ item.quantity }}">
-                        <input type="number" name="other_items[vaccine][][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
-                        <span class="unit-type">units</span>
-                        <button type="button" class="remove-item" onclick="removeItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    {% endif %}
+                {% set vaccine_items = update.items | selectattr('item_type', 'equalto', 'vaccine') | selectattr('schedule_id', 'equalto', None) | list %}
+                {% for item in vaccine_items %}
+                <div class="dynamic-item vaccine-item">
+                    <select name="other_items[vaccine][{{ loop.index0 }}][id]">
+                        <option value="">Select Vaccine</option>
+                        {% for vac in vaccines %}
+                        <option value="{{ vac.id }}" {% if vac.id == item.item_id %}selected{% endif %}>{{ vac.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number" name="other_items[vaccine][{{ loop.index0 }}][quantity]" placeholder="Quantity" min="0" step="0.01" value="{{ item.quantity }}">
+                    <input type="number" name="other_items[vaccine][{{ loop.index0 }}][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
+                    <span class="unit-type">units</span>
+                    <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+                </div>
                 {% endfor %}
 
                 <!-- Miscellaneous Items -->
@@ -333,9 +315,7 @@
                     </select>
                     <input type="number" name="misc_price_per_unit[]" placeholder="Price per Unit" min="0" step="0.01" value="{{ misc_item.price_per_unit }}" required>
                     <input type="number" name="misc_units_used[]" placeholder="Units Used" min="0" step="0.01" value="{{ misc_item.units_used }}" required>
-                    <button type="button" class="remove-item" onclick="removeItem(this)">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
                 </div>
                 {% endfor %}
             </div>
@@ -929,6 +909,19 @@ textarea:focus {
 {% block scripts %}
 {{ super() }}
 <script>
+function getNextIndex(type) {
+    const items = document.querySelectorAll(`select[name^="other_items[${type}]"][name$="[id]"]`);
+    let max = -1;
+    items.forEach(item => {
+        const match = item.name.match(/\[(\d+)\]\[id\]$/);
+        if (match) {
+            const idx = parseInt(match[1]);
+            if (idx > max) max = idx;
+        }
+    });
+    return max + 1;
+}
+
 function removeItem(button) {
     button.closest('.dynamic-item').remove();
 }
@@ -944,67 +937,62 @@ function addFeedItem() {
             </select>
             <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0">
             <span class="unit-type">units</span>
-            <button type="button" class="remove-item" onclick="removeItem(this)">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
         </div>
     `;
     document.getElementById('feedItems').insertAdjacentHTML('beforeend', template);
 }
 
 function addMedicineItem() {
+    const nextIndex = getNextIndex('medicine');
     const template = `
         <div class="dynamic-item">
-            <select name="other_items[medicine][][id]">
+            <select name="other_items[medicine][${nextIndex}][id]">
                 <option value="">Select Medicine</option>
                 {% for medicine in medicines %}
                 <option value="{{ medicine.id }}">{{ medicine.name }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="other_items[medicine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[medicine][${nextIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
             <span class="unit-type">units</span>
-            <button type="button" class="remove-item" onclick="removeItem(this)">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
 
 function addHealthMaterialItem() {
+    const nextIndex = getNextIndex('health_material');
     const template = `
         <div class="dynamic-item">
-            <select name="other_items[health_material][][id]">
+            <select name="other_items[health_material][${nextIndex}][id]">
                 <option value="">Select Health Material</option>
                 {% for material in health_materials %}
                 <option value="{{ material.id }}">{{ material.name }} - {{ material.category }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="other_items[health_material][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[health_material][${nextIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
             <span class="unit-type">units</span>
-            <button type="button" class="remove-item" onclick="removeItem(this)">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
 }
 
 function addVaccineItem() {
+    const nextIndex = getNextIndex('vaccine');
     const template = `
         <div class="dynamic-item vaccine-item">
-            <select name="other_items[vaccine][][id]">
+            <select name="other_items[vaccine][${nextIndex}][id]">
                 <option value="">Select Vaccine</option>
                 {% for vaccine in vaccines %}
                 <option value="{{ vaccine.id }}">{{ vaccine.name }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="other_items[vaccine][][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
-            <input type="number" name="other_items[vaccine][][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
+            <input type="number" name="other_items[vaccine][${nextIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[vaccine][${nextIndex}][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
             <span class="unit-type">units</span>
-            <button type="button" class="remove-item" onclick="removeItem(this)">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
@@ -1027,9 +1015,7 @@ function addMiscellaneousItem() {
             </select>
             <input type="number" name="misc_price_per_unit[]" placeholder="Price per Unit" min="0" step="0.01" required>
             <input type="number" name="misc_units_used[]" placeholder="Units Used" min="0" step="0.01" required>
-            <button type="button" class="remove-item" onclick="removeItem(this)">
-                <i class="fas fa-times"></i>
-            </button>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
         </div>
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
@@ -1166,18 +1152,10 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
     }
 
     // Validate other items
-    const medicineItems = document.querySelectorAll('select[name="other_items[medicine][][id]"]');
-    const medicineQuantities = document.querySelectorAll('input[name="other_items[medicine][][quantity]"]');
-    const selectedMedicines = new Set();
-    
+    const medicineItems = document.querySelectorAll('select[name^="other_items[medicine]"]');
+    const medicineQuantities = document.querySelectorAll('input[name^="other_items[medicine]"][name$="[quantity]"]');
     for (let i = 0; i < medicineItems.length; i++) {
         if (medicineItems[i].value) {
-            if (selectedMedicines.has(medicineItems[i].value)) {
-                alert('Please do not select the same medicine multiple times.');
-                return;
-            }
-            selectedMedicines.add(medicineItems[i].value);
-            
             const quantity = parseFloat(medicineQuantities[i].value) || 0;
             if (quantity < 0) {
                 alert('Please enter valid quantities for all selected medicine items.');
@@ -1185,19 +1163,10 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
         }
     }
-    
-    const healthItems = document.querySelectorAll('select[name="other_items[health_material][][id]"]');
-    const healthQuantities = document.querySelectorAll('input[name="other_items[health_material][][quantity]"]');
-    const selectedHealthMaterials = new Set();
-    
+    const healthItems = document.querySelectorAll('select[name^="other_items[health_material]"]');
+    const healthQuantities = document.querySelectorAll('input[name^="other_items[health_material]"][name$="[quantity]"]');
     for (let i = 0; i < healthItems.length; i++) {
         if (healthItems[i].value) {
-            if (selectedHealthMaterials.has(healthItems[i].value)) {
-                alert('Please do not select the same health material multiple times.');
-                return;
-            }
-            selectedHealthMaterials.add(healthItems[i].value);
-            
             const quantity = parseFloat(healthQuantities[i].value) || 0;
             if (quantity < 0) {
                 alert('Please enter valid quantities for all selected health material items.');
@@ -1205,25 +1174,15 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
             }
         }
     }
-    
-    const vaccineItems = document.querySelectorAll('select[name="other_items[vaccine][][id]"]');
-    const vaccineDoses = document.querySelectorAll('input[name="other_items[vaccine][][dose_number]"]');
-    const vaccineQuantities = document.querySelectorAll('input[name="other_items[vaccine][][quantity]"]');
-    const selectedVaccines = new Set();
-    
+    const vaccineItems = document.querySelectorAll('select[name^="other_items[vaccine]"]');
+    const vaccineDoses = document.querySelectorAll('input[name^="other_items[vaccine]"][name$="[dose_number]"]');
+    const vaccineQuantities = document.querySelectorAll('input[name^="other_items[vaccine]"][name$="[quantity]"]');
     for (let i = 0; i < vaccineItems.length; i++) {
         if (vaccineItems[i].value) {
-            const vaccineKey = `${vaccineItems[i].value}-${vaccineDoses[i].value}`;
-            if (selectedVaccines.has(vaccineKey)) {
-                alert('Please do not select the same vaccine and dose combination multiple times.');
-                return;
-            }
             if (!vaccineDoses[i].value) {
                 alert('Please select a dose number for all vaccines.');
                 return;
             }
-            selectedVaccines.add(vaccineKey);
-            
             const quantity = parseFloat(vaccineQuantities[i].value) || 0;
             if (quantity < 0) {
                 alert('Please enter valid quantities for all selected vaccines.');
@@ -1259,7 +1218,7 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
         }
     }
 
-    // If all validations pass, submit the form
+    // If all validation passes, submit the form
     this.submit();
 });
 </script>

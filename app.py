@@ -1576,6 +1576,7 @@ def update_batch(batch_id):
                                     
                                     if item:
                                         # Create batch update item without schedule ID
+                                        print(f"Saving {item_type}: id={item.id}, quantity={quantity}, batch_update_id={batch_update.id}")
                                         update_item = BatchUpdateItem(
                                             batch_update_id=batch_update.id,
                                             item_id=item.id,
@@ -2056,6 +2057,7 @@ def edit_batch_update(batch_id, date):
                                         
                                         if item:
                                             # Create batch update item with current price
+                                            print(f"Saving {item_type}: id={item.id}, quantity={quantity}, batch_update_id={update.id}")
                                             update_item = BatchUpdateItem(
                                                 batch_update_id=update.id,
                                                 item_id=item.id,
