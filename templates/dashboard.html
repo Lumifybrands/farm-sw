@@ -87,56 +87,6 @@
             </div>
         </div>
 
-        <!-- Upcoming Schedules Section -->
-        <!-- <div class="row mb-4">
-            <div class="col-12">
-                <div class="card content-card">
-                    <div class="card-header">
-                        <h5 class="card-title">Upcoming Schedules</h5>
-                        <a href="{{ url_for('schedules') }}" class="btn btn-sm btn-outline-primary">View All</a>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>Date</th>
-                                        <th>Batch</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for schedule in upcoming_schedules %}
-                                    <tr>
-                                        <td>
-                                            {% if schedule.medicine %}
-                                                <span class="badge bg-info">Medicine</span>
-                                            {% elif schedule.vaccine %}
-                                                <span class="badge bg-warning">Vaccine</span>
-                                            {% else %}
-                                                <span class="badge bg-success">Health Material</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ schedule.scheduled_date|strftime('%Y-%m-%d') }}</td>
-                                        <td>{{ schedule.batches[0].batch_number if schedule.batches else 'N/A' }}</td>
-                                        <td>
-                                            {% if schedule.completed %}
-                                                <span class="badge bg-secondary">Completed</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">Pending</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
     </div>
 </div>
 
