@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Add Batch - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Batch</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Add Batch</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form">
+        <div class="form-group">
+            <label for="farm_id">Select Farm</label>
+            <select id="farm_id" name="farm_id" required>
+                <option value="">Select a farm...</option>
+                {% for farm in farms %}
+                <option value="{{ farm.id }}"
+                        data-capacity="{{ farm.total_capacity }}"
+                        data-available="{{ farm.get_available_capacity() }}"
+                        data-num-sheds="{{ farm.num_sheds }}"
+                        data-shed-capacities="{{ farm.get_shed_capacities()|tojson }}"
+                        data-shed-available="{{ farm.get_shed_available_capacities()|tojson }}">
+                    {{ farm.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="manager_id">Assign Manager</label>
+            <select id="manager_id" name="manager_id">
+                <option value="">Select a manager...</option>
+                {% for manager in managers %}
+                <option value="{{ manager.id }}">
+                    {{ manager.employee.name if manager.employee else manager.username }} 
+                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="farm-info" style="display: none;">
+            <div class="info-card">
+                <div class="info-item">
+                    <label>Total Capacity:</label>
+                    <span id="totalCapacity">0</span>
+                </div>
+                <div class="info-item">
+                    <label>Available Capacity:</label>
+                    <span id="availableCapacity">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group" style="display: none;">
+            <label for="batch_number">Batch Number</label>
+            <input type="text" id="batch_number" name="batch_number" readonly disabled>
+        </div>
+
+        <div class="form-group">
+            <label for="brand">Brand</label>
+            <input type="text" class="form-control" id="brand" name="brand">
+        </div>
+
+        <div class="form-group">
+            <label>Shed Distribution</label>
+            <div id="shed_distribution">
+                <!-- Shed inputs will be dynamically added here -->
+            </div>
+            <small class="form-text text-muted">Total birds must match the sum of birds in sheds</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="total_birds">Total Birds</label>
+            <input type="number" class="form-control" id="total_birds" name="total_birds" required min="1">
+        </div>
+
+        <div class="form-group">
+            <label for="extra_chicks">Extra Chicks (Optional)</label>
+            <input type="number" class="form-control" id="extra_chicks" name="extra_chicks" min="0" value="0">
+            <small class="form-text text-muted">Additional chicks kept as backup</small>
+        </div>
+
+        <div class="form-group">
+            <label for="created_at">Batch Start Date</label>
+            <input type="datetime-local" id="created_at" name="created_at" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cost_per_chicken">Cost per Chicks</label>
+            <input type="number" class="form-control" id="cost_per_chicken" name="cost_per_chicken" required min="0" step="0.01">
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Add Batch</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.farm-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.info-card {
+    display: flex;
+    gap: 20px;
+}
+
+.info-item {
+    flex: 1;
+}
+
+.info-item label {
+    font-weight: 500;
+    color: #666;
+    margin-right: 8px;
+}
+
+.info-item span {
+    color: #1a73e8;
+    font-weight: 500;
+}
+
+.error-message {
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default created_at to current date and time
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('created_at').value = now.toISOString().slice(0, 16);
+
+    // Add event listener for farm selection
+    document.getElementById('farm_id').addEventListener('change', updateFarmInfo);
+
+    const farmSelect = document.getElementById('farm_id');
+    const shedDistribution = document.getElementById('shed_distribution');
+    const totalBirdsInput = document.getElementById('total_birds');
+    const farmSheds = {{ farm_sheds|tojson|safe }};
+
+    function updateShedDistribution() {
+        const farmId = farmSelect.value;
+        const farm = farmSheds[farmId];
+        shedDistribution.innerHTML = '';
+
+        if (!farm) return;
+
+        for (let i = 0; i < farm.num_sheds; i++) {
+            const available = farm.shed_available[i];
+            const total = farm.shed_capacities[i];
+            const status = farm.shed_status[i];
+            const isDisabled = status.is_partially_allocated;
+
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label for="shed_${i + 1}_birds">Shed ${i + 1} (Available: ${available}/${total})</label>
+                <input type="number" 
+                       class="form-control shed-input" 
+                       id="shed_${i + 1}_birds" 
+                       name="shed_${i + 1}_birds" 
+                       min="0" 
+                       max="${available + 500}"
+                       value="0"
+                       ${isDisabled ? 'disabled' : ''}
+                       onchange="validateTotalBirds()">
+                ${status.is_partially_allocated ? '<small class="text-danger">Shed is allocated</small>' : ''}
+            `;
+            shedDistribution.appendChild(div);
+        }
+    }
+
+    function validateTotalBirds() {
+        const totalBirds = parseInt(totalBirdsInput.value) || 0;
+        const shedInputs = document.querySelectorAll('.shed-input:not([disabled])');
+        let totalDistributed = 0;
+
+        shedInputs.forEach(input => {
+            totalDistributed += parseInt(input.value) || 0;
+        });
+
+        const isValid = totalBirds === totalDistributed;
+        totalBirdsInput.setCustomValidity(isValid ? '' : 'Total birds must match the sum of birds in sheds');
+    }
+
+    farmSelect.addEventListener('change', updateShedDistribution);
+    totalBirdsInput.addEventListener('input', validateTotalBirds);
+
+    // Initialize shed distribution on page load
+    updateShedDistribution();
+});
+
+function updateFarmInfo() {
+    const farmSelect = document.getElementById('farm_id');
+    const selectedOption = farmSelect.options[farmSelect.selectedIndex];
+    const farmInfo = document.querySelector('.farm-info');
+    const shedContainer = document.getElementById('shed_birds_container');
+    
+    if (farmSelect.value) {
+        const totalCapacity = parseInt(selectedOption.dataset.capacity);
+        const availableCapacity = parseInt(selectedOption.dataset.available);
+        const numSheds = parseInt(selectedOption.dataset.numSheds);
+        const shedCapacities = JSON.parse(selectedOption.dataset.shedCapacities);
+        const shedAvailable = JSON.parse(selectedOption.dataset.shedAvailable);
+
+        document.getElementById('totalCapacity').textContent = totalCapacity;
+        document.getElementById('availableCapacity').textContent = availableCapacity;
+        farmInfo.style.display = 'block';
+
+        // Update shed birds fields
+        shedContainer.innerHTML = '';
+        for (let i = 0; i < numSheds; i++) {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label for="shed_${i + 1}_birds">Birds in Shed ${i + 1} (Available: ${shedAvailable[i]})</label>
+                <input type="number" id="shed_${i + 1}_birds" name="shed_${i + 1}_birds" 
+                       min="0" max="${shedAvailable[i]}" required 
+                       onchange="validateShedBirds(${i + 1}, ${shedAvailable[i]})">
+                <small class="error-message" id="shedError_${i + 1}" style="display: none; color: red;"></small>
+            `;
+            shedContainer.appendChild(div);
+        }
+    } else {
+        farmInfo.style.display = 'none';
+        shedContainer.innerHTML = '';
+    }
+}
+
+function validateShedBirds(shedNumber, maxCapacity) {
+    const input = document.getElementById(`shed_${shedNumber}_birds`);
+    const errorElement = document.getElementById(`shedError_${shedNumber}`);
+    
+    if (parseInt(input.value) > maxCapacity) {
+        errorElement.textContent = `Cannot exceed available capacity (${maxCapacity})`;
+        errorElement.style.display = 'block';
+        input.setCustomValidity('Exceeds available capacity');
+    } else {
+        errorElement.style.display = 'none';
+        input.setCustomValidity('');
+    }
+}
+</script>
+{% endblock %} 

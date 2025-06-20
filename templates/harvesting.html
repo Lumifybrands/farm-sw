@@ -1,0 +1,533 @@
+{% extends "base.html" %}
+
+{% block title %}Harvesting - Batch {{ batch.batch_number }} - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Harvesting - Batch {{ batch.batch_number }}</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Harvesting</span>
+    </div>
+</div>
+
+<div class="harvesting-container">
+    <div class="harvesting-header">
+        <div class="search-bar">
+            <input type="text" id="harvestSearch" placeholder="Search harvesting records...">
+            <i class="fas fa-search"></i>
+        </div>
+        <button class="add-harvest-btn {% if batch.available_birds == 0 %}disabled{% endif %}" 
+                onclick="{% if batch.available_birds > 0 %}location.href='{{ url_for('add_harvest', batch_id=batch.id) }}'{% endif %}"
+                {% if batch.available_birds == 0 %}title="No birds available for harvesting"{% endif %}>
+            <i class="fas fa-plus"></i> Add Harvest Update
+        </button>
+    </div>
+
+    <div class="harvesting-table-container">
+        <!-- Desktop Table View -->
+        <table class="harvesting-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Quantity</th>
+                    <th>Weight (kg)</th>
+                    <th>Price (per kg)</th>
+                    <th>Total Value</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for harvest in harvests|sort(attribute='date', reverse=true) %}
+                <tr>
+                    <td>{{ harvest.date.strftime('%d-%m-%Y') }}</td>
+                    <td>{{ harvest.quantity }}</td>
+                    <td>{{ harvest.weight }}</td>
+                    <td>{{ "%.2f"|format(harvest.selling_price) }}</td>
+                    <td>{{ "%.2f"|format(harvest.total_value) }}</td>
+                    <td>{{ harvest.notes }}</td>
+                    <td class="action-buttons">
+                        <button class="action-btn view" onclick="location.href='{{ url_for('view_harvest', harvest_id=harvest.id) }}'">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="action-btn edit" onclick="location.href='{{ url_for('edit_harvest', harvest_id=harvest.id) }}'">
+                            <i class="fas fa-edit"></i> Edit Details
+                        </button>
+                        <button class="action-btn delete" onclick="deleteHarvest({{ harvest.id }})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Mobile Card View -->
+        <div class="harvesting-cards">
+            {% for harvest in harvests|sort(attribute='date', reverse=true) %}
+            <div class="harvest-card">
+                <div class="card-header">
+                    <div class="harvest-date">
+                        <i class="fas fa-calendar"></i>
+                        {{ harvest.date.strftime('%d-%m-%Y') }}
+                    </div>
+                    <div class="harvest-value">
+                        <span class="value-label">Total Value</span>
+                        <span class="value-amount">₹{{ "%.2f"|format(harvest.total_value) }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="harvest-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-dove"></i>
+                            <span class="stat-label">Quantity</span>
+                            <span class="stat-value">{{ harvest.quantity }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-weight-hanging"></i>
+                            <span class="stat-label">Weight</span>
+                            <span class="stat-value">{{ harvest.weight }} kg</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-tag"></i>
+                            <span class="stat-label">Price/kg</span>
+                            <span class="stat-value">₹{{ "%.2f"|format(harvest.selling_price) }}</span>
+                        </div>
+                    </div>
+                    {% if harvest.notes %}
+                    <div class="harvest-notes">
+                        <i class="fas fa-sticky-note"></i>
+                        <span>{{ harvest.notes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn view" onclick="location.href='{{ url_for('view_harvest', harvest_id=harvest.id) }}'">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="action-btn edit" onclick="location.href='{{ url_for('edit_harvest', harvest_id=harvest.id) }}'">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn delete" onclick="deleteHarvest({{ harvest.id }})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .harvesting-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 20px;
+    }
+    
+    .search-bar {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
+    }
+    
+    .search-bar input {
+        width: 100%;
+        padding: 8px 12px;
+        padding-right: 35px;
+        border: 1px solid #1a73e8;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .search-bar i {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #1a73e8;
+    }
+    
+    .search-bar input:focus {
+        border-color: #1557b0;
+        box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        outline: none;
+    }
+    
+    .add-harvest-btn {
+        background-color: #1a73e8;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+    
+    .add-harvest-btn:hover {
+        background-color: #1557b0;
+    }
+    
+    .add-harvest-btn.disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    
+    .add-harvest-btn.disabled:hover {
+        background-color: #6c757d;
+    }
+    
+    .harvesting-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .harvesting-table th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+    }
+    
+    .harvesting-table td {
+        padding: 12px;
+        border-top: 1px solid #eee;
+    }
+    
+    .harvesting-table tr:nth-child(even) {
+        background-color: rgba(26, 115, 232, 0.05);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        padding: 6px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+    }
+    
+    .action-btn.view, .action-btn.edit {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .action-btn.view:hover, .action-btn.edit:hover {
+        background-color: #1557b0;
+    }
+    
+    .action-btn.delete {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-btn.delete:hover {
+        background-color: #c82333;
+    }
+
+    /* Mobile Card View - Hidden by default */
+    .harvesting-cards {
+        display: none;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .harvesting-table {
+            display: none;
+        }
+
+        .harvesting-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 10px;
+        }
+
+        .harvest-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .harvest-card:active {
+            transform: scale(0.98);
+        }
+
+        .card-header {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .harvest-date {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .harvest-date i {
+            color: #1a73e8;
+        }
+
+        .harvest-value {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .value-label {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .value-amount {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .harvest-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-item i {
+            color: #1a73e8;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-bottom: 3px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .harvest-notes {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .harvest-notes i {
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .card-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .card-actions .action-btn {
+            width: 100%;
+            height: auto;
+            padding: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .card-actions .action-btn i {
+            font-size: 1rem;
+        }
+
+        /* Optimize header for mobile */
+        .harvesting-header {
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: none;
+        }
+
+        .add-harvest-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .harvesting-cards {
+            padding: 5px;
+            gap: 10px;
+        }
+
+        .card-header {
+            padding: 12px;
+        }
+
+        .card-body {
+            padding: 12px;
+        }
+
+        .harvest-stats {
+            gap: 8px;
+        }
+
+        .stat-item {
+            padding: 8px;
+        }
+
+        .stat-item i {
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+        }
+
+        .stat-value {
+            font-size: 0.9rem;
+        }
+
+        .card-actions {
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .card-actions .action-btn {
+            padding: 8px;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function deleteHarvest(harvestId) {
+    if (confirm('Are you sure you want to delete this harvest record?')) {
+        fetch(`/harvests/${harvestId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting harvest record: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the harvest record');
+        });
+    }
+}
+
+// Function to filter harvests
+function filterHarvests(searchText) {
+    // Filter table rows
+    const rows = document.querySelectorAll('.harvesting-table tbody tr');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchText.toLowerCase()) ? '' : 'none';
+    });
+
+    // Filter cards
+    const cards = document.querySelectorAll('.harvest-card');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchText.toLowerCase()) ? '' : 'none';
+    });
+}
+
+document.getElementById('harvestSearch').addEventListener('input', function(e) {
+    filterHarvests(e.target.value);
+});
+
+// Add mobile-specific event handlers
+document.addEventListener('DOMContentLoaded', function() {
+    if ('ontouchstart' in window) {
+        // Improve touch feedback for cards
+        document.querySelectorAll('.harvest-card').forEach(card => {
+            card.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('touchend', function() {
+                this.style.transform = '';
+            });
+        });
+
+        // Improve touch feedback for buttons
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.style.opacity = '0.8';
+            });
+            btn.addEventListener('touchend', function() {
+                this.style.opacity = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

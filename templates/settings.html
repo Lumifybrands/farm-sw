@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Settings</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Settings</span>
+    </div>
+</div>
+
+<div class="settings-container">
+    <!-- Change Username Section -->
+    <div class="settings-section">
+        <h2><i class="fas fa-user"></i> Change Username</h2>
+        <form action="{{ url_for('update_profile') }}" method="POST" class="settings-form">
+            <div class="form-group">
+                <label for="new_username">New Username</label>
+                <input type="text" id="new_username" name="new_username" required>
+            </div>
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" required>
+                <small>Enter your current password to confirm the change</small>
+            </div>
+            <button type="submit" class="settings-btn">Update Username</button>
+        </form>
+    </div>
+
+    <!-- Change Password Section -->
+    <div class="settings-section">
+        <h2><i class="fas fa-lock"></i> Change Password</h2>
+        <form action="{{ url_for('update_profile') }}" method="POST" class="settings-form">
+            <div class="form-group">
+                <label for="current_password_change">Current Password</label>
+                <input type="password" id="current_password_change" name="current_password_change" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+                <small>Enter your new password twice to confirm</small>
+            </div>
+            <button type="submit" class="settings-btn">Update Password</button>
+        </form>
+    </div>
+</div>
+{% endblock %} 

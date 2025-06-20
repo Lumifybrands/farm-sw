@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="dashboard-container">
+        
+        <!-- Welcome Message -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card welcome-card">
+                    <div class="card-body">
+                        <h2 class="welcome-title">Welcome, {{ session.get('username', 'User') }}!</h2>
+                        <p class="welcome-subtitle">Here's an overview of your farm management system.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="row g-4 mb-4 sum-card">
+            <!-- Total Farms Card -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h6 class="stat-label">Total Farms</h6>
+                                <h3 class="stat-value">{{ farms|length }}</h3>
+                            </div>
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Batches Card -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h6 class="stat-label">Active Batches</h6>
+                                <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|list|length }}</h3>
+                            </div>
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-kiwi-bird"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Birds Card -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h6 class="stat-label">Total Birds</h6>
+                                <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|sum(attribute='available_birds') }}</h3>
+                            </div>
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-feather"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Schedules Card -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-info">
+                                <h6 class="stat-label">Pending Schedules</h6>
+                                <h3 class="stat-value">{{ pending_schedules_count }}</h3>
+                            </div>
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* Dashboard Layout */
+.dashboard-wrapper {
+    /* padding: 2rem; */
+    min-height: calc(100vh - 60px);
+    background-color: #f8f9fa;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;    
+    /* max-width: 1400px; */
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.sum-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    min-height: 20vh;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+    margin-bottom: 1.5rem;
+    
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Welcome Card */
+.welcome-card {
+    background: linear-gradient(135deg, #4b6cb7 0%, #6781b6 100%);
+    color: white;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(75, 108, 183, 0.15);
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: #ffffff;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    position: relative;
+    width: 15vw;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #4b6cb7, #6781b6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card .card-body {
+    padding: 1.75rem;
+}
+
+.stat-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.stat-icon-wrapper {
+    width: 65px;
+    height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+}
+
+.stat-icon-wrapper i {
+    font-size: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover .stat-icon-wrapper i {
+    transform: scale(1.1);
+}
+
+/* Custom colors for stat cards */
+.stat-card:nth-child(1) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(75, 108, 183, 0.1), rgba(103, 129, 182, 0.1));
+    color: #4b6cb7;
+}
+
+.stat-card:nth-child(2) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.2));
+    color: #28a745;
+}
+
+.stat-card:nth-child(3) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.2));
+    color: #ffc107;
+}
+
+.stat-card:nth-child(4) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.2));
+    color: #17a2b8;
+}
+
+/* Content Card */
+.content-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: #2c3e50;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 500;
+    font-size: 0.75rem;
+    border-radius: 50px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .dashboard-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 992px) {
+    .welcome-title {
+        font-size: 2rem;
+    }
+    
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        padding: 1rem;
+    }
+
+    .sum-card {
+        flex-direction: column;
+    }
+
+    .stat-card {
+        width: 55vw;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .welcome-card {
+        padding: 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.75rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .card-header .btn {
+        margin-top: 0.75rem;
+    }
+    
+    .stat-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon-wrapper {
+        margin: 1rem 0 0 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .welcome-title {
+        font-size: 1.5rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.75rem;
+    }
+}
+</style>
+{% endblock %}

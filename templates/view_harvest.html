@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}View Harvest - Batch {{ harvest.batch.batch_number }} - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>View Harvest - Batch {{ harvest.batch.batch_number }}</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Harvesting</span> / <span>View Harvest</span>
+    </div>
+</div>
+
+<div class="view-harvest-container">
+    <div class="harvest-details">
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Date</label>
+                <span>{{ harvest.date.strftime('%d-%m-%Y') }}</span>
+            </div>
+            <div class="detail-group">
+                <label>Quantity</label>
+                <span>{{ harvest.quantity }}</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Weight (kg)</label>
+                <span>{{ "%.2f"|format(harvest.weight) }}</span>
+            </div>
+            <div class="detail-group">
+                <label>Price (per kg)</label>
+                <span>{{ "%.2f"|format(harvest.selling_price) }}</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-group">
+                <label>Total Value</label>
+                <span>{{ "%.2f"|format(harvest.total_value) }}</span>
+            </div>
+        </div>
+
+        <div class="detail-group">
+            <label>Notes</label>
+            <p class="notes">{{ harvest.notes or 'No notes available' }}</p>
+        </div>
+
+        <div class="detail-actions">
+            <a href="{{ url_for('edit_harvest', harvest_id=harvest.id) }}" class="btn-primary">
+                <i class="fas fa-edit"></i> Edit Harvest
+            </a>
+            <a href="{{ url_for('harvest_batch', batch_id=harvest.batch.id) }}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Harvesting
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .content-header h1 {
+        color: #1a73e8;
+    }
+    
+    .view-harvest-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .harvest-details {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .detail-row {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .detail-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .detail-group label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .detail-group span {
+        font-size: 16px;
+        color: #1a73e8;
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .notes {
+        padding: 12px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        color: #2c3e50;
+        margin: 0;
+        border: 1px solid #e2e8f0;
+        line-height: 1.5;
+    }
+    
+    .detail-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    
+    .btn-primary, .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        border: 1px solid #ddd;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #e9ecef;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 768px) {
+        .view-harvest-container {
+            margin: 10px;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .detail-row {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .detail-group span {
+            font-size: 16px;
+            padding: 12px;
+        }
+
+        .detail-actions {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-primary, .btn-secondary {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+        }
+
+        /* Improve touch targets */
+        .detail-group label {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        /* Add visual feedback for touch */
+        .btn-primary:active,
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+
+        /* Improve notes readability */
+        .notes {
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 12px;
+        }
+    }
+
+    /* Additional optimizations for very small screens */
+    @media (max-width: 480px) {
+        .view-harvest-container {
+            margin: 5px;
+            padding: 12px;
+        }
+
+        .harvest-details {
+            gap: 15px;
+        }
+
+        .detail-group span {
+            padding: 10px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 12px;
+        }
+
+        .notes {
+            padding: 10px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add touch feedback for mobile
+    if ('ontouchstart' in window) {
+        const buttons = document.querySelectorAll('.btn-primary, .btn-secondary');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.opacity = '0.8';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.opacity = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 
