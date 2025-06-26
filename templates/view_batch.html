@@ -1487,8 +1487,9 @@
 
 .expandable-header .summary {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
     color: #4a5568;
     font-size: 0.9em;
 }
@@ -1847,6 +1848,14 @@
                                 <label>Average Weight</label>
                                 <span>{{ "%.2f"|format(last_update.avg_weight) }} kg</span>
                             </div>
+                            <div class="info-item">
+                                <label>Male Weight</label>
+                                <span>{{ "%.2f"|format(last_update.male_weight) }} kg</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Female Weight</label>
+                                <span>{{ "%.2f"|format(last_update.female_weight) }} kg</span>
+                            </div>
                         </div>
                     </div>
 
@@ -2149,6 +2158,40 @@
                         </div>
                     </div>
                     {% endif %}
+                    {% if last_update.feed_returns %}
+                    <div class="expandable-item">
+                        <div class="expandable-header" onclick="toggleExpandable(this)">
+                            <div class="title">
+                                <i class="fas fa-undo"></i>
+                                <span>Feed Stock Returns</span>
+                            </div>
+                            <div class="summary">
+                                {% for ret in last_update.feed_returns %}
+                                <div class="item">
+                                    <i class="fas fa-box"></i>
+                                    <span>{{ ret.feed.brand }} - {{ ret.feed.category }} ({{ "%.2f"|format(ret.quantity) }} packets)</span>
+                                </div>
+                                {% endfor %}
+                                <i class="fas fa-chevron-down expand-icon"></i>
+                            </div>
+                        </div>
+                        <div class="expandable-content">
+                            <div class="items-grid">
+                                {% for ret in last_update.feed_returns %}
+                                <div class="item-card feed-card">
+                                    <div class="item-header">
+                                        <span class="item-name">{{ ret.feed.brand }} - {{ ret.feed.category }}</span>
+                                        <span class="quantity-badge">
+                                            <i class="fas fa-box"></i>
+                                            {{ "%.2f"|format(ret.quantity) }} packets
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="no-updates">
@@ -2286,6 +2329,14 @@ function fetchBatchUpdate(date) {
                                 <div class="info-item">
                                     <label>Average Weight</label>
                                     <span>${parseFloat(data.update.avg_weight || 0).toFixed(2)} kg</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Male Weight</label>
+                                    <span>${parseFloat(data.update.male_weight || 0).toFixed(2)} kg</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Female Weight</label>
+                                    <span>${parseFloat(data.update.female_weight || 0).toFixed(2)} kg</span>
                                 </div>
                             </div>
                         </div>
@@ -2483,6 +2534,40 @@ function fetchBatchUpdate(date) {
                                 </div>
                             </div>
                         ` : ''}
+                        ${data.update.feed_returns && data.update.feed_returns.length > 0 ? `
+                            <div class="expandable-item">
+                                <div class="expandable-header" onclick="toggleExpandable(this)">
+                                    <div class="title">
+                                        <i class="fas fa-undo"></i>
+                                        <span>Feed Stock Returns</span>
+                                    </div>
+                                    <div class="summary">
+                                        ${data.update.feed_returns.map(ret => `
+                                            <div class="item">
+                                                <i class="fas fa-box"></i>
+                                                <span>${ret.feed.brand} - ${ret.feed.category} (${ret.quantity.toFixed(2)} packets)</span>
+                                            </div>
+                                        `).join('')}
+                                        <i class="fas fa-chevron-down expand-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="expandable-content">
+                                    <div class="items-grid">
+                                        ${data.update.feed_returns.map(ret => `
+                                            <div class="item-card feed-card">
+                                                <div class="item-header">
+                                                    <span class="item-name">${ret.feed.brand} - ${ret.feed.category}</span>
+                                                    <span class="quantity-badge">
+                                                        <i class="fas fa-box"></i>
+                                                        ${ret.quantity.toFixed(2)} packets
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             } else {
@@ -2665,6 +2750,14 @@ function showBatchUpdate(update) {
                 <div class="info-item">
                     <label>Average Weight</label>
                     <span>${parseFloat(update.avg_weight).toFixed(2)} kg</span>
+                </div>
+                <div class="info-item">
+                    <label>Male Weight</label>
+                    <span>${parseFloat(update.male_weight).toFixed(2)} kg</span>
+                </div>
+                <div class="info-item">
+                    <label>Female Weight</label>
+                    <span>${parseFloat(update.female_weight).toFixed(2)} kg</span>
                 </div>
             </div>
         </div>

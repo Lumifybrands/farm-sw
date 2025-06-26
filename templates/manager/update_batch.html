@@ -62,6 +62,15 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="male_weight">Male Weight (kg)</label>
+                    <input type="number" id="male_weight" name="male_weight" min="0" step="0.01" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="female_weight">Female Weight (kg)</label>
+                    <input type="number" id="female_weight" name="female_weight" min="0" step="0.01" value="0" required>
+                </div>
+
+                <div class="form-group">
                     <label for="avg_weight">Average Weight of Birds (kg)</label>
                     <input type="number" id="avg_weight" name="avg_weight" min="0" step="0.01" value="0" required>
                 </div>
@@ -74,6 +83,15 @@
                 </div>
                 <button type="button" class="add-item" onclick="addFeedItem()">
                     <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
+
+            <!-- Feed Stock Return Section -->
+            <div class="dynamic-section" id="feedStockReturnSection">
+                <h3>Feed Stock Return</h3>
+                <div class="dynamic-items" id="feedReturnItems"></div>
+                <button type="button" class="add-item" onclick="addFeedReturnItem()">
+                    <i class="fas fa-plus"></i> Add Feed Return
                 </button>
             </div>
 
@@ -1022,6 +1040,23 @@ function addVaccineItem() {
     `;
     document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
     vaccineIndex++;
+}
+
+function addFeedReturnItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="feed_return_id[]">
+                <option value="">Select Feed</option>
+                {% for feed in feeds %}
+                <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="feed_return_quantity[]" placeholder="Quantity Returned (Packets)" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('feedReturnItems').insertAdjacentHTML('beforeend', template);
 }
 
 // Form validation
