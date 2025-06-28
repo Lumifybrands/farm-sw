@@ -1466,8 +1466,9 @@ def update_batch(batch_id):
                         batch_update_id=new_update.id,
                         feed_id=feed_id,
                         quantity=quantity,
-                        price=feed.price, # Store price at the time of update
-                        quantity_per_unit_at_time=feed.weight
+                        price_at_time=feed.price, # Store price at the time of update
+                        quantity_per_unit_at_time=feed.weight,
+                        total_cost=quantity * feed.price
                     )
                     db.session.execute(update_feed)
 
