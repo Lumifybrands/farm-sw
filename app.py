@@ -1414,16 +1414,22 @@ def update_batch_status(batch_id):
 def update_batch(batch_id):
     batch = Batch.query.get_or_404(batch_id)
     
-    # Check if an update has already been submitted today
+    # Check if an update has already been submitted for the selected date
     selected_date_str = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
     selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
 
-    existing_update = BatchUpdate.query.filter_by(batch_id=batch.id, date=selected_date).first()
-
     if request.method == 'POST':
+        # Use the date from the form, not the query string
+        form_date_str = request.form.get('date')
+        try:
+            form_date = datetime.strptime(form_date_str, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            form_date = selected_date
+        # Check for existing update for the form date
+        existing_update = BatchUpdate.query.filter_by(batch_id=batch.id, date=form_date).first()
         if existing_update:
-            flash('An update has already been submitted for this batch today.', 'error')
-            return redirect(url_for('update_batch', batch_id=batch.id, date=selected_date_str))
+            flash('An update has already been submitted for this batch on the selected date.', 'error')
+            return redirect(url_for('update_batch', batch_id=batch.id, date=form_date_str))
 
         # Create new batch update
         mortality_count = int(request.form.get('mortality_count', 0))
@@ -1442,7 +1448,7 @@ def update_batch(batch_id):
         
         new_update = BatchUpdate(
             batch_id=batch.id,
-            date=selected_date,
+            date=form_date,
             mortality_count=mortality_count,
             feed_used=feed_used,
             avg_weight=avg_weight,
@@ -1537,8 +1543,8 @@ def update_batch(batch_id):
         return redirect(url_for('view_batch', batch_id=batch.id))
     
     # GET request - show form
+    existing_update = BatchUpdate.query.filter_by(batch_id=batch.id, date=selected_date).first()
     managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
-
     medicines = Medicine.query.all()
     medicines_dict = [{
         'id': m.id,
@@ -1548,7 +1554,6 @@ def update_batch(batch_id):
         'price': m.price,
         'notes': m.notes
     } for m in medicines]
-
     health_materials = HealthMaterial.query.all()
     health_materials_dict = [{
         'id': h.id,
@@ -1559,7 +1564,6 @@ def update_batch(batch_id):
         'price': h.price,
         'notes': h.notes
     } for h in health_materials]
-
     vaccines = Vaccine.query.all()
     vaccines_dict = [{
         'id': v.id,
@@ -1570,7 +1574,6 @@ def update_batch(batch_id):
         'dose_ages': v.get_dose_ages(),
         'notes': v.notes
     } for v in vaccines]
-
     feeds = Feed.query.all()
 
     return render_template('update_batch.html', 

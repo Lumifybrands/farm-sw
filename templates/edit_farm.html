@@ -48,6 +48,19 @@
         </div>
 
         <div class="form-group">
+            <label for="manager_id">Assign Manager</label>
+            <select id="manager_id" name="manager_id" class="form-control">
+                <option value="">Select a manager...</option>
+                {% for manager in managers %}
+                <option value="{{ manager.id }}" {% if farm.manager_id == manager.id %}selected{% endif %}>
+                    {{ manager.employee.name if manager.employee else manager.username }}
+                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
             <label for="farm_condition">Farm Condition</label>
             <select id="farm_condition" name="farm_condition" required>
                 <option value="">Select Condition</option>
