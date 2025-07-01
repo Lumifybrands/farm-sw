@@ -82,6 +82,8 @@ class Farm(db.Model):
     farm_condition = db.Column(db.String(20), nullable=False, default='average')  # 'average', 'medium', 'good'
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    manager = db.relationship('User', backref=db.backref('managed_farms', lazy=True))
 
     def get_shed_capacities(self):
         return json.loads(self.shed_capacities)
@@ -943,7 +945,8 @@ def add_farm():
                 total_area=float(request.form.get('total_area', 0)),
                 owner_name=request.form.get('owner_name'),
                 contact_number=request.form.get('contact_number', ''),
-                farm_condition=request.form.get('farm_condition', 'average')
+                farm_condition=request.form.get('farm_condition', 'average'),
+                manager_id=request.form.get('manager_id') or None
             )
             farm.set_shed_capacities(shed_capacities)
             
@@ -954,7 +957,8 @@ def add_farm():
         except Exception as e:
             flash('Error adding farm: ' + str(e), 'error')
             db.session.rollback()
-    return render_template('add_farm.html')
+    managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+    return render_template('add_farm.html', managers=managers)
 
 @app.route('/farms/<int:farm_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -978,6 +982,7 @@ def edit_farm(farm_id):
             farm.contact_number = request.form.get('contact_number', '')
             farm.farm_condition = request.form.get('farm_condition', 'average')
             farm.set_shed_capacities(shed_capacities)
+            farm.manager_id = request.form.get('manager_id') or None
             
             db.session.commit()
             flash('Farm updated successfully', 'success')
@@ -985,7 +990,8 @@ def edit_farm(farm_id):
         except Exception as e:
             flash('Error updating farm: ' + str(e), 'error')
             db.session.rollback()
-    return render_template('edit_farm.html', farm=farm)
+    managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+    return render_template('edit_farm.html', farm=farm, managers=managers)
 
 @app.route('/farms/<int:farm_id>/view')
 @login_required

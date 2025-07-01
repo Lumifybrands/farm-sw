@@ -14,7 +14,7 @@
     <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form">
         <div class="form-group">
             <label for="farm_id">Select Farm</label>
-            <select id="farm_id" name="farm_id" required>
+            <select id="farm_id" name="farm_id" required class="form-control" style="width: 100%">
                 <option value="">Select a farm...</option>
                 {% for farm in farms %}
                 <option value="{{ farm.id }}"
@@ -22,7 +22,8 @@
                         data-available="{{ farm.get_available_capacity() }}"
                         data-num-sheds="{{ farm.num_sheds }}"
                         data-shed-capacities="{{ farm.get_shed_capacities()|tojson }}"
-                        data-shed-available="{{ farm.get_shed_available_capacities()|tojson }}">
+                        data-shed-available="{{ farm.get_shed_available_capacities()|tojson }}"
+                        data-manager-id="{{ farm.manager_id or '' }}">
                     {{ farm.name }}
                 </option>
                 {% endfor %}
@@ -133,12 +134,40 @@
     margin-top: 5px;
     font-size: 0.9em;
 }
+
+
 </style>
 
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for farm selector
+    $('#farm_id').select2({
+        placeholder: 'Select a farm...',
+        allowClear: true,
+        width: 'resolve'
+    });
+    // When farm changes, set manager field to assigned manager
+    $('#farm_id').on('change', function() {
+        var selectedOption = $(this).find('option:selected');
+        var managerId = selectedOption.data('manager-id');
+        if (managerId) {
+            $('#manager_id').val(managerId).trigger('change');
+        } else {
+            $('#manager_id').val('').trigger('change');
+        }
+    });
+});
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Set default created_at to current date and time

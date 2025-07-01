@@ -54,6 +54,15 @@
     </div>
 
     <div class="detail-group">
+        <label><i class="fas fa-user-tie"></i> Assigned Manager</label>
+        {% if farm.manager %}
+            <span>{{ farm.manager.employee.name if farm.manager.employee else farm.manager.username }} ({{ 'Senior Manager' if farm.manager.user_type == 'senior_manager' else 'Assistant Manager' }})</span>
+        {% else %}
+            <span>Not assigned</span>
+        {% endif %}
+    </div>
+
+    <div class="detail-group">
         <label><i class="fas fa-phone"></i> Contact Number</label>
         <span>{{ farm.contact_number }}</span>
     </div>
