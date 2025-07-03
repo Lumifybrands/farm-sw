@@ -153,7 +153,7 @@
                         <i class="fas fa-exclamation-triangle risk-icon"></i>
                         <span class="risk-card-title">Batches with High & Medium Risk</span>
                     </div>
-                    <div class="risk-card-body">
+                    <div class="risk-card-body" style="max-height: 260px; overflow-y: auto;">
                         {% if risk_batches and risk_batches|length > 0 %}
                         <div class="risk-table-wrapper">
                             <table class="risk-table">
@@ -192,7 +192,7 @@
                         <i class="fas fa-hourglass-half risk-icon" style="color: #4b6cb7;"></i>
                         <span class="risk-card-title" style="color: #4b6cb7;">Batches Above 28 Days Old</span>
                     </div>
-                    <div class="risk-card-body">
+                    <div class="risk-card-body" style="max-height: 260px; overflow-y: auto;">
                         {% if above_28_batches and above_28_batches|length > 0 %}
                         <div class="risk-table-wrapper">
                             <table class="risk-table">
