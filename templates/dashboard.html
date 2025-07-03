@@ -23,13 +23,14 @@
                 <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
                             <div class="stat-info">
                                 <h6 class="stat-label">Total Farms</h6>
                                 <h3 class="stat-value">{{ farms|length }}</h3>
                             </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fas fa-warehouse"></i>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -40,13 +41,14 @@
                 <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-kiwi-bird"></i>
+                            </div>
                             <div class="stat-info">
                                 <h6 class="stat-label">Active Batches</h6>
                                 <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|list|length }}</h3>
                             </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fa-solid fa-kiwi-bird"></i>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -57,13 +59,14 @@
                 <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-feather"></i>
+                            </div>
                             <div class="stat-info">
                                 <h6 class="stat-label">Total Birds</h6>
                                 <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|sum(attribute='available_birds') }}</h3>
                             </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fas fa-feather"></i>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -74,13 +77,168 @@
                 <div class="card stat-card">
                     <div class="card-body">
                         <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
                             <div class="stat-info">
                                 <h6 class="stat-label">Pending Schedules</h6>
                                 <h3 class="stat-value">{{ pending_schedules_count }}</h3>
                             </div>
-                            <div class="stat-icon-wrapper">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit by Month Graph and Stats Row (Custom Flex) -->
+        <div class="dashboard-flex-row">
+            <!-- Graph -->
+            <div class="dashboard-graph">
+                <div class="graph-card-custom">
+                    <div class="graph-card-header">
+                        <span class="graph-card-title">Profit by Month (Last 12 Months)</span>
+                    </div>
+                    <div class="graph-card-body">
+                        <div class="graph-canvas-wrapper">
+                            <canvas id="profitByMonthChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Stats Cards -->
+            <div class="dashboard-stats">
+                <h5 class="this-month-heading">This Month</h5>
+                <div class="stat-card-custom stat-fcr">
+                    <div class="stat-info py-4">
+                        <div class="stat-icon-custom stat-fcr-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div class="stat-text-content">
+                            <span class="stat-label">Avg. FCR</span>
+                            <h3 class="stat-value mt-2">{{ avg_fcr_this_month|round(2) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card-custom stat-profit">
+                    <div class="stat-info py-4">
+                        <div class="stat-icon-custom stat-profit-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="stat-text-content">
+                            <span class="stat-label">Total Profit</span>
+                            <h3 class="stat-value mt-2">{{ total_profit_this_month|round(2) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card-custom stat-mortality">
+                    <div class="stat-info py-4">
+                        <div class="stat-icon-custom stat-mortality-icon">
+                            <i class="fas fa-skull-crossbones"></i>
+                        </div>
+                        <div class="stat-text-content">
+                            <span class="stat-label">Mortality Rate</span>
+                            <h3 class="stat-value mt-2">{{ avg_mortality_rate_this_month|round(2) }}%</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-bottom-row">
+            <!-- Risk Batches Box -->
+            <div class="risk-batches-box">
+                <div class="risk-card">
+                    <div class="risk-card-header">
+                        <i class="fas fa-exclamation-triangle risk-icon"></i>
+                        <span class="risk-card-title">Batches with High & Medium Risk</span>
+                    </div>
+                    <div class="risk-card-body">
+                        {% if risk_batches and risk_batches|length > 0 %}
+                        <div class="risk-table-wrapper">
+                            <table class="risk-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch #</th>
+                                        <th>Farm</th>
+                                        <th>Priority</th>
+                                        <th>Remark</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in risk_batches %}
+                                    <tr>
+                                        <td>{{ item.batch.batch_number }}</td>
+                                        <td>{{ item.batch.farm.name }}</td>
+                                        <td>
+                                            <span class="risk-badge risk-{{ item.priority }}">{{ item.priority|capitalize }}</span>
+                                        </td>
+                                        <td>{{ item.remark }}</td>
+                                        <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="risk-empty">No batches with high or medium risk at the moment.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Batches Above 28 Days Widget -->
+                <div class="risk-card" style="margin-top: 2rem;">
+                    <div class="risk-card-header" style="background: linear-gradient(90deg, #e6f0fb 0%, #e6f9fb 100%);">
+                        <i class="fas fa-hourglass-half risk-icon" style="color: #4b6cb7;"></i>
+                        <span class="risk-card-title" style="color: #4b6cb7;">Batches Above 28 Days Old</span>
+                    </div>
+                    <div class="risk-card-body">
+                        {% if above_28_batches and above_28_batches|length > 0 %}
+                        <div class="risk-table-wrapper">
+                            <table class="risk-table">
+                                <thead>
+                                    <tr>
+                                        <th>Batch #</th>
+                                        <th>Farm</th>
+                                        <th>Age (days)</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for batch in above_28_batches %}
+                                    <tr>
+                                        <td>{{ batch.batch_number }}</td>
+                                        <td>{{ batch.farm.name }}</td>
+                                        <td>{{ batch.get_age_days() }}</td>
+                                        <td>
+                                            <span class="risk-badge risk-{{ batch.status }}">{{ batch.status|capitalize }}</span>
+                                        </td>
+                                        <td>{{ batch.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="risk-empty">No batches above 28 days old at the moment.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Batch Status Overview Section -->
+            <div class="batch-status-overview-box">
+                <div class="batch-status-card">
+                    <div class="batch-status-header">
+                        <i class="fas fa-chart-pie batch-status-icon"></i>
+                        <span class="batch-status-title">Batch Status Overview</span>
+                    </div>
+                    <div class="batch-status-body">
+                        <canvas id="batchStatusChart" height="120"></canvas>
+                        <div class="batch-status-legend">
+                            <span><span class="legend-dot legend-ongoing"></span> Ongoing: {{ batch_status_counts.ongoing }}</span>
+                            <span><span class="legend-dot legend-closing"></span> Closing: {{ batch_status_counts.closing }}</span>
+                            <span><span class="legend-dot legend-closed"></span> Closed: {{ batch_status_counts.closed }}</span>
                         </div>
                     </div>
                 </div>
@@ -198,24 +356,48 @@
 }
 
 .stat-info {
-    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1.2rem;
+    text-align: left;
+    height: 100%;
+}
+
+.stat-icon-custom {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.stat-text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.1rem;
 }
 
 .stat-label {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #6c757d;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .stat-value {
-    font-size: 2.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #2c3e50;
     margin: 0;
     line-height: 1.2;
+}
+
+.stat-desc {
+    font-size: 0.95rem;
+    color: #b2b2b2;
+    margin-top: 0.1rem;
 }
 
 .stat-icon-wrapper {
@@ -335,6 +517,13 @@
     .stat-card .card-body {
         padding: 1.5rem;
     }
+    .col-lg-4.d-flex.flex-column.gap-3 {
+        flex-direction: row !important;
+        gap: 1rem !important;
+    }
+    .stat-card.stat-highlight {
+        min-width: 48%;
+    }
 }
 
 @media (max-width: 768px) {
@@ -377,6 +566,13 @@
     .stat-icon-wrapper {
         margin: 1rem 0 0 0;
     }
+    .col-lg-4.d-flex.flex-column.gap-3 {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+    .stat-card.stat-highlight {
+        min-width: unset;
+    }
 }
 
 @media (max-width: 576px) {
@@ -397,5 +593,592 @@
         padding: 0.75rem;
     }
 }
+
+.stat-highlight {
+    border: 2px solid #e3e6f0;
+    box-shadow: 0 2px 12px rgba(40, 167, 69, 0.07);
+    background: #f9fafb;
+    transition: box-shadow 0.2s;
+}
+.stat-highlight:hover {
+    box-shadow: 0 6px 24px rgba(40, 167, 69, 0.13);
+}
+.stat-icon-wrapper i {
+    font-size: 1.7rem;
+}
+
+@media (min-width: 992px) {
+  .row.h-100 > .col-6 {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
+
+.dashboard-flex-row {
+    display: flex;
+    gap: 2rem;
+    align-items: stretch;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.dashboard-graph {
+    flex: 2 1 400px;
+    min-width: 300px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.dashboard-stats {
+    flex: 1 1 220px;
+    min-width: 220px;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    justify-content: flex-start;
+    height: 100%;
+}
+.stat-custom {
+    margin-bottom: 0 !important;
+}
+@media (max-width: 900px) {
+    .dashboard-flex-row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .dashboard-graph, .dashboard-stats {
+        max-width: 100%;
+        min-width: 0;
+        height: auto;
+    }
+}
+.this-month-heading {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    margin-top: 0.2rem;
+    color: #2c3e50;
+    text-align: left;
+    letter-spacing: 0.5px;
+}
+.dashboard-bottom-row {
+    display: flex;
+    gap: 2.5rem;
+    justify-content: center;
+    align-items: flex-start;
+    margin: 0 auto 1.5rem auto;
+    max-width: 1200px;
+}
+.risk-batches-box, .batch-status-overview-box {
+    flex: 1 1 0;
+    /* min-width: 320px;
+    max-width: 500px; */
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+    height: 500px;
+}
+
+.risk-batches-box {
+    min-width: 50vw;
+    height: 500px;
+}
+.batch-status-overview-box {
+    margin: 0 auto 1.5rem auto;
+    max-width: 600px;
+}
+.risk-card, .batch-status-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+@media (max-width: 1100px) {
+    .dashboard-bottom-row {
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 700px;
+    }
+    .risk-batches-box, .batch-status-overview-box {
+        max-width: 100%;
+        min-width: 0;
+        min-height: unset;
+        height: auto;
+    }
+    .risk-card, .batch-status-card {
+        height: auto;
+    }
+}
+.risk-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(231, 76, 60, 0.08);
+    border: 1.5px solid #f5eaea;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.risk-card-header {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #fbeee6 0%, #f9e6e6 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #f5eaea;
+}
+.risk-icon {
+    color: #e74c3c;
+    font-size: 1.5rem;
+    margin-right: 0.7rem;
+}
+.risk-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #c0392b;
+    letter-spacing: 0.5px;
+}
+.risk-card-body {
+    padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+    background: #fff;
+}
+.risk-table-wrapper {
+    overflow-x: auto;
+}
+.risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98rem;
+    background: #fff;
+}
+.risk-table th, .risk-table td {
+    padding: 0.7em 0.8em;
+    text-align: left;
+    border-bottom: 1px solid #f2dede;
+}
+.risk-table th {
+    background: #fbeee6;
+    color: #a94442;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.93rem;
+    letter-spacing: 0.5px;
+    border-top: none;
+}
+.risk-table tr:last-child td {
+    border-bottom: none;
+}
+.risk-badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.9em;
+    border-radius: 1em;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+.risk-high {
+    background: #e74c3c;
+    color: #fff;
+}
+.risk-medium {
+    background: #f1c40f;
+    color: #222;
+}
+.risk-empty {
+    text-align: center;
+    color: #b2b2b2;
+    font-size: 1.05rem;
+    padding: 1.5rem 0 1rem 0;
+}
+.stat-card-custom {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(44, 62, 80, 0.07);
+    border: 1.5px solid #e8eaf6;
+    margin-bottom: 1.2rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: box-shadow 0.2s, border 0.2s;
+}
+.stat-card-custom:hover {
+    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.13);
+    border-color: #c5cae9;
+}
+.stat-fcr {
+    background: linear-gradient(120deg, #e3fcec 0%, #f8fffa 100%);
+    border-left: 5px solid #28a745;
+}
+.stat-profit {
+    background: linear-gradient(120deg, #fffbe6 0%, #fffdf5 100%);
+    border-left: 5px solid #ffc107;
+}
+.stat-icon-custom {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    margin: 0 auto 0.7rem auto;
+    font-size: 1.7rem;
+    background: #f4f6fb;
+}
+.stat-fcr-icon {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.25));
+    color: #28a745;
+}
+.stat-profit-icon {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.25));
+    color: #ffc107;
+}
+.graph-card-custom {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
+    border: 1.5px solid #e3e6f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+    height: 100%;
+}
+.graph-card-header {
+    background: linear-gradient(90deg, #e9f0fb 0%, #f3f6fb 100%);
+    padding: 1.1rem 1.5rem 1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+.graph-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4b6cb7;
+    letter-spacing: 0.5px;
+}
+.graph-card-body {
+    padding: 1.5rem 2rem 2rem 2rem;
+    background: #fff;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.graph-canvas-wrapper {
+    background: linear-gradient(120deg, #f6fafd 60%, #e9f0fb 100%);
+    border-radius: 14px;
+    border: 1.5px solid #e3e6f0;
+    box-shadow: 0 2px 12px rgba(75, 108, 183, 0.06);
+    padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+}
+.graph-card-body canvas {
+    background: transparent;
+    border-radius: 10px;
+    box-shadow: none;
+    border: none;
+}
+@media (max-width: 900px) {
+    .graph-card-body {
+        padding: 1rem 0.5rem 1.5rem 0.5rem;
+    }
+}
+.batch-status-overview-box {
+    margin: 0 auto 1.5rem auto;
+    max-width: 600px;
+}
+.batch-status-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
+    border: 1.5px solid #e3e6f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.batch-status-header {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #e9f0fb 0%, #f3f6fb 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+.batch-status-icon {
+    color: #4b6cb7;
+    font-size: 1.5rem;
+    margin-right: 0.7rem;
+}
+.batch-status-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4b6cb7;
+    letter-spacing: 0.5px;
+}
+.batch-status-body {
+    padding: 1.5rem 1.5rem 1.2rem 1.5rem;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.batch-status-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.2rem;
+    font-size: 1rem;
+    justify-content: center;
+}
+.legend-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-right: 0.5em;
+    vertical-align: middle;
+}
+.legend-ongoing { background: #4b6cb7; }
+.legend-closing { background: #ffc107; }
+.legend-closed { background: #e74c3c; }
+/* Add new styles for stat-mortality */
+.stat-mortality {
+    background: linear-gradient(120deg, #fff0f0 0%, #fff6f6 100%);
+    border-left: 5px solid #e74c3c;
+}
+.stat-mortality-icon {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.25));
+    color: #e74c3c;
+}
+.stat-mortality .stat-value {
+    color: #e74c3c;
+}
+.stat-mortality .stat-desc {
+    font-size: 1rem;
+    color: #b2b2b2;
+    margin-top: 0.2rem;
+}
+.dashboard-stats .stat-card-custom {
+    width: 100%;
+    min-width: 0;
+    min-height: 140px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+@media (min-width: 600px) {
+    .dashboard-stats .stat-card-custom {
+        min-width: 220px;
+        max-width: 350px;
+        height: 160px;
+    }
+}
+.graph-card-custom,
+.dashboard-stats {
+    height: 500px;
+    max-height: 500px;
+}
+
+.dashboard-stats {
+    gap: 1rem;
+}
+
+.dashboard-stats .stat-card-custom {
+    min-height: 0;
+    height: 100px;
+    padding: 0.5rem 0.5rem;
+}
+
+.stat-info.text-center.py-4 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+.stat-icon-custom {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+}
 </style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="application/json" id="jinja-vars-profit">{{ profit_by_month|tojson|safe }}</script>
+<script type="application/json" id="jinja-vars-fcr">{{ fcr_by_month|tojson|safe }}</script>
+<script type="application/json" id="jinja-vars-batch-status">{{ batch_status_counts|tojson|safe }}</script>
+<script type="text/javascript">
+    const profitByMonthData = JSON.parse(document.getElementById('jinja-vars-profit').textContent);
+    const fcrByMonthData = JSON.parse(document.getElementById('jinja-vars-fcr').textContent);
+    const batchStatusCounts = JSON.parse(document.getElementById('jinja-vars-batch-status').textContent);
+    const ctx = document.getElementById('profitByMonthChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: profitByMonthData.map(item => item.month),
+            datasets: [
+                {
+                    label: 'Profit',
+                    data: profitByMonthData.map(item => item.profit),
+                    borderColor: '#4b6cb7',
+                    backgroundColor: 'rgba(75, 108, 183, 0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#4b6cb7',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 7,
+                    pointHoverBackgroundColor: '#6781b6',
+                    pointStyle: 'circle',
+                    borderWidth: 3,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'FCR',
+                    data: fcrByMonthData.map(item => item.fcr),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.10)',
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#28a745',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 7,
+                    pointHoverBackgroundColor: '#218838',
+                    pointStyle: 'rectRot',
+                    borderWidth: 3,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#2c3e50',
+                        font: { weight: 600 }
+                    }
+                },
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#4b6cb7',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#e3e6f0',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label === 'Profit') {
+                                return 'Profit: ' + context.parsed.y.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                            } else if (context.dataset.label === 'FCR') {
+                                return 'FCR: ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: 10
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#e3e6f0',
+                        borderColor: '#e3e6f0',
+                        borderWidth: 2,
+                        drawTicks: false,
+                    },
+                    ticks: {
+                        color: '#4b6cb7',
+                        font: { weight: 600 }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#e3e6f0',
+                        borderColor: '#e3e6f0',
+                        borderWidth: 2,
+                        drawTicks: false,
+                    },
+                    ticks: {
+                        color: '#4b6cb7',
+                        font: { weight: 600 },
+                        callback: function(value) {
+                            return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Profit',
+                        color: '#4b6cb7',
+                        font: { weight: 700 }
+                    }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        color: '#28a745',
+                        font: { weight: 600 },
+                    },
+                    title: {
+                        display: true,
+                        text: 'FCR',
+                        color: '#28a745',
+                        font: { weight: 700 }
+                    }
+                }
+            }
+        }
+    });
+    // Batch Status Donut Chart
+    const batchStatusCtx = document.getElementById('batchStatusChart').getContext('2d');
+    new Chart(batchStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Ongoing', 'Closing', 'Closed'],
+            datasets: [{
+                data: [batchStatusCounts.ongoing, batchStatusCounts.closing, batchStatusCounts.closed],
+                backgroundColor: [
+                    '#4b6cb7',
+                    '#ffc107',
+                    '#e74c3c'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' batches';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

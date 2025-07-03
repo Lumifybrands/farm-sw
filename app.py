@@ -7,6 +7,10 @@ from datetime import datetime, timedelta
 from functools import wraps
 import json
 from sqlalchemy import func
+from sqlalchemy import extract
+from collections import OrderedDict
+import calendar
+from sqlalchemy.orm import joinedload
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -817,12 +821,127 @@ def dashboard():
     # Sort all schedules by date
     upcoming_schedules.sort(key=lambda x: x.schedule_date if hasattr(x, 'schedule_date') else x.scheduled_date)
     
+    # Aggregate profit by month for the last 12 months
+    # Get the last 12 months
+    today = datetime.now()
+    months = [(today.year if today.month - i > 0 else today.year - 1,
+               (today.month - i - 1) % 12 + 1) for i in range(11, -1, -1)]
+
+    # Query profits grouped by year and month
+    profit_data = (
+        db.session.query(
+            extract('year', FinancialSummary.created_at).label('year'),
+            extract('month', FinancialSummary.created_at).label('month'),
+            func.sum(FinancialSummary.total_profit).label('profit')
+        )
+        .group_by('year', 'month')
+        .order_by('year', 'month')
+        .all()
+    )
+
+    # Query average FCR grouped by year and month
+    fcr_data = (
+        db.session.query(
+            extract('year', FinancialSummary.created_at).label('year'),
+            extract('month', FinancialSummary.created_at).label('month'),
+            func.avg(FinancialSummary.fcr_value).label('fcr')
+        )
+        .group_by('year', 'month')
+        .order_by('year', 'month')
+        .all()
+    )
+
+    # Map (year, month) to profit and fcr
+    profit_map = {(int(row.year), int(row.month)): float(row.profit or 0) for row in profit_data}
+    fcr_map = {(int(row.year), int(row.month)): float(row.fcr or 0) for row in fcr_data}
+
+    # Prepare data for the last 12 months
+    profit_by_month = []
+    fcr_by_month = []
+    for year, month in months:
+        label = f"{calendar.month_abbr[month]} {year}"
+        profit = profit_map.get((year, month), 0)
+        fcr = fcr_map.get((year, month), 0)
+        profit_by_month.append({'month': label, 'profit': profit})
+        fcr_by_month.append({'month': label, 'fcr': fcr})
+    
+    # Calculate average FCR and total profit for the current month
+    current_year = today.year
+    current_month = today.month
+    this_month_summaries = FinancialSummary.query.filter(
+        extract('year', FinancialSummary.created_at) == current_year,
+        extract('month', FinancialSummary.created_at) == current_month
+    ).all()
+    if this_month_summaries:
+        avg_fcr_this_month = sum(fs.fcr_value or 0 for fs in this_month_summaries) / len(this_month_summaries)
+        total_profit_this_month = sum(fs.total_profit or 0 for fs in this_month_summaries)
+    else:
+        avg_fcr_this_month = 0
+        total_profit_this_month = 0
+    
+    # Get batches with high or medium risk remarks
+    risk_updates = (
+        BatchUpdate.query
+        .filter(BatchUpdate.remarks_priority.in_(['high', 'medium']))
+        .options(joinedload(BatchUpdate.batch))
+        .order_by(
+            BatchUpdate.remarks_priority.desc(),  # 'high' > 'medium'
+            BatchUpdate.created_at.desc()
+        )
+        .all()
+    )
+    # Group by batch, keep only the latest update per batch
+    seen_batches = set()
+    risk_batches = []
+    for update in risk_updates:
+        if update.batch_id not in seen_batches:
+            risk_batches.append({
+                'batch': update.batch,
+                'priority': update.remarks_priority,
+                'remark': update.remarks,
+                'created_at': update.created_at
+            })
+            seen_batches.add(update.batch_id)
+    
+    # Batch status overview
+    batch_status_counts = {
+        'ongoing': Batch.query.filter_by(status='ongoing').count(),
+        'closing': Batch.query.filter_by(status='closing').count(),
+        'closed': Batch.query.filter_by(status='closed').count(),
+    }
+    
+    # Mortality Rate Widget (this month)
+    month_updates = BatchUpdate.query.filter(
+        extract('year', BatchUpdate.created_at) == current_year,
+        extract('month', BatchUpdate.created_at) == current_month
+    ).all()
+    total_mortalities = sum(u.mortality_count for u in month_updates)
+    total_birds = sum(u.batch.total_birds if u.batch else 0 for u in month_updates)
+    if total_birds > 0:
+        avg_mortality_rate_this_month = (total_mortalities / total_birds) * 100
+    else:
+        avg_mortality_rate_this_month = 0
+    
+    # Get batches above 28 days old (ongoing or closing)
+    above_28_batches = []
+    for batch in active_batches:
+        if batch.get_age_days() > 28:
+            above_28_batches.append(batch)
+    
     return render_template('dashboard.html',
                          farms=farms,
                          active_batches=active_batches,
                          total_birds=total_birds,
                          pending_schedules_count=pending_schedules_count,
-                         upcoming_schedules=upcoming_schedules)
+                         upcoming_schedules=upcoming_schedules,
+                         profit_by_month=profit_by_month,
+                         fcr_by_month=fcr_by_month,
+                         avg_fcr_this_month=avg_fcr_this_month,
+                         total_profit_this_month=total_profit_this_month,
+                         risk_batches=risk_batches,
+                         batch_status_counts=batch_status_counts,
+                         avg_mortality_rate_this_month=avg_mortality_rate_this_month,
+                         above_28_batches=above_28_batches)
 
 @app.route('/settings')
 @login_required
