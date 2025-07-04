@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Manager Dashboard - Bismi Farms{% endblock %}</title>
+    <title>{% block title %}Manager Dashboard - Farm Management Software{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -393,7 +393,7 @@
             </button>
             <div class="logo">
                 <i class="fas fa-kiwi-bird"></i>
-                <span>JS Farms</span>
+                <span>Farm Management</span>
             </div>
             <div class="user-info">
                 <span>{{ session.get('username') }} ({{ session.get('user_type').replace('_', ' ').title() }})</span>

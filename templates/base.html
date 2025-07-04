@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4CAF50">
-    <meta name="description" content="Farm Management System for Bismi Farms">
+    <meta name="description" content="Farm Management System for Farm Management Software">
     
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192x192.png') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Bismi Farms">
+    <meta name="apple-mobile-web-app-title" content="Farm Management Software">
     
-    <title>{% block title %}Bismi Farms{% endblock %} - Bismi Farms</title>
+    <title>{% block title %}Farm Management Software{% endblock %} - Farm Management Software</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -333,7 +333,7 @@
             </button>
             <div class="logo">
                 <i class="fas fa-kiwi-bird"></i>
-                <span>JS Farms</span>
+                <span>Farm Management</span>
             </div>
             
             {% if session.get('user_id') %}

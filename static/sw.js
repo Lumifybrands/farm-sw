@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bismi-farms-v1';
+const CACHE_NAME = 'farm-management-v1';
 const urlsToCache = [
     '/',
     '/static/css/style.css',

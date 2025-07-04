@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Add Farm - Bismi Farms{% endblock %}
+{% block title %}Add Farm - Farm Management Software{% endblock %}
 
 {% block content %}
 <div class="content-header">
@@ -45,6 +45,19 @@
         <div class="form-group">
             <label for="contact_number">Contact Number</label>
             <input type="tel" id="contact_number" name="contact_number" pattern="[0-9]+" required>
+        </div>
+
+        <div class="form-group">
+            <label for="manager_id">Assign Manager</label>
+            <select id="manager_id" name="manager_id" class="form-control">
+                <option value="">Select a manager...</option>
+                {% for manager in managers %}
+                <option value="{{ manager.id }}">
+                    {{ manager.employee.name if manager.employee else manager.username }}
+                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
         <div class="form-group">

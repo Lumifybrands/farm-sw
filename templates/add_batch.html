@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Add Batch - Bismi Farms{% endblock %}
+{% block title %}Add Batch - Farm Management Software{% endblock %}
 
 {% block content %}
 <div class="content-header">
@@ -14,7 +14,7 @@
     <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form">
         <div class="form-group">
             <label for="farm_id">Select Farm</label>
-            <select id="farm_id" name="farm_id" required>
+            <select id="farm_id" name="farm_id" required class="form-control" style="width: 100%">
                 <option value="">Select a farm...</option>
                 {% for farm in farms %}
                 <option value="{{ farm.id }}"
@@ -22,7 +22,8 @@
                         data-available="{{ farm.get_available_capacity() }}"
                         data-num-sheds="{{ farm.num_sheds }}"
                         data-shed-capacities="{{ farm.get_shed_capacities()|tojson }}"
-                        data-shed-available="{{ farm.get_shed_available_capacities()|tojson }}">
+                        data-shed-available="{{ farm.get_shed_available_capacities()|tojson }}"
+                        data-manager-id="{{ farm.manager_id or '' }}">
                     {{ farm.name }}
                 </option>
                 {% endfor %}
@@ -133,128 +134,104 @@
     margin-top: 5px;
     font-size: 0.9em;
 }
+
+
 </style>
 
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+$(document).ready(function() {
+    // Initialize Select2 for farm selector
+    $('#farm_id').select2({
+        placeholder: 'Select a farm...',
+        allowClear: true,
+        width: 'resolve'
+    });
+
+    // Unified handler for farm selection
+    function updateOnFarmChange() {
+        var selectedOption = $('#farm_id').find('option:selected');
+        var managerId = selectedOption.data('manager-id');
+        // Update manager field
+        if (managerId) {
+            $('#manager_id').val(managerId).trigger('change');
+        } else {
+            $('#manager_id').val('').trigger('change');
+        }
+
+        // Update farm info
+        var totalCapacity = selectedOption.data('capacity');
+        var availableCapacity = selectedOption.data('available');
+        if ($('#farm_id').val()) {
+            $('#totalCapacity').text(totalCapacity);
+            $('#availableCapacity').text(availableCapacity);
+            $('.farm-info').show();
+        } else {
+            $('.farm-info').hide();
+        }
+
+        // Update shed distribution
+        var farmId = $('#farm_id').val();
+        var farmSheds = {{ farm_sheds|tojson|safe }};
+        var shedDistribution = $('#shed_distribution');
+        shedDistribution.empty();
+        if (farmSheds[farmId]) {
+            var farm = farmSheds[farmId];
+            for (var i = 0; i < farm.num_sheds; i++) {
+                var available = farm.shed_available[i];
+                var total = farm.shed_capacities[i];
+                var status = farm.shed_status[i];
+                var isDisabled = status.is_partially_allocated;
+                var div = $('<div>', {class: 'form-group'});
+                div.html(
+                    '<label for="shed_' + (i + 1) + '_birds">Shed ' + (i + 1) + ' (Available: ' + available + '/' + total + ')</label>' +
+                    '<input type="number" ' +
+                    'class="form-control shed-input" ' +
+                    'id="shed_' + (i + 1) + '_birds" ' +
+                    'name="shed_' + (i + 1) + '_birds" ' +
+                    'min="0" ' +
+                    'max="' + (available + 500) + '" ' +
+                    'value="0" ' +
+                    (isDisabled ? 'disabled' : '') +
+                    ' onchange="validateTotalBirds()">' +
+                    (isDisabled ? '<small class="text-danger">Shed is allocated</small>' : '')
+                );
+                shedDistribution.append(div);
+            }
+        }
+        validateTotalBirds();
+    }
+
+    // Validate total birds
+    window.validateTotalBirds = function() {
+        var totalBirds = parseInt($('#total_birds').val()) || 0;
+        var totalDistributed = 0;
+        $('.shed-input:not([disabled])').each(function() {
+            totalDistributed += parseInt($(this).val()) || 0;
+        });
+        var isValid = totalBirds === totalDistributed;
+        $('#total_birds')[0].setCustomValidity(isValid ? '' : 'Total birds must match the sum of birds in sheds');
+    };
+
+    // Bind unified handler
+    $('#farm_id').on('change', updateOnFarmChange);
+    $('#total_birds').on('input', window.validateTotalBirds);
+
+    // Run on page load (in case of pre-selected farm)
+    updateOnFarmChange();
+
     // Set default created_at to current date and time
-    const now = new Date();
+    var now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('created_at').value = now.toISOString().slice(0, 16);
-
-    // Add event listener for farm selection
-    document.getElementById('farm_id').addEventListener('change', updateFarmInfo);
-
-    const farmSelect = document.getElementById('farm_id');
-    const shedDistribution = document.getElementById('shed_distribution');
-    const totalBirdsInput = document.getElementById('total_birds');
-    const farmSheds = {{ farm_sheds|tojson|safe }};
-
-    function updateShedDistribution() {
-        const farmId = farmSelect.value;
-        const farm = farmSheds[farmId];
-        shedDistribution.innerHTML = '';
-
-        if (!farm) return;
-
-        for (let i = 0; i < farm.num_sheds; i++) {
-            const available = farm.shed_available[i];
-            const total = farm.shed_capacities[i];
-            const status = farm.shed_status[i];
-            const isDisabled = status.is_partially_allocated;
-
-            const div = document.createElement('div');
-            div.className = 'form-group';
-            div.innerHTML = `
-                <label for="shed_${i + 1}_birds">Shed ${i + 1} (Available: ${available}/${total})</label>
-                <input type="number" 
-                       class="form-control shed-input" 
-                       id="shed_${i + 1}_birds" 
-                       name="shed_${i + 1}_birds" 
-                       min="0" 
-                       max="${available + 500}"
-                       value="0"
-                       ${isDisabled ? 'disabled' : ''}
-                       onchange="validateTotalBirds()">
-                ${status.is_partially_allocated ? '<small class="text-danger">Shed is allocated</small>' : ''}
-            `;
-            shedDistribution.appendChild(div);
-        }
-    }
-
-    function validateTotalBirds() {
-        const totalBirds = parseInt(totalBirdsInput.value) || 0;
-        const shedInputs = document.querySelectorAll('.shed-input:not([disabled])');
-        let totalDistributed = 0;
-
-        shedInputs.forEach(input => {
-            totalDistributed += parseInt(input.value) || 0;
-        });
-
-        const isValid = totalBirds === totalDistributed;
-        totalBirdsInput.setCustomValidity(isValid ? '' : 'Total birds must match the sum of birds in sheds');
-    }
-
-    farmSelect.addEventListener('change', updateShedDistribution);
-    totalBirdsInput.addEventListener('input', validateTotalBirds);
-
-    // Initialize shed distribution on page load
-    updateShedDistribution();
 });
-
-function updateFarmInfo() {
-    const farmSelect = document.getElementById('farm_id');
-    const selectedOption = farmSelect.options[farmSelect.selectedIndex];
-    const farmInfo = document.querySelector('.farm-info');
-    const shedContainer = document.getElementById('shed_birds_container');
-    
-    if (farmSelect.value) {
-        const totalCapacity = parseInt(selectedOption.dataset.capacity);
-        const availableCapacity = parseInt(selectedOption.dataset.available);
-        const numSheds = parseInt(selectedOption.dataset.numSheds);
-        const shedCapacities = JSON.parse(selectedOption.dataset.shedCapacities);
-        const shedAvailable = JSON.parse(selectedOption.dataset.shedAvailable);
-
-        document.getElementById('totalCapacity').textContent = totalCapacity;
-        document.getElementById('availableCapacity').textContent = availableCapacity;
-        farmInfo.style.display = 'block';
-
-        // Update shed birds fields
-        shedContainer.innerHTML = '';
-        for (let i = 0; i < numSheds; i++) {
-            const div = document.createElement('div');
-            div.className = 'form-group';
-            div.innerHTML = `
-                <label for="shed_${i + 1}_birds">Birds in Shed ${i + 1} (Available: ${shedAvailable[i]})</label>
-                <input type="number" id="shed_${i + 1}_birds" name="shed_${i + 1}_birds" 
-                       min="0" max="${shedAvailable[i]}" required 
-                       onchange="validateShedBirds(${i + 1}, ${shedAvailable[i]})">
-                <small class="error-message" id="shedError_${i + 1}" style="display: none; color: red;"></small>
-            `;
-            shedContainer.appendChild(div);
-        }
-    } else {
-        farmInfo.style.display = 'none';
-        shedContainer.innerHTML = '';
-    }
-}
-
-function validateShedBirds(shedNumber, maxCapacity) {
-    const input = document.getElementById(`shed_${shedNumber}_birds`);
-    const errorElement = document.getElementById(`shedError_${shedNumber}`);
-    
-    if (parseInt(input.value) > maxCapacity) {
-        errorElement.textContent = `Cannot exceed available capacity (${maxCapacity})`;
-        errorElement.style.display = 'block';
-        input.setCustomValidity('Exceeds available capacity');
-    } else {
-        errorElement.style.display = 'none';
-        input.setCustomValidity('');
-    }
-}
 </script>
 {% endblock %} 

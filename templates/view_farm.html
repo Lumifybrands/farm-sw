@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}View Farm - Bismi Farms{% endblock %}
+{% block title %}View Farm - Farm Management Software{% endblock %}
 
 {% block content %}
 <div class="content-header">
@@ -51,6 +51,15 @@
     <div class="detail-group">
         <label><i class="fas fa-user"></i> Owner Name</label>
         <span>{{ farm.owner_name }}</span>
+    </div>
+
+    <div class="detail-group">
+        <label><i class="fas fa-user-tie"></i> Assigned Manager</label>
+        {% if farm.manager %}
+            <span>{{ farm.manager.employee.name if farm.manager.employee else farm.manager.username }} ({{ 'Senior Manager' if farm.manager.user_type == 'senior_manager' else 'Assistant Manager' }})</span>
+        {% else %}
+            <span>Not assigned</span>
+        {% endif %}
     </div>
 
     <div class="detail-group">

@@ -1,7 +1,7 @@
 {
-    "name": "Bismi Farms",
-    "short_name": "Bismi Farms",
-    "description": "Farm Management System for Bismi Farms",
+    "name": "Farm Management Software",
+    "short_name": "Farm Management Software",
+    "description": "Farm Management System Powered By Lumify",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
