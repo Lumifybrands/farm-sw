@@ -76,193 +76,202 @@
                 </div>
             </div>
 
-            <!-- Feed Section -->
-            <div class="dynamic-section" id="feedSection">
-                <h3>Feed Allocation</h3>
-                <div class="dynamic-items" id="feedItems">
+            <!-- Show Advanced Toggle (Checkbox) -->
+            <div class="show-advanced-toggle" style="margin-bottom: 1em;">
+                <label for="advancedToggle" style="cursor:pointer; color:#1a73e8; font-weight:500;">
+                    <input type="checkbox" id="advancedToggle" style="margin-right:8px;"> Show Advanced
+                </label>
+            </div>
+            <div id="advancedSection" class="advanced-section" style="display:none;">
+                <div style="color: red; font-weight: bold; margin-bottom: 1em;">If you see this, the advanced section is visible!</div>
+                <!-- Feed Section -->
+                <div class="dynamic-section" id="feedSection">
+                    <h3>Feed Allocation</h3>
+                    <div class="dynamic-items" id="feedItems">
+                    </div>
+                    <button type="button" class="add-item" onclick="addFeedItem()">
+                        <i class="fas fa-plus"></i> Add Feed
+                    </button>
                 </div>
-                <button type="button" class="add-item" onclick="addFeedItem()">
-                    <i class="fas fa-plus"></i> Add Feed
-                </button>
-            </div>
 
-            <!-- Feed Stock Return Section -->
-            <div class="dynamic-section" id="feedStockReturnSection">
-                <h3>Feed Stock Return</h3>
-                <div class="dynamic-items" id="feedReturnItems"></div>
-                <button type="button" class="add-item" onclick="addFeedReturnItem()">
-                    <i class="fas fa-plus"></i> Add Feed Return
-                </button>
-            </div>
+                <!-- Feed Stock Return Section -->
+                <div class="dynamic-section" id="feedStockReturnSection">
+                    <h3>Feed Stock Return</h3>
+                    <div class="dynamic-items" id="feedReturnItems"></div>
+                    <button type="button" class="add-item" onclick="addFeedReturnItem()">
+                        <i class="fas fa-plus"></i> Add Feed Return
+                    </button>
+                </div>
 
-            <!-- Scheduled Items Section -->
-            <div class="dynamic-section" id="scheduledItemsSection">
-                <h3>Scheduled Items</h3>
-                <div class="scheduled-items-container">
-                    {% if medicine_schedules or health_material_schedules or vaccine_schedules %}
-                        <!-- Medicine Schedules -->
-                        {% if medicine_schedules %}
-                        <div class="scheduled-category">
-                            <h4><i class="fas fa-pills"></i> Medicine Schedules</h4>
-                            <div class="scheduled-items" id="medicineSchedules">
-                                {% for schedule in medicine_schedules %}
-                                <div class="scheduled-item {% if schedule.schedule_date < today %}overdue{% endif %}">
-                                    <div class="scheduled-item-info">
-                                        <label class="checkbox-container">
-                                            <input type="checkbox" 
-                                                   name="scheduled_items[medicine][{{ schedule.id }}][selected]" 
-                                                   value="1"
-                                                   onchange="toggleQuantityField(this, 'medicine_quantity_{{ schedule.id }}')">
-                                            <span class="checkmark"></span>
-                                            <span class="item-name">{{ schedule.medicine.name }}</span>
-                                        </label>
-                                        <div class="schedule-details">
-                                            <span class="schedule-date {% if schedule.schedule_date < today %}overdue{% endif %}">
-                                                Scheduled: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}
-                                                {% if schedule.schedule_date < today %}
-                                                <span class="overdue-badge">Overdue</span>
+                <!-- Scheduled Items Section -->
+                <div class="dynamic-section" id="scheduledItemsSection">
+                    <h3>Scheduled Items</h3>
+                    <div class="scheduled-items-container">
+                        {% if medicine_schedules or health_material_schedules or vaccine_schedules %}
+                            <!-- Medicine Schedules -->
+                            {% if medicine_schedules %}
+                            <div class="scheduled-category">
+                                <h4><i class="fas fa-pills"></i> Medicine Schedules</h4>
+                                <div class="scheduled-items" id="medicineSchedules">
+                                    {% for schedule in medicine_schedules %}
+                                    <div class="scheduled-item {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                        <div class="scheduled-item-info">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" 
+                                                    name="scheduled_items[medicine][{{ schedule.id }}][selected]" 
+                                                    value="1"
+                                                    onchange="toggleQuantityField(this, 'medicine_quantity_{{ schedule.id }}')">
+                                                <span class="checkmark"></span>
+                                                <span class="item-name">{{ schedule.medicine.name }}</span>
+                                            </label>
+                                            <div class="schedule-details">
+                                                <span class="schedule-date {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                                    Scheduled: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}
+                                                    {% if schedule.schedule_date < today %}
+                                                    <span class="overdue-badge">Overdue</span>
+                                                    {% endif %}
+                                                </span>
+                                                {% if schedule.notes %}
+                                                <span class="schedule-notes">{{ schedule.notes }}</span>
                                                 {% endif %}
-                                            </span>
-                                            {% if schedule.notes %}
-                                            <span class="schedule-notes">{{ schedule.notes }}</span>
-                                            {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="scheduled-item-quantity" id="medicine_quantity_{{ schedule.id }}" style="display: none;">
+                                            <input type="number" 
+                                                name="scheduled_items[medicine][{{ schedule.id }}][quantity]" 
+                                                placeholder="Quantity" 
+                                                min="0" 
+                                                step="0.01" 
+                                                value="0"
+                                                onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'medicine')">
+                                            <span class="unit-type">units</span>
                                         </div>
                                     </div>
-                                    <div class="scheduled-item-quantity" id="medicine_quantity_{{ schedule.id }}" style="display: none;">
-                                        <input type="number" 
-                                               name="scheduled_items[medicine][{{ schedule.id }}][quantity]" 
-                                               placeholder="Quantity" 
-                                               min="0" 
-                                               step="0.01" 
-                                               value="0"
-                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'medicine')">
-                                        <span class="unit-type">units</span>
-                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
-                        </div>
-                        {% endif %}
+                            {% endif %}
 
-                        <!-- Health Material Schedules -->
-                        {% if health_material_schedules %}
-                        <div class="scheduled-category">
-                            <h4><i class="fas fa-spray-can"></i> Health Material Schedules</h4>
-                            <div class="scheduled-items" id="healthMaterialSchedules">
-                                {% for schedule in health_material_schedules %}
-                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
-                                    <div class="scheduled-item-info">
-                                        <label class="checkbox-container">
-                                            <input type="checkbox" 
-                                                   name="scheduled_items[health_material][{{ schedule.id }}][selected]" 
-                                                   value="1"
-                                                   onchange="toggleQuantityField(this, 'health_material_quantity_{{ schedule.id }}')">
-                                            <span class="checkmark"></span>
-                                            <span class="item-name">{{ schedule.health_material.name }}</span>
-                                        </label>
-                                        <div class="schedule-details">
-                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
-                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
-                                                {% if schedule.scheduled_date < today %}
-                                                <span class="overdue-badge">Overdue</span>
+                            <!-- Health Material Schedules -->
+                            {% if health_material_schedules %}
+                            <div class="scheduled-category">
+                                <h4><i class="fas fa-spray-can"></i> Health Material Schedules</h4>
+                                <div class="scheduled-items" id="healthMaterialSchedules">
+                                    {% for schedule in health_material_schedules %}
+                                    <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                        <div class="scheduled-item-info">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" 
+                                                    name="scheduled_items[health_material][{{ schedule.id }}][selected]" 
+                                                    value="1"
+                                                    onchange="toggleQuantityField(this, 'health_material_quantity_{{ schedule.id }}')">
+                                                <span class="checkmark"></span>
+                                                <span class="item-name">{{ schedule.health_material.name }}</span>
+                                            </label>
+                                            <div class="schedule-details">
+                                                <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                    Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                    {% if schedule.scheduled_date < today %}
+                                                    <span class="overdue-badge">Overdue</span>
+                                                    {% endif %}
+                                                </span>
+                                                {% if schedule.notes %}
+                                                <span class="schedule-notes">{{ schedule.notes }}</span>
                                                 {% endif %}
-                                            </span>
-                                            {% if schedule.notes %}
-                                            <span class="schedule-notes">{{ schedule.notes }}</span>
-                                            {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="scheduled-item-quantity" id="health_material_quantity_{{ schedule.id }}" style="display: none;">
+                                            <input type="number" 
+                                                name="scheduled_items[health_material][{{ schedule.id }}][quantity]" 
+                                                placeholder="Quantity" 
+                                                min="0" 
+                                                step="0.01" 
+                                                value="0"
+                                                onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'health_material')">
+                                            <span class="unit-type">units</span>
                                         </div>
                                     </div>
-                                    <div class="scheduled-item-quantity" id="health_material_quantity_{{ schedule.id }}" style="display: none;">
-                                        <input type="number" 
-                                               name="scheduled_items[health_material][{{ schedule.id }}][quantity]" 
-                                               placeholder="Quantity" 
-                                               min="0" 
-                                               step="0.01" 
-                                               value="0"
-                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'health_material')">
-                                        <span class="unit-type">units</span>
-                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
-                        </div>
-                        {% endif %}
+                            {% endif %}
 
-                        <!-- Vaccine Schedules -->
-                        {% if vaccine_schedules %}
-                        <div class="scheduled-category">
-                            <h4><i class="fas fa-syringe"></i> Vaccine Schedules</h4>
-                            <div class="scheduled-items" id="vaccineSchedules">
-                                {% for schedule in vaccine_schedules %}
-                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
-                                    <div class="scheduled-item-info">
-                                        <label class="checkbox-container">
-                                            <input type="checkbox" 
-                                                   name="scheduled_items[vaccine][{{ schedule.id }}][selected]" 
-                                                   value="1"
-                                                   onchange="toggleQuantityField(this, 'vaccine_quantity_{{ schedule.id }}')">
-                                            <span class="checkmark"></span>
-                                            <span class="item-name">{{ schedule.vaccine.name }} (Dose {{ schedule.dose_number }})</span>
-                                        </label>
-                                        <div class="schedule-details">
-                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
-                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
-                                                {% if schedule.scheduled_date < today %}
-                                                <span class="overdue-badge">Overdue</span>
+                            <!-- Vaccine Schedules -->
+                            {% if vaccine_schedules %}
+                            <div class="scheduled-category">
+                                <h4><i class="fas fa-syringe"></i> Vaccine Schedules</h4>
+                                <div class="scheduled-items" id="vaccineSchedules">
+                                    {% for schedule in vaccine_schedules %}
+                                    <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                        <div class="scheduled-item-info">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" 
+                                                    name="scheduled_items[vaccine][{{ schedule.id }}][selected]" 
+                                                    value="1"
+                                                    onchange="toggleQuantityField(this, 'vaccine_quantity_{{ schedule.id }}')">
+                                                <span class="checkmark"></span>
+                                                <span class="item-name">{{ schedule.vaccine.name }} (Dose {{ schedule.dose_number }})</span>
+                                            </label>
+                                            <div class="schedule-details">
+                                                <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                    Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                    {% if schedule.scheduled_date < today %}
+                                                    <span class="overdue-badge">Overdue</span>
+                                                    {% endif %}
+                                                </span>
+                                                {% if schedule.notes %}
+                                                <span class="schedule-notes">{{ schedule.notes }}</span>
                                                 {% endif %}
-                                            </span>
-                                            {% if schedule.notes %}
-                                            <span class="schedule-notes">{{ schedule.notes }}</span>
-                                            {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="scheduled-item-quantity" id="vaccine_quantity_{{ schedule.id }}" style="display: none;">
+                                            <input type="number" 
+                                                name="scheduled_items[vaccine][{{ schedule.id }}][quantity]" 
+                                                placeholder="Quantity" 
+                                                min="0" 
+                                                step="0.01" 
+                                                value="0"
+                                                onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'vaccine')">
+                                            <span class="unit-type">units</span>
                                         </div>
                                     </div>
-                                    <div class="scheduled-item-quantity" id="vaccine_quantity_{{ schedule.id }}" style="display: none;">
-                                        <input type="number" 
-                                               name="scheduled_items[vaccine][{{ schedule.id }}][quantity]" 
-                                               placeholder="Quantity" 
-                                               min="0" 
-                                               step="0.01" 
-                                               value="0"
-                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'vaccine')">
-                                        <span class="unit-type">units</span>
-                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
-                        </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="no-schedules-message">
+                                <i class="fas fa-calendar-check"></i>
+                                <p>No schedules for today</p>
+                            </div>
                         {% endif %}
-                    {% else %}
-                        <div class="no-schedules-message">
-                            <i class="fas fa-calendar-check"></i>
-                            <p>No schedules for today</p>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
-            </div>
 
-            <!-- Other Items Section -->
-            <div class="dynamic-section" id="otherItemsSection">
-                <h3>Other Items</h3>
-                <div class="dynamic-items" id="otherItems"></div>
-                <div class="item-type-selector">
-                    <button type="button" onclick="addMedicineItem()">Add Medicine</button>
-                    <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
-                    <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
-                    <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
+                <!-- Other Items Section -->
+                <div class="dynamic-section" id="otherItemsSection">
+                    <h3>Other Items</h3>
+                    <div class="dynamic-items" id="otherItems"></div>
+                    <div class="item-type-selector">
+                        <button type="button" onclick="addMedicineItem()">Add Medicine</button>
+                        <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                        <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                        <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group full-width">
-                <label for="remarks">Remarks</label>
-                <div class="remarks-container">
-                    <select name="remarks_priority" id="remarks_priority" class="remarks-priority">
-                        <option value="low">Low Priority</option>
-                        <option value="medium">Medium Priority</option>
-                        <option value="high">High Priority</option>
-                    </select>
-                    <textarea id="remarks" name="remarks" rows="4" placeholder="Enter any additional remarks or observations..."></textarea>
+                <div class="form-group full-width">
+                    <label for="remarks">Remarks</label>
+                    <div class="remarks-container">
+                        <select name="remarks_priority" id="remarks_priority" class="remarks-priority">
+                            <option value="low">Low Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="high">High Priority</option>
+                        </select>
+                        <textarea id="remarks" name="remarks" rows="4" placeholder="Enter any additional remarks or observations..."></textarea>
+                    </div>
                 </div>
-            </div>
+            </div> <!-- End advancedSection -->
         </div>
 
         <div class="form-actions">
@@ -900,6 +909,8 @@ textarea:focus {
         width: 100%;
     }
 }
+
+.advanced-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; background: #f8f9fa; margin-bottom: 1em; }
 </style>
 
 <script>
@@ -1106,6 +1117,16 @@ document.querySelector('.update-form').addEventListener('submit', function(e) {
     
     // If everything passes, submit the form
     this.submit();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    var adv = document.getElementById('advancedSection');
+    var toggle = document.getElementById('advancedToggle');
+    if (toggle && adv) {
+        toggle.addEventListener('change', function() {
+            adv.style.display = this.checked ? 'block' : 'none';
+        });
+    }
 });
 </script>
 {% endblock %} 

@@ -14,7 +14,7 @@ from sqlalchemy.orm import joinedload
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bismi_farm.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jsfarm.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)  # Session expires after 2 hours
 
@@ -707,6 +707,24 @@ def init_db():
 
             # Create all tables
             db.create_all()
+
+            # Create default admin user if not exists
+            if not User.query.filter_by(user_type='admin').first():
+                admin_user = User(username='admin', user_type='admin')
+                admin_user.set_password('admin123')
+                db.session.add(admin_user)
+                db.session.flush()  # get admin_user.id
+                admin_employee = Employee(
+                    name='Administrator',
+                    user_id=admin_user.id,
+                    phone_number=None,
+                    alternate_phone_number=None
+                )
+                db.session.add(admin_employee)
+                db.session.commit()
+                print('Default admin user created: username="admin", password="admin123"')
+            else:
+                print('Admin user already exists. No default admin created.')
 
             # +
             
