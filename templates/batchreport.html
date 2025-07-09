@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Report - Farm Management Software{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Batch Report</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Reports</span> / <span>Batch Report</span>
+    </div>
+</div>
+
+<div class="report-container" style="max-width: 600px; margin: 2rem auto;">
+    <div class="card" style="padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-radius: 12px; background: #fff;">
+        <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; color: #1a73e8;">Select a Batch</h2>
+        <form method="get" id="batch-select-form">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="batch_id" style="font-weight: 500; color: #333; margin-bottom: 0.5rem; display: block;">Batch</label>
+                <select name="batch_id" id="batch_id" class="form-control" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 1rem;" onchange="this.form.submit()">
+                    <option value="">-- Select a Batch --</option>
+                    {% for batch in batches %}
+                        <option value="{{ batch.id }}" {% if selected_batch and batch.id == selected_batch.id %}selected{% endif %}>{{ batch.batch_number }} (Farm: {{ batch.farm.name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_batch %}
+<div class="report-container" style="max-width: 1100px; margin: 2rem auto;">
+    <div class="card" style="padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); border-radius: 12px; background: #fff;">
+        <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; color: #1a73e8;">Batch Overview</h2>
+        <div class="info-grid" style="margin-bottom: 2rem;">
+            <div class="info-box"><div class="info-label">Batch Number</div><div class="info-value">{{ selected_batch.batch_number }}</div></div>
+            <div class="info-box"><div class="info-label">Farm Batch Number</div><div class="info-value">#{{ selected_batch.farm_batch_number }}</div></div>
+            <div class="info-box"><div class="info-label">Farm Name</div><div class="info-value">{{ selected_batch.farm.name }}</div></div>
+            <div class="info-box"><div class="info-label">Age</div><div class="info-value">{{ selected_batch.get_age_days() }} days</div></div>
+            <div class="info-box"><div class="info-label">Available Birds</div><div class="info-value">{{ selected_batch.available_birds }}</div></div>
+            <div class="info-box"><div class="info-label">Mortality</div><div class="info-value">{{ selected_batch.total_mortality }}</div></div>
+            <div class="info-box"><div class="info-label">Feed Used</div><div class="info-value">{{ "%.2f"|format(selected_batch.feed_usage) }} packets</div></div>
+            <div class="info-box"><div class="info-label">Current Feed Stock</div><div class="info-value">{{ "%.2f"|format(selected_batch.feed_stock) }} packets</div></div>
+            <div class="info-box"><div class="info-label">Manager</div><div class="info-value">{% if selected_batch.manager %}{{ selected_batch.manager.employee.name if selected_batch.manager.employee else selected_batch.manager.username }}<span class="badge {% if selected_batch.manager.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">{{ 'Senior Manager' if selected_batch.manager.user_type == 'senior_manager' else 'Assistant Manager' }}</span>{% else %}<span class="text-muted">No manager assigned</span>{% endif %}</div></div>
+            <div class="info-box"><div class="info-label">Status</div><div class="info-value"><span class="status-badge status-{{ selected_batch.status }}">{{ selected_batch.status|title }}</span></div></div>
+            <div class="info-box"><div class="info-label">Chicks Brand</div><div class="info-value">{{ selected_batch.brand if selected_batch.brand else 'Not specified' }}</div></div>
+            <div class="info-box"><div class="info-label">Total Birds</div><div class="info-value">{{ selected_batch.total_birds }}</div></div>
+            <div class="info-box"><div class="info-label">Cost per Chick</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.cost_per_chicken) }}</div></div>
+            <div class="info-box"><div class="info-label">Created On</div><div class="info-value">{{ selected_batch.created_at.strftime('%Y-%m-%d %H:%M') }}</div></div>
+        </div>
+
+        <h3 style="color: #1a73e8; margin-bottom: 1rem;">Financial Summary</h3>
+        {% if selected_batch.financial_summary %}
+        <div class="info-grid" style="margin-bottom: 2rem;">
+            <div class="info-box highlight"><div class="info-label">Total Revenue</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_revenue) }}</div></div>
+            <div class="info-box highlight"><div class="info-label">Total Expenses</div><div class="info-value">₹{{ "%.2f"|format(
+                (selected_batch.financial_summary.total_feed_cost or 0) +
+                (selected_batch.financial_summary.total_medicine_cost or 0) +
+                (selected_batch.financial_summary.total_vaccine_cost or 0) +
+                (selected_batch.financial_summary.total_health_material_cost or 0) +
+                (selected_batch.financial_summary.total_miscellaneous_cost or 0) +
+                (selected_batch.financial_summary.total_bird_cost or 0)
+            ) }}</div></div>
+            <div class="info-box highlight {% if selected_batch.financial_summary.total_profit > 0 %}profit{% else %}loss{% endif %}"><div class="info-label">Total Profit/Loss</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_profit) }}</div></div>
+        </div>
+        <div class="info-grid" style="margin-bottom: 2rem;">
+            <div class="info-box"><div class="info-label">FCR (Feed Conversion Ratio)</div><div class="info-value">{{ "%.2f"|format(selected_batch.financial_summary.fcr_value) }}</div></div>
+            <div class="info-box"><div class="info-label">Mortality Rate</div><div class="info-value">{{ "%.2f"|format((selected_batch.total_mortality / selected_batch.total_birds * 100) if selected_batch.total_birds > 0 else 0) }}%</div></div>
+            <div class="info-box"><div class="info-label">Total Feed Used</div><div class="info-value">{{ "%.2f"|format(selected_batch.feed_usage) }} packets</div></div>
+            <div class="info-box"><div class="info-label">Farmer Cost</div><div class="info-value">{{ "%.2f"|format(selected_batch.financial_summary.fcr_price) }} kg</div></div>
+            <div class="info-box"><div class="info-label">Average Weight</div><div class="info-value">{% if selected_batch.harvests and selected_batch.harvests|sum(attribute='quantity') > 0 %}{{ "%.2f"|format(selected_batch.harvests|sum(attribute='weight') / selected_batch.harvests|sum(attribute='quantity')) }} kg/bird{% else %}-{% endif %}</div></div>
+        </div>
+        {% else %}
+        <div class="alert alert-info"><i class="fas fa-info-circle"></i> Financial summary will be available after the batch is closed.</div>
+        {% endif %}
+
+        <h3 style="color: #1a73e8; margin-bottom: 1rem;">Harvests</h3>
+        <div class="info-grid" style="margin-bottom: 2rem;">
+            {% if selected_batch.harvests %}
+                {% for harvest in selected_batch.harvests %}
+                <div class="info-box">
+                    <div class="info-label">Harvest #{{ loop.index }}</div>
+                    <div class="harvest-details">
+                        <div><span>Birds:</span> <span>{{ harvest.quantity }}</span></div>
+                        <div><span>Weight:</span> <span>{{ "%.2f"|format(harvest.weight) }} kg</span></div>
+                        <div><span>Rate:</span> <span>₹{{ "%.2f"|format(harvest.selling_price) }}/kg</span></div>
+                        <div><span>Total:</span> <span>₹{{ "%.2f"|format(harvest.total_value) }}</span></div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="info-box"><div class="info-label">No Harvests Recorded</div><div class="info-value">-</div></div>
+            {% endif %}
+        </div>
+        <div class="info-box" style="margin-bottom: 2rem;">
+            <div class="info-label">Average Rate</div>
+            <div class="info-value">{% if selected_batch.harvests and selected_batch.harvests|sum(attribute='weight') > 0 %}₹{{ "%.2f"|format(selected_batch.harvests|sum(attribute='total_value') / selected_batch.harvests|sum(attribute='weight')) }}/kg{% else %}-{% endif %}</div>
+        </div>
+
+        <h3 style="color: #1a73e8; margin-bottom: 1rem;">Expense Breakdown</h3>
+        {% if selected_batch.financial_summary %}
+        <div class="info-grid" style="margin-bottom: 2rem;">
+            <div class="info-box"><div class="info-label">Chicks Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_bird_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Feed Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_feed_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Medicine Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_medicine_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Health Materials Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_health_material_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Vaccine Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_vaccine_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Miscellaneous Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.total_miscellaneous_cost) }}</div></div>
+            <div class="info-box"><div class="info-label">Farmer Cost</div><div class="info-value">{{ "%.2f"|format(selected_batch.financial_summary.fcr_price) }} kg</div></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+    <p style="text-align: center; margin-top: 2rem; color: #888;">Select a batch to view its report. Detailed batch analytics and export options will appear here.</p>
+{% endif %}
+{% endblock %} 

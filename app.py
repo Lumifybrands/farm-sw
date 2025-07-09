@@ -735,6 +735,65 @@ def init_db():
 # Initialize database
 init_db()
 
+def get_body_weight_and_feed_consumption(age):
+    """
+    Get body weight and feed consumption for a given age (1-42 days).
+    Returns a dictionary with 'body_weight' and 'feed_consumption' in grams.
+    Data is based on the Vencobb commercial broiler chart.
+    """
+    # Data from the provided chart (all values in grams)
+    age_data = {
+        1: {'body_weight': 45, 'feed_consumption': 13},
+        2: {'body_weight': 63, 'feed_consumption': 16},
+        3: {'body_weight': 83, 'feed_consumption': 19},
+        4: {'body_weight': 106, 'feed_consumption': 23},
+        5: {'body_weight': 133, 'feed_consumption': 27},
+        6: {'body_weight': 163, 'feed_consumption': 30},
+        7: {'body_weight': 195, 'feed_consumption': 34},
+        8: {'body_weight': 229, 'feed_consumption': 37},
+        9: {'body_weight': 265, 'feed_consumption': 41},
+        10: {'body_weight': 303, 'feed_consumption': 45},
+        11: {'body_weight': 343, 'feed_consumption': 50},
+        12: {'body_weight': 385, 'feed_consumption': 55},
+        13: {'body_weight': 431, 'feed_consumption': 61},
+        14: {'body_weight': 480, 'feed_consumption': 66},
+        15: {'body_weight': 533, 'feed_consumption': 70},
+        16: {'body_weight': 588, 'feed_consumption': 74},
+        17: {'body_weight': 646, 'feed_consumption': 79},
+        18: {'body_weight': 708, 'feed_consumption': 83},
+        19: {'body_weight': 772, 'feed_consumption': 89},
+        20: {'body_weight': 838, 'feed_consumption': 94},
+        21: {'body_weight': 905, 'feed_consumption': 95},
+        22: {'body_weight': 973, 'feed_consumption': 106},
+        23: {'body_weight': 1042, 'feed_consumption': 113},
+        24: {'body_weight': 1113, 'feed_consumption': 117},
+        25: {'body_weight': 1185, 'feed_consumption': 123},
+        26: {'body_weight': 1258, 'feed_consumption': 127},
+        27: {'body_weight': 1333, 'feed_consumption': 131},
+        28: {'body_weight': 1410, 'feed_consumption': 136},
+        29: {'body_weight': 1491, 'feed_consumption': 138},
+        30: {'body_weight': 1575, 'feed_consumption': 141},
+        31: {'body_weight': 1662, 'feed_consumption': 146},
+        32: {'body_weight': 1751, 'feed_consumption': 149},
+        33: {'body_weight': 1840, 'feed_consumption': 152},
+        34: {'body_weight': 1930, 'feed_consumption': 156},
+        35: {'body_weight': 2020, 'feed_consumption': 160},
+        36: {'body_weight': 2110, 'feed_consumption': 162},
+        37: {'body_weight': 2197, 'feed_consumption': 165},
+        38: {'body_weight': 2283, 'feed_consumption': 169},
+        39: {'body_weight': 2367, 'feed_consumption': 171},
+        40: {'body_weight': 2449, 'feed_consumption': 176},
+        41: {'body_weight': 2530, 'feed_consumption': 177},
+        42: {'body_weight': 2610, 'feed_consumption': 180},
+    }
+    try:
+        age = int(age)
+        if age < 1 or age > 42:
+            return None
+    except (ValueError, TypeError):
+        return None
+    return age_data.get(age)
+
 @app.before_request
 def before_request():
     session.permanent = True  # Make session permanent
@@ -943,7 +1002,7 @@ def dashboard():
     # Get batches above 28 days old (ongoing or closing)
     above_28_batches = []
     for batch in active_batches:
-        if batch.get_age_days() > 28:
+        if batch.get_age_days() > 32:
             above_28_batches.append(batch)
     
     return render_template('dashboard.html',
@@ -970,35 +1029,43 @@ def settings():
 @login_required
 def update_profile():
     user = User.query.get(session['user_id'])
-    current_password = request.form.get('current_password')
-    new_username = request.form.get('new_username')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-    
-    # Verify current password
-    if not check_password_hash(user.password_hash, current_password):
-        flash('Current password is incorrect', 'error')
-        return redirect(url_for('settings'))
-    
-    # Handle username change
-    if new_username:
-        if User.query.filter_by(username=new_username).first():
-            flash('Username already exists', 'error')
+    # Check which form was submitted
+    if 'new_username' in request.form:
+        # Username change form
+        new_username = request.form.get('new_username')
+        current_password = request.form.get('current_password')
+        # Verify current password
+        if not user.check_password(current_password):
+            flash('Current password is incorrect', 'error')
             return redirect(url_for('settings'))
-        user.username = new_username
-        session['username'] = new_username
-        flash('Username updated successfully', 'success')
-    
-    # Handle password change
-    if new_password:
+        if new_username:
+            if User.query.filter_by(username=new_username).first():
+                flash('Username already exists', 'error')
+                return redirect(url_for('settings'))
+            user.username = new_username
+            session['username'] = new_username
+            db.session.commit()
+            flash('Username updated successfully', 'success')
+        return redirect(url_for('settings'))
+    elif 'new_password' in request.form:
+        # Password change form
+        current_password = request.form.get('current_password_change')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        # Verify current password
+        if not user.check_password(current_password):
+            flash('Current password is incorrect', 'error')
+            return redirect(url_for('settings'))
         if new_password != confirm_password:
             flash('New passwords do not match', 'error')
             return redirect(url_for('settings'))
         user.set_password(new_password)
+        db.session.commit()
         flash('Password updated successfully', 'success')
-    
-    db.session.commit()
-    return redirect(url_for('settings'))
+        return redirect(url_for('settings'))
+    else:
+        flash('Invalid form submission', 'error')
+        return redirect(url_for('settings'))
 
 @app.route('/update_notifications', methods=['POST'])
 def update_notifications():
@@ -1215,7 +1282,8 @@ def batches():
     return render_template('batches.html', 
                          batches=batches,
                          now=datetime.now(),
-                         timedelta=timedelta)  # Add timedelta to template context
+                         timedelta=timedelta,  # Add timedelta to template context
+                         get_body_weight_and_feed_consumption=get_body_weight_and_feed_consumption)  # Pass function to template
 
 def generate_batch_number():
     # Get the last batch number
@@ -4470,6 +4538,59 @@ def manifest():
 @app.route('/offline.html')
 def offline():
     return render_template('offline.html')
+
+@app.route('/batchreport')
+@login_required
+def batch_report():
+    batches = Batch.query.filter_by(status='closed').all()
+    batch_id = request.args.get('batch_id', type=int)
+    selected_batch = None
+    if batch_id:
+        selected_batch = Batch.query.get(batch_id)
+    return render_template('batchreport.html', batches=batches, selected_batch=selected_batch)
+
+@app.route('/farmreport')
+@login_required
+def farm_report():
+    farms = Farm.query.all()
+    farm_id = request.args.get('farm_id', type=int)
+    selected_farm = None
+    report = None
+    if farm_id:
+        selected_farm = Farm.query.get(farm_id)
+        batches = Batch.query.filter_by(farm_id=farm_id).all()
+        batch_ids = [b.id for b in batches]
+        # Get all financial summaries for these batches
+        summaries = [b.financial_summary for b in batches if b.financial_summary]
+        total_batches = len(batches)
+        total_profit = sum(s.total_profit for s in summaries if s.total_profit and s.total_profit > 0)
+        total_loss = sum(s.total_profit for s in summaries if s.total_profit and s.total_profit < 0)
+        total_expenses = sum((s.total_feed_cost or 0) + (s.total_medicine_cost or 0) + (s.total_vaccine_cost or 0) + (s.total_health_material_cost or 0) + (s.total_miscellaneous_cost or 0) + (s.total_bird_cost or 0) for s in summaries)
+        # All managers who managed any batch in this farm
+        manager_ids = set(b.manager_id for b in batches if b.manager_id)
+        managers = [User.query.get(mid) for mid in manager_ids]
+        # Most profitable batch
+        most_profitable = None
+        if summaries:
+            most_profitable = max(summaries, key=lambda s: s.total_profit if s.total_profit is not None else float('-inf'))
+        # Average mortality rate
+        mortality_rates = [(b.total_mortality / b.total_birds) * 100 for b in batches if b.total_birds > 0]
+        avg_mortality_rate = sum(mortality_rates) / len(mortality_rates) if mortality_rates else 0
+        # Average FCR
+        fcr_values = [s.fcr_value for s in summaries if s.fcr_value is not None]
+        avg_fcr = sum(fcr_values) / len(fcr_values) if fcr_values else 0
+        report = {
+            'total_batches': total_batches,
+            'total_profit': total_profit,
+            'total_loss': total_loss,
+            'total_expenses': total_expenses,
+            'managers': managers,
+            'most_profitable_batch': most_profitable.batch if most_profitable else None,
+            'most_profitable_manager': most_profitable.batch.manager if most_profitable and most_profitable.batch and most_profitable.batch.manager else None,
+            'avg_mortality_rate': avg_mortality_rate,
+            'avg_fcr': avg_fcr
+        }
+    return render_template('farmreport.html', farms=farms, selected_farm=selected_farm, report=report)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

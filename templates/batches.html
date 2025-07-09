@@ -36,12 +36,12 @@
                 <tr>
                     <th>Batch No.</th>
                     <th>Farm Name</th>
-                    <th>Total Birds</th>
-                    <th>Available Birds</th>
+                    <th>Available/Total Birds</th>
                     <th>Total Mortality</th>
                     <th>Age</th>
                     <th>Last Update</th>
-                    <th>Remarks</th>
+                    <th>Actual/Standard Weight (gms)</th>
+                    <th>Actual/Standard Feed Cons (gms)</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -50,8 +50,7 @@
                 <tr data-status="{{ batch.status }}">
                     <td>{{ batch.batch_number }}</td>
                     <td>{{ batch.farm.name }} - {{ batch.farm_batch_number }}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
-                    <td>{{ batch.total_birds }}</td>
-                    <td>{{ batch.available_birds }}</td>
+                    <td>{{ batch.available_birds }}/{{ batch.total_birds }}</td>
                     <td>{{ batch.total_mortality }}</td>
                     <td>{{ batch.get_age_days() }}</td>
                     <td>
@@ -70,8 +69,7 @@
                         {% else %}
                             <span class="update-badge no-updates">No updates</span>
                         {% endif %}
-                    </td>
-                    <td>
+                        <br>
                         {% if batch.updates %}
                             {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
                             {% if last_update.remarks %}
@@ -83,6 +81,28 @@
                             {% endif %}
                         {% else %}
                             <span class="remarks-badge no-remarks">No remarks</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {# NOTE: The function get_body_weight_and_feed_consumption(age) must be passed to the template context from Flask for this to work. #}
+                        {% set age = batch.get_age_days() %}
+                        {% set std_data = get_body_weight_and_feed_consumption(age) %}
+                        {% if batch.updates %}
+                            {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                            {{ last_update.avg_weight|default('-') }} / {{ std_data['body_weight'] if std_data else '-' }}
+                        {% else %}
+                            - / {{ std_data['body_weight'] if std_data else '-' }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {# Actual/Standard Feed Cons (gms) #}
+                        {% set age = batch.get_age_days() %}
+                        {% set std_data = get_body_weight_and_feed_consumption(age) %}
+                        {% if batch.updates %}
+                            {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                            {{ last_update.feed_used|default('-') }} / {{ std_data['feed_consumption'] if std_data else '-' }}
+                        {% else %}
+                            - / {{ std_data['feed_consumption'] if std_data else '-' }}
                         {% endif %}
                     </td>
                     <td class="action-buttons">
@@ -183,6 +203,50 @@
                                 <span class="update-badge no-updates">No updates</span>
                             </div>
                         {% endif %}
+                    </div>
+                    <div class="batch-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Actual Weight</span>
+                            <span class="stat-value">
+                                {# NOTE: The function get_body_weight_and_feed_consumption(age) must be passed to the template context from Flask for this to work. #}
+                                {% set age = batch.get_age_days() %}
+                                {% set std_data = get_body_weight_and_feed_consumption(age) %}
+                                {% if batch.updates %}
+                                    {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                                    {{ last_update.avg_weight|default('-') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Standard Weight</span>
+                            {% set age = batch.get_age_days() %}
+                            {% set std_data = get_body_weight_and_feed_consumption(age) %}
+                            <span class="stat-value">
+                                {{ std_data['body_weight'] if std_data else '-' }}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Actual Feed Cons</span>
+                            <span class="stat-value">
+                                {# Actual/Standard Feed Cons (gms) #}
+                                {% if batch.updates %}
+                                    {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                                    {{ last_update.feed_used|default('-') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Standard Feed Cons</span>
+                            <span class="stat-value">
+                                {% set age = batch.get_age_days() %}
+                                {% set std_data = get_body_weight_and_feed_consumption(age) %}
+                                {{ std_data['feed_consumption'] if std_data else '-' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -657,6 +721,15 @@
             padding: 8px;
             font-size: 0.85rem;
         }
+    }
+
+    .data-cards {
+        display: flex;
+        padding: 10px;
+    }
+
+    .data-card {
+        background-color: ;
     }
 </style>
 
