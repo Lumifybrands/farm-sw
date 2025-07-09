@@ -100,7 +100,7 @@
                         {% set std_data = get_body_weight_and_feed_consumption(age) %}
                         {% if batch.updates %}
                             {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
-                            {{ last_update.feed_used|default('-') }} / {{ std_data['feed_consumption'] if std_data else '-' }}
+                            {{ (last_update.feed_used * batch.available_birds)|round(2) }} / {{ (std_data['feed_consumption'] * batch.available_birds)|round(2) }}
                         {% else %}
                             - / {{ std_data['feed_consumption'] if std_data else '-' }}
                         {% endif %}
@@ -233,7 +233,7 @@
                                 {# Actual/Standard Feed Cons (gms) #}
                                 {% if batch.updates %}
                                     {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
-                                    {{ last_update.feed_used|default('-') }}
+                                    {{ (last_update.feed_used * batch.available_birds)|round(2) }}
                                 {% else %}
                                     -
                                 {% endif %}
@@ -244,7 +244,7 @@
                             <span class="stat-value">
                                 {% set age = batch.get_age_days() %}
                                 {% set std_data = get_body_weight_and_feed_consumption(age) %}
-                                {{ std_data['feed_consumption'] if std_data else '-' }}
+                                {{ (std_data['feed_consumption'] * batch.available_birds)|round(2) }}
                             </span>
                         </div>
                     </div>
