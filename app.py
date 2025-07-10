@@ -1740,36 +1740,68 @@ def update_batch(batch_id):
         batch.feed_stock -= total_returned_feed
 
         # Process scheduled items
-        scheduled_items_data = request.form.getlist('scheduled_items')
-        if scheduled_items_data:
-            for item_data in scheduled_items_data:
-                item_type, item_id, field, value = item_data.split('|')
-                if field == 'selected':
-                    quantity = float(value)
-                    if item_type == 'medicine':
-                        medicine = Medicine.query.get(item_id)
-                        if medicine:
-                            schedule = MedicineSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
-                    elif item_type == 'health_material':
-                        health_material = HealthMaterial.query.get(item_id)
-                        if health_material:
-                            schedule = HealthMaterialSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
-                    elif item_type == 'vaccine':
-                        vaccine = Vaccine.query.get(item_id)
-                        if vaccine:
-                            schedule = VaccineSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
+        for key, value in request.form.items():
+            if key.startswith('scheduled_items['):
+                try:
+                    # Extract type, id, and field from the key
+                    # Format: scheduled_items[type][id][field]
+                    key_parts = key.replace('scheduled_items[', '').replace(']', '').split('[')
+                    if len(key_parts) == 3:
+                        item_type, item_id, field = key_parts
+                        item_id = int(item_id)
+                        
+                        # Only process selected items with quantity
+                        if field == 'selected' and value == '1':
+                            quantity_key = f'scheduled_items[{item_type}][{item_id}][quantity]'
+                            quantity = float(request.form.get(quantity_key, 0) or 0)
+                            
+                            if quantity > 0:
+                                # Get the appropriate schedule and item
+                                schedule = None
+                                item = None
+                                if item_type == 'medicine':
+                                    schedule = MedicineSchedule.query.get(item_id)
+                                    item = schedule.medicine if schedule else None
+                                elif item_type == 'health_material':
+                                    schedule = HealthMaterialSchedule.query.get(item_id)
+                                    item = schedule.health_material if schedule else None
+                                elif item_type == 'vaccine':
+                                    schedule = VaccineSchedule.query.get(item_id)
+                                    item = schedule.vaccine if schedule else None
+                                    item.unit_type = 'ml'
+
+                                # if item.unit_type:
+                                #     unit_type = item.unit_type
+                                # else:
+                                #     unit_type = 'ml'
+                                
+                                if schedule and item:
+                                    # Create batch update item with current price and schedule ID
+                                    update_item = BatchUpdateItem(
+                                        batch_update_id=new_update.id,
+                                        item_id=item.id,
+                                        item_type=item_type,
+                                        quantity=quantity,
+                                        quantity_per_unit_at_time=item.quantity_per_unit,  # Use item's quantity_per_unit
+                                        unit_type=item.unit_type,  # Add unit_type from item
+                                        price_at_time=item.price,
+                                        total_cost=item.price * quantity,
+                                        schedule_id=schedule.id,
+                                        dose_number=schedule.dose_number if item_type == 'vaccine' else None
+                                    )
+                                    db.session.add(update_item)
+                                    
+                                    # Mark schedule as completed
+                                    schedule.completed = True
+
+                                # Add batch to schedule's batches if not already present
+                                if batch not in schedule.batches:
+                                    schedule.batches.append(batch)
+                                else:
+                                    print(f"Warning: Could not find schedule or item for {item_type} with ID {item_id}")
+                except (ValueError, IndexError) as e:
+                    print(f"Error processing scheduled item {key}: {str(e)}")
+                    continue
 
         db.session.commit()
         flash('Batch update recorded successfully!', 'success')
@@ -1809,17 +1841,30 @@ def update_batch(batch_id):
     } for v in vaccines]
     feeds = Feed.query.all()
 
+    # Get scheduled items for today
+    medicine_schedules = MedicineSchedule.query.filter(
+        MedicineSchedule.batches.contains(batch),
+        MedicineSchedule.schedule_date <= selected_date,
+        MedicineSchedule.completed == False
+    ).all()
+    
+    health_material_schedules = HealthMaterialSchedule.query.filter(
+        HealthMaterialSchedule.batches.contains(batch),
+        HealthMaterialSchedule.scheduled_date <= selected_date,
+        HealthMaterialSchedule.completed == False
+    ).all()
+    
+    vaccine_schedules = VaccineSchedule.query.filter(
+        VaccineSchedule.batches.contains(batch),
+        VaccineSchedule.scheduled_date <= selected_date,
+        VaccineSchedule.completed == False
+    ).all()
+
     return render_template('update_batch.html', 
                          batch=batch, 
-                         medicine_schedules=MedicineSchedule.query.filter(
-                             MedicineSchedule.batches.any(id=batch.id)
-                         ).all(),
-                         health_material_schedules=HealthMaterialSchedule.query.filter(
-                             HealthMaterialSchedule.batches.any(id=batch.id)
-                         ).all(),
-                         vaccine_schedules=VaccineSchedule.query.filter(
-                             VaccineSchedule.batches.any(id=batch.id)
-                         ).all(),
+                         medicine_schedules=medicine_schedules,
+                         health_material_schedules=health_material_schedules,
+                         vaccine_schedules=vaccine_schedules,
                          medicines=medicines_dict,
                          health_materials=health_materials_dict,
                          vaccines=vaccines_dict,
