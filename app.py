@@ -952,35 +952,43 @@ def settings():
 @login_required
 def update_profile():
     user = User.query.get(session['user_id'])
-    current_password = request.form.get('current_password')
-    new_username = request.form.get('new_username')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-    
-    # Verify current password
-    if not check_password_hash(user.password_hash, current_password):
-        flash('Current password is incorrect', 'error')
-        return redirect(url_for('settings'))
-    
-    # Handle username change
-    if new_username:
-        if User.query.filter_by(username=new_username).first():
-            flash('Username already exists', 'error')
+    # Check which form was submitted
+    if 'new_username' in request.form:
+        # Username change form
+        new_username = request.form.get('new_username')
+        current_password = request.form.get('current_password')
+        # Verify current password
+        if not user.check_password(current_password):
+            flash('Current password is incorrect', 'error')
             return redirect(url_for('settings'))
-        user.username = new_username
-        session['username'] = new_username
-        flash('Username updated successfully', 'success')
-    
-    # Handle password change
-    if new_password:
+        if new_username:
+            if User.query.filter_by(username=new_username).first():
+                flash('Username already exists', 'error')
+                return redirect(url_for('settings'))
+            user.username = new_username
+            session['username'] = new_username
+            db.session.commit()
+            flash('Username updated successfully', 'success')
+        return redirect(url_for('settings'))
+    elif 'new_password' in request.form:
+        # Password change form
+        current_password = request.form.get('current_password_change')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        # Verify current password
+        if not user.check_password(current_password):
+            flash('Current password is incorrect', 'error')
+            return redirect(url_for('settings'))
         if new_password != confirm_password:
             flash('New passwords do not match', 'error')
             return redirect(url_for('settings'))
         user.set_password(new_password)
+        db.session.commit()
         flash('Password updated successfully', 'success')
-    
-    db.session.commit()
-    return redirect(url_for('settings'))
+        return redirect(url_for('settings'))
+    else:
+        flash('Invalid form submission', 'error')
+        return redirect(url_for('settings'))
 
 @app.route('/update_notifications', methods=['POST'])
 def update_notifications():
@@ -1626,36 +1634,68 @@ def update_batch(batch_id):
         batch.feed_stock -= total_returned_feed
 
         # Process scheduled items
-        scheduled_items_data = request.form.getlist('scheduled_items')
-        if scheduled_items_data:
-            for item_data in scheduled_items_data:
-                item_type, item_id, field, value = item_data.split('|')
-                if field == 'selected':
-                    quantity = float(value)
-                    if item_type == 'medicine':
-                        medicine = Medicine.query.get(item_id)
-                        if medicine:
-                            schedule = MedicineSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
-                    elif item_type == 'health_material':
-                        health_material = HealthMaterial.query.get(item_id)
-                        if health_material:
-                            schedule = HealthMaterialSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
-                    elif item_type == 'vaccine':
-                        vaccine = Vaccine.query.get(item_id)
-                        if vaccine:
-                            schedule = VaccineSchedule.query.get(item_id)
-                            if schedule:
-                                schedule.completed = True
-                                schedule.batches.append(batch)
-                                db.session.add(schedule)
+        for key, value in request.form.items():
+            if key.startswith('scheduled_items['):
+                try:
+                    # Extract type, id, and field from the key
+                    # Format: scheduled_items[type][id][field]
+                    key_parts = key.replace('scheduled_items[', '').replace(']', '').split('[')
+                    if len(key_parts) == 3:
+                        item_type, item_id, field = key_parts
+                        item_id = int(item_id)
+                        
+                        # Only process selected items with quantity
+                        if field == 'selected' and value == '1':
+                            quantity_key = f'scheduled_items[{item_type}][{item_id}][quantity]'
+                            quantity = float(request.form.get(quantity_key, 0) or 0)
+                            
+                            if quantity > 0:
+                                # Get the appropriate schedule and item
+                                schedule = None
+                                item = None
+                                if item_type == 'medicine':
+                                    schedule = MedicineSchedule.query.get(item_id)
+                                    item = schedule.medicine if schedule else None
+                                elif item_type == 'health_material':
+                                    schedule = HealthMaterialSchedule.query.get(item_id)
+                                    item = schedule.health_material if schedule else None
+                                elif item_type == 'vaccine':
+                                    schedule = VaccineSchedule.query.get(item_id)
+                                    item = schedule.vaccine if schedule else None
+                                    item.unit_type = 'ml'
+
+                                # if item.unit_type:
+                                #     unit_type = item.unit_type
+                                # else:
+                                #     unit_type = 'ml'
+                                
+                                if schedule and item:
+                                    # Create batch update item with current price and schedule ID
+                                    update_item = BatchUpdateItem(
+                                        batch_update_id=new_update.id,
+                                        item_id=item.id,
+                                        item_type=item_type,
+                                        quantity=quantity,
+                                        quantity_per_unit_at_time=item.quantity_per_unit,  # Use item's quantity_per_unit
+                                        unit_type=item.unit_type,  # Add unit_type from item
+                                        price_at_time=item.price,
+                                        total_cost=item.price * quantity,
+                                        schedule_id=schedule.id,
+                                        dose_number=schedule.dose_number if item_type == 'vaccine' else None
+                                    )
+                                    db.session.add(update_item)
+                                    
+                                    # Mark schedule as completed
+                                    schedule.completed = True
+
+                                # Add batch to schedule's batches if not already present
+                                if batch not in schedule.batches:
+                                    schedule.batches.append(batch)
+                                else:
+                                    print(f"Warning: Could not find schedule or item for {item_type} with ID {item_id}")
+                except (ValueError, IndexError) as e:
+                    print(f"Error processing scheduled item {key}: {str(e)}")
+                    continue
 
         db.session.commit()
         flash('Batch update recorded successfully!', 'success')
@@ -1695,17 +1735,30 @@ def update_batch(batch_id):
     } for v in vaccines]
     feeds = Feed.query.all()
 
+    # Get scheduled items for today
+    medicine_schedules = MedicineSchedule.query.filter(
+        MedicineSchedule.batches.contains(batch),
+        MedicineSchedule.schedule_date <= selected_date,
+        MedicineSchedule.completed == False
+    ).all()
+    
+    health_material_schedules = HealthMaterialSchedule.query.filter(
+        HealthMaterialSchedule.batches.contains(batch),
+        HealthMaterialSchedule.scheduled_date <= selected_date,
+        HealthMaterialSchedule.completed == False
+    ).all()
+    
+    vaccine_schedules = VaccineSchedule.query.filter(
+        VaccineSchedule.batches.contains(batch),
+        VaccineSchedule.scheduled_date <= selected_date,
+        VaccineSchedule.completed == False
+    ).all()
+
     return render_template('update_batch.html', 
                          batch=batch, 
-                         medicine_schedules=MedicineSchedule.query.filter(
-                             MedicineSchedule.batches.any(id=batch.id)
-                         ).all(),
-                         health_material_schedules=HealthMaterialSchedule.query.filter(
-                             HealthMaterialSchedule.batches.any(id=batch.id)
-                         ).all(),
-                         vaccine_schedules=VaccineSchedule.query.filter(
-                             VaccineSchedule.batches.any(id=batch.id)
-                         ).all(),
+                         medicine_schedules=medicine_schedules,
+                         health_material_schedules=health_material_schedules,
+                         vaccine_schedules=vaccine_schedules,
                          medicines=medicines_dict,
                          health_materials=health_materials_dict,
                          vaccines=vaccines_dict,
@@ -4408,6 +4461,59 @@ def manifest():
 @app.route('/offline.html')
 def offline():
     return render_template('offline.html')
+
+@app.route('/batchreport')
+@login_required
+def batch_report():
+    batches = Batch.query.filter_by(status='closed').all()
+    batch_id = request.args.get('batch_id', type=int)
+    selected_batch = None
+    if batch_id:
+        selected_batch = Batch.query.get(batch_id)
+    return render_template('batchreport.html', batches=batches, selected_batch=selected_batch)
+
+@app.route('/farmreport')
+@login_required
+def farm_report():
+    farms = Farm.query.all()
+    farm_id = request.args.get('farm_id', type=int)
+    selected_farm = None
+    report = None
+    if farm_id:
+        selected_farm = Farm.query.get(farm_id)
+        batches = Batch.query.filter_by(farm_id=farm_id).all()
+        batch_ids = [b.id for b in batches]
+        # Get all financial summaries for these batches
+        summaries = [b.financial_summary for b in batches if b.financial_summary]
+        total_batches = len(batches)
+        total_profit = sum(s.total_profit for s in summaries if s.total_profit and s.total_profit > 0)
+        total_loss = sum(s.total_profit for s in summaries if s.total_profit and s.total_profit < 0)
+        total_expenses = sum((s.total_feed_cost or 0) + (s.total_medicine_cost or 0) + (s.total_vaccine_cost or 0) + (s.total_health_material_cost or 0) + (s.total_miscellaneous_cost or 0) + (s.total_bird_cost or 0) for s in summaries)
+        # All managers who managed any batch in this farm
+        manager_ids = set(b.manager_id for b in batches if b.manager_id)
+        managers = [User.query.get(mid) for mid in manager_ids]
+        # Most profitable batch
+        most_profitable = None
+        if summaries:
+            most_profitable = max(summaries, key=lambda s: s.total_profit if s.total_profit is not None else float('-inf'))
+        # Average mortality rate
+        mortality_rates = [(b.total_mortality / b.total_birds) * 100 for b in batches if b.total_birds > 0]
+        avg_mortality_rate = sum(mortality_rates) / len(mortality_rates) if mortality_rates else 0
+        # Average FCR
+        fcr_values = [s.fcr_value for s in summaries if s.fcr_value is not None]
+        avg_fcr = sum(fcr_values) / len(fcr_values) if fcr_values else 0
+        report = {
+            'total_batches': total_batches,
+            'total_profit': total_profit,
+            'total_loss': total_loss,
+            'total_expenses': total_expenses,
+            'managers': managers,
+            'most_profitable_batch': most_profitable.batch if most_profitable else None,
+            'most_profitable_manager': most_profitable.batch.manager if most_profitable and most_profitable.batch and most_profitable.batch.manager else None,
+            'avg_mortality_rate': avg_mortality_rate,
+            'avg_fcr': avg_fcr
+        }
+    return render_template('farmreport.html', farms=farms, selected_farm=selected_farm, report=report)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
