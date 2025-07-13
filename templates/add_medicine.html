@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Add Medicine - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Medicine</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Medicines</span> / <span>Add Medicine</span>
+    </div>
+</div>
+
+<div class="section-container">
+    <form method="POST" class="form-container">
+        <div class="form-group">
+            <label for="name">Medicine Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="quantity_per_unit">Quantity per Unit</label>
+            <div class="input-group">
+                <input type="number" id="quantity_per_unit" name="quantity_per_unit" step="0.01" required>
+                <select name="unit_type" required>
+                    <option value="ml">ml</option>
+                    <option value="litre">Litre</option>
+                    <option value="gram">Gram</option>
+                    <option value="bottle">Bottle</option>
+                    <option value="pack">Pack</option>
+                    <option value="piece">Piece</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price per Unit (₹)</label>
+            <input type="number" id="price" name="price" step="0.01" required>
+        </div>
+
+        <div class="form-group" style="display: none;">
+            <label for="stock">Stock Units</label>
+            <input type="number" id="stock" name="stock" value="0" required >
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('medicines') }}" class="cancel-btn">Cancel</a>
+            <button type="submit" class="submit-btn">Add Medicine</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.section-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.form-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex: 2;
+}
+
+.input-group select {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.cancel-btn, .submit-btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+    text-align: center;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+.submit-btn {
+    background-color: #1a73e8;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #1557b0;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .section-container {
+        padding: 15px;
+    }
+
+    .form-container {
+        padding: 15px;
+    }
+
+    .input-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .input-group input,
+    .input-group select {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .cancel-btn, .submit-btn {
+        width: 100%;
+        padding: 12px;
+    }
+}
+
+/* Additional optimizations for very small screens */
+@media (max-width: 480px) {
+    .section-container {
+        padding: 10px;
+    }
+
+    .form-container {
+        padding: 12px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group select,
+    .form-group textarea {
+        font-size: 13px;
+        padding: 8px;
+    }
+}
+</style>
+{% endblock %} 

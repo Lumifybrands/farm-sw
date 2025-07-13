@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="description" content="Farm Management System for Bismi Farms">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192x192.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Bismi Farms">
+    
+    <title>{% block title %}Bismi Farms{% endblock %} - Bismi Farms</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        /* Additional styles for base template */
+        .sidebar {
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            height: calc(100vh - 60px);
+            position: fixed;
+            top: 60px;
+            left: 0;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 999;
+            width: 280px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .sidebar-section h3 {
+            color: #1a73e8;
+            padding: 0.75rem 1rem;
+            margin: 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+            position: relative;
+        }
+
+        .sidebar-menu > li > a {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #000000cc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-menu > li > a:hover {
+            background-color: rgba(26, 115, 232, 0.08);
+            color: #1557b0;
+        }
+
+        .sidebar-menu > li.active > a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-menu > li > a i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .sidebar-menu > li.active > a i {
+            opacity: 1;
+        }
+
+        /* Submenu styles */
+        .has-submenu {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .submenu-icon {
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+            opacity: 0.7;
+        }
+
+        .sidebar-menu li.active .submenu-icon {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+
+        .submenu {
+            display: none;
+            padding: 0.25rem 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .sidebar-menu li.active .submenu {
+            display: block;
+        }
+
+        .submenu li {
+            margin: 0.25rem 0;
+            position: relative;
+        }
+
+        .submenu a {
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            font-size: 0.95em;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #000000cc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+
+        .submenu a:hover {
+            background-color: rgba(26, 115, 232, 0.08);
+            color: #1557b0;
+        }
+
+        .submenu li.active a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .submenu a i {
+            width: 1.25rem;
+            text-align: center;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .submenu li.active a i {
+            opacity: 1;
+        }
+
+        /* Update the health section active state */
+        .sidebar-menu li[class*="health"] > a {
+            background-color: #1a73e8;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-menu li[class*="health"] > a i {
+            opacity: 1;
+        }
+
+        .sidebar-menu li[class*="health"] .submenu {
+            display: block;
+        }
+
+        .mobile-nav-toggle {
+            color: #1a73e8;
+        }
+        
+        .mobile-nav-toggle:hover {
+            color: #1557b0;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .mobile-nav-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .user-info span:not(.logout-text) {
+                display: none;
+            }
+
+            .user-info {
+                display: flex;
+                gap: 0;
+            }
+
+            .logout-btn {
+                padding: 0.5rem;
+            }
+
+            /* Keep logo text visible but adjust size */
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .logo i {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+            width: calc(100% - 40px);
+        }
+
+        .flash-message {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .flash-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flash-message.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .flash-message.success i {
+            color: #28a745;
+        }
+
+        .flash-message.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .flash-message.error i {
+            color: #dc3545;
+        }
+
+        .flash-message.warning {
+            border-left: 4px solid #ffc107;
+        }
+
+        .flash-message.warning i {
+            color: #ffc107;
+        }
+
+        .flash-message.info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .flash-message.info i {
+            color: #17a2b8;
+        }
+
+        .flash-close {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: 10px;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .flash-close:hover {
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fas fa-kiwi-bird"></i>
+                <span>Bismi Farms</span>
+            </div>
+            
+            {% if session.get('user_id') %}
+            <div class="user-info">
+                <span>{{ session.get('username') }} ({{ session.get('user_type') }})</span>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="logout-text">Logout</span>
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <div class="flash-content">
+                                <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                            <button class="flash-close" onclick="this.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if session.get('user_id') %}
+        <div class="dashboard-container">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Main Menu</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'dashboard' %}class="active"{% endif %}>
+                            <a href="{{ url_for('dashboard') }}">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'schedules' %}class="active"{% endif %}>
+                            <a href="{{ url_for('schedules') }}">
+                                <i class="fas fa-calendar-alt"></i>
+                                Schedules
+                            </a>
+                        </li>
+                        <li {% if request.endpoint and request.endpoint.startswith('batch') and request.endpoint != 'batch_report' %}class="active"{% endif %}>
+                            <a href="{{ url_for('batches') }}">
+                                <i class="fas fa-layer-group"></i>
+                                Batch
+                            </a>
+                        </li>
+                        <li {% if request.endpoint and request.endpoint.startswith('farms') %}class="active"{% endif %}>
+                            <a href="{{ url_for('farms') }}">
+                                <i class="fas fa-warehouse"></i>
+                                Farm
+                            </a>
+                        </li>
+                        <li {% if request.endpoint and request.endpoint.startswith('feed') %}class="active"{% endif %}>
+                            <a href="{{ url_for('feeds') }}">
+                                <i class="fas fa-seedling"></i>
+                                Feed
+                            </a>
+                        </li>
+                        <li {% if request.endpoint and (request.endpoint.startswith('health_material') or request.endpoint.startswith('medicine') or request.endpoint.startswith('vaccine')) %}class="active"{% endif %}>
+                            <a href="#health" class="has-submenu">
+                                <i class="fas fa-heartbeat"></i>
+                                <span>Health</span>
+                                <i class="fas fa-chevron-down submenu-icon"></i>
+                            </a>
+                            <ul class="submenu">
+                                <li {% if request.endpoint and request.endpoint.startswith('health_material') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('health_materials') }}">
+                                        <i class="fas fa-medkit"></i>
+                                        <span>Health Materials</span>
+                                    </a>
+                                </li>
+                                <li {% if request.endpoint and request.endpoint.startswith('medicine') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('medicines') }}">
+                                        <i class="fas fa-pills"></i>
+                                        <span>Medicines</span>
+                                    </a>
+                                </li>
+                                <li {% if request.endpoint and request.endpoint.startswith('vaccine') %}class="active"{% endif %}>
+                                    <a href="{{ url_for('vaccines') }}">
+                                        <i class="fas fa-syringe"></i>
+                                        <span>Vaccines</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li {% if request.endpoint and request.endpoint.startswith('farm_manager') %}class="active"{% endif %}>
+                            <a href="{{ url_for('farm_manager') }}">
+                                <i class="fas fa-user-tie"></i>
+                                <span>Farm Manager</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Reports</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'batch_report' %}class="active"{% endif %}>
+                            <a href="{{ url_for('batch_report') }}">
+                                <i class="fas fa-file-alt"></i>
+                                Batch Report
+                            </a>
+                        </li>
+                        <li {% if request.endpoint == 'farm_report' %}class="active"{% endif %}>
+                            <a href="{{ url_for('farm_report') }}">
+                                <i class="fas fa-chart-bar"></i>
+                                Farm Report
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Settings</h3>
+                    <ul class="sidebar-menu">
+                        <li {% if request.endpoint == 'settings' %}class="active"{% endif %}>
+                            <a href="{{ url_for('settings') }}">
+                                <i class="fas fa-cog"></i>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="dashboard-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+        {% else %}
+            {% block full_content %}{% endblock %}
+        {% endif %}
+    </div>
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Mobile Navigation Toggle
+        document.getElementById('mobileNavToggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.sidebar');
+            const mobileNavToggle = document.getElementById('mobileNavToggle');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(event.target) && 
+                !mobileNavToggle.contains(event.target) && 
+                sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const sidebar = document.querySelector('.sidebar');
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Submenu toggle functionality
+        document.querySelectorAll('.has-submenu').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const parent = this.parentElement;
+                const submenu = parent.querySelector('.submenu');
+                const icon = this.querySelector('.submenu-icon');
+                
+                // Toggle active class on parent
+                parent.classList.toggle('active');
+                
+                // Toggle submenu display
+                if (submenu.style.display === 'block') {
+                    submenu.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                } else {
+                    submenu.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // Initialize submenu state based on active items
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeSubmenu = document.querySelector('.submenu li.active');
+            if (activeSubmenu) {
+                const parent = activeSubmenu.closest('li');
+                const submenu = parent.querySelector('.submenu');
+                const icon = parent.querySelector('.submenu-icon');
+                
+                parent.classList.add('active');
+                submenu.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        });
+
+        // Auto-dismiss flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                // Add slide-out animation before removing
+                setTimeout(() => {
+                    message.style.animation = 'slideOut 0.3s ease-out forwards';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000); // Dismiss after 5 seconds
+            });
+        });
+    </script>
+    {% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/static/sw.js', {
+                        scope: '/'
+                    });
+                    console.log('ServiceWorker registration successful with scope:', registration.scope);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('Service Worker update found!');
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            console.log('Service Worker state:', newWorker.state);
+                        });
+                    });
+                } catch (error) {
+                    console.error('ServiceWorker registration failed:', error);
+                }
+            });
+        } else {
+            console.log('Service Workers are not supported in this browser');
+        }
+    </script>
+</body>
+</html> 

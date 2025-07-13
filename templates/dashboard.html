@@ -1,0 +1,1825 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="dashboard-container">
+        
+        <!-- Welcome Message -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card welcome-card">
+                    <div class="card-body">
+                        <h2 class="welcome-title">Welcome, {{ session.get('username', 'User') }}!</h2>
+                        <p class="welcome-subtitle">Here's an overview of your farm management system.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="sum-card mb-4">
+            
+            <div class="stat-row">
+                <!-- Total Farms Card -->
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h6 class="stat-label">Total Farms</h6>
+                                <h3 class="stat-value">{{ farms|length }}</h3>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            
+
+                <!-- Active Batches Card -->
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-kiwi-bird"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h6 class="stat-label">Active Batches</h6>
+                                <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|list|length }}</h3>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Birds Card -->
+            <div class="stat-row">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-feather"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h6 class="stat-label">Total Birds</h6>
+                                <h3 class="stat-value">{{ active_batches|selectattr('status', 'in', ['ongoing', 'closing'])|sum(attribute='available_birds') }}</h3>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            
+
+                <!-- Pending Schedules Card -->
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-content">
+                            <div class="stat-icon-wrapper">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h6 class="stat-label">Pending Schedules</h6>
+                                <h3 class="stat-value">{{ pending_schedules_count }}</h3>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit by Month Graph and Stats Row (Custom Flex) -->
+        <div class="dashboard-flex-row">
+            <!-- Graph -->
+            <div class="dashboard-graph">
+                <div class="graph-card-custom">
+                    <div class="graph-card-header">
+                        <span class="graph-card-title">Profit by Month (Last 12 Months)</span>
+                    </div>
+                    <div class="graph-card-body">
+                        <div class="custom-legend" id="customProfitLegend" style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 0.7rem; margin-left: 1.2rem;"></div>
+                        <div class="graph-canvas-wrapper">
+                            <canvas id="profitByMonthChart" width="900" height="350"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Stats Cards -->
+            <div class="dashboard-stats">
+                <h5 class="this-month-heading">This Month</h5>
+                <div class="stat-rows">
+                    <div class="stat-card-custom stat-fcr">
+                        <div class="stat-info py-4">
+                            <div class="stat-icon-custom stat-fcr-icon">
+                                <i class="fas fa-balance-scale"></i>
+                            </div>
+                            <div class="stat-text-content">
+                                <span class="stat-label">Avg. FCR</span>
+                                <h3 class="stat-value mt-2">{{ avg_fcr_this_month|round(2) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card-custom stat-profit">
+                        <div class="stat-info py-4">
+                            <div class="stat-icon-custom stat-profit-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="stat-text-content">
+                                <span class="stat-label">Total Profit</span>
+                                <h3 class="stat-value mt-2">{{ total_profit_this_month|round(2) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card-custom stat-mortality">
+                    <div class="stat-info py-4">
+                        <div class="stat-icon-custom stat-mortality-icon">
+                            <i class="fas fa-skull-crossbones"></i>
+                        </div>
+                        <div class="stat-text-content">
+                            <span class="stat-label">Mortality Rate</span>
+                            <h3 class="stat-value mt-2">{{ avg_mortality_rate_this_month|round(2) }}%</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-bottom-row">
+            <!-- Risk Batches Box -->
+            <div class="risk-batches-box modern-risk-batches">
+                <div class="risk-card modern-risk-card">
+                    <div class="risk-card-header modern-risk-header">
+                        <i class="fas fa-exclamation-triangle risk-icon"></i>
+                        <span class="risk-card-title">Batches with High & Medium Risk</span>
+                    </div>
+                    <div class="risk-card-body modern-risk-body" style="max-height: 260px; overflow-y: auto;">
+                        {% if risk_batches and risk_batches|length > 0 %}
+                        <div class="risk-table-wrapper modern-risk-table-wrapper">
+                            <table class="risk-table modern-risk-table">
+                                <thead class="modern-risk-thead">
+                                    <tr>
+                                        <th>Batch #</th>
+                                        <th>Farm</th>
+                                        <th>Priority</th>
+                                        <th>Remark</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="modern-risk-tbody">
+                                    {% for item in risk_batches %}
+                                    <tr class="modern-risk-row">
+                                        <td data-label="Batch #">{{ item.batch.batch_number }}</td>
+                                        <td data-label="Farm">{{ item.batch.farm.name }}</td>
+                                        <td data-label="Priority">
+                                            <span class="risk-badge risk-{{ item.priority }} modern-risk-badge">
+                                                <i class="fas fa-circle" style="font-size:0.7em; margin-right:0.3em;"></i> {{ item.priority|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td data-label="Remark">{{ item.remark }}</td>
+                                        <td data-label="Date">{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <!-- Mobile card layout -->
+                            <div class="modern-risk-mobile-list">
+                                {% for item in risk_batches %}
+                                <div class="modern-risk-mobile-card risk-{{ item.priority }}">
+                                    <div class="modern-risk-mobile-row">
+                                        <span class="modern-risk-mobile-label">Batch #</span>
+                                        <span class="modern-risk-mobile-value">{{ item.batch.batch_number }}</span>
+                                    </div>
+                                    <div class="modern-risk-mobile-row">
+                                        <span class="modern-risk-mobile-label">Farm</span>
+                                        <span class="modern-risk-mobile-value">{{ item.batch.farm.name }}</span>
+                                    </div>
+                                    <div class="modern-risk-mobile-row">
+                                        <span class="modern-risk-mobile-label">Priority</span>
+                                        <span class="modern-risk-mobile-value">
+                                            <span class="risk-badge risk-{{ item.priority }} modern-risk-badge">
+                                                <i class="fas fa-circle"></i> {{ item.priority|capitalize }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="modern-risk-mobile-row">
+                                        <span class="modern-risk-mobile-label">Remark</span>
+                                        <span class="modern-risk-mobile-value">{{ item.remark }}</span>
+                                    </div>
+                                    <div class="modern-risk-mobile-row">
+                                        <span class="modern-risk-mobile-label">Date</span>
+                                        <span class="modern-risk-mobile-value">{{ item.created_at.strftime('%Y-%m-%d') }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="risk-empty modern-risk-empty">
+                            <i class="fas fa-check-circle" style="color:#28a745; font-size:2em; margin-bottom:0.5em;"></i><br>
+                            No batches with high or medium risk at the moment.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Batches Above 28 Days Widget -->
+                <div class="risk-card modern-above28-card" style="margin-top: 2rem;">
+                    <div class="risk-card-header modern-above28-header" style="background: linear-gradient(90deg, #e6f0fb 0%, #e6f9fb 100%);">
+                        <i class="fas fa-hourglass-half risk-icon" style="color: #4b6cb7;"></i>
+                        <span class="risk-card-title" style="color: #4b6cb7;">Batches Above 28 Days Old</span>
+                    </div>
+                    <div class="risk-card-body modern-above28-body" style="max-height: 260px; overflow-y: auto;">
+                        {% if above_28_batches and above_28_batches|length > 0 %}
+                        <div class="risk-table-wrapper modern-above28-table-wrapper">
+                            <table class="risk-table modern-above28-table">
+                                <thead class="modern-above28-thead">
+                                    <tr>
+                                        <th>Batch #</th>
+                                        <th>Farm</th>
+                                        <th>Age (days)</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="modern-above28-tbody">
+                                    {% for batch in above_28_batches %}
+                                    <tr class="modern-above28-row">
+                                        <td data-label="Batch #">{{ batch.batch_number }}</td>
+                                        <td data-label="Farm">{{ batch.farm.name }}</td>
+                                        <td data-label="Age (days)">{{ batch.get_age_days() }}</td>
+                                        <td data-label="Status">
+                                            <span class="risk-badge risk-{{ batch.status }} modern-above28-badge">
+                                                <i class="fas fa-circle" style="font-size:0.7em; margin-right:0.3em;"></i> {{ batch.status|capitalize }}
+                                            </span>
+                                        </td>
+                                        <td data-label="Created">{{ batch.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <!-- Mobile card layout -->
+                            <div class="modern-above28-mobile-list">
+                                {% for batch in above_28_batches %}
+                                <div class="modern-above28-mobile-card risk-{{ batch.status }}">
+                                    <div class="modern-above28-mobile-row">
+                                        <span class="modern-above28-mobile-label">Batch #</span>
+                                        <span class="modern-above28-mobile-value">{{ batch.batch_number }}</span>
+                                    </div>
+                                    <div class="modern-above28-mobile-row">
+                                        <span class="modern-above28-mobile-label">Farm</span>
+                                        <span class="modern-above28-mobile-value">{{ batch.farm.name }}</span>
+                                    </div>
+                                    <div class="modern-above28-mobile-row">
+                                        <span class="modern-above28-mobile-label">Age (days)</span>
+                                        <span class="modern-above28-mobile-value">{{ batch.get_age_days() }}</span>
+                                    </div>
+                                    <div class="modern-above28-mobile-row">
+                                        <span class="modern-above28-mobile-label">Status</span>
+                                        <span class="modern-above28-mobile-value">
+                                            <span class="risk-badge risk-{{ batch.status }} modern-above28-badge">
+                                                <i class="fas fa-circle"></i> {{ batch.status|capitalize }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="modern-above28-mobile-row">
+                                        <span class="modern-above28-mobile-label">Created</span>
+                                        <span class="modern-above28-mobile-value">{{ batch.created_at.strftime('%Y-%m-%d') }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="risk-empty modern-above28-empty">
+                            <i class="fas fa-check-circle" style="color:#28a745; font-size:2em; margin-bottom:0.5em;"></i><br>
+                            No batches above 28 days old at the moment.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Batch Status Overview Section -->
+            <div class="batch-status-overview-box">
+                <div class="batch-status-card">
+                    <div class="batch-status-header">
+                        <i class="fas fa-chart-pie batch-status-icon"></i>
+                        <span class="batch-status-title">Batch Status Overview</span>
+                    </div>
+                    <div class="batch-status-body">
+                        <canvas id="batchStatusChart"></canvas>
+                        <div class="batch-status-legend">
+                            <div class="label-row">
+                                <span><span class="legend-dot legend-ongoing"></span> Ongoing: {{ batch_status_counts.ongoing }}</span>
+                                <span><span class="legend-dot legend-closing"></span> Closing: {{ batch_status_counts.closing }}</span>
+                            </div>
+                            <span><span class="legend-dot legend-closed"></span> Closed: {{ batch_status_counts.closed }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* Dashboard Layout */
+.dashboard-wrapper {
+    /* padding: 2rem; */
+    min-height: calc(100vh - 60px);
+    background-color: #f8f9fa;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;    
+    /* max-width: 1400px; */
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.sum-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    min-height: 20vh;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+    margin-bottom: 1.5rem;
+    
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Welcome Card */
+.welcome-card {
+    background: linear-gradient(135deg, #4b6cb7 0%, #6781b6 100%);
+    color: white;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(75, 108, 183, 0.15);
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: #ffffff;
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    position: relative;
+    width: 15vw;
+    flex: 1 1 220px; /* or 1 1 20% for 5 cards, etc. */
+    min-width: 180px;
+    max-width: 300px;
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #4b6cb7, #6781b6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.stat-card .card-body {
+    padding: 1.75rem;
+}
+
+.stat-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1.2rem;
+    text-align: left;
+    height: 100%;
+}
+
+.stat-icon-custom {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.stat-text-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.1rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.2rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.stat-desc {
+    font-size: 0.95rem;
+    color: #b2b2b2;
+    margin-top: 0.1rem;
+}
+
+.stat-icon-wrapper {
+    width: 65px;
+    height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+}
+
+.stat-icon-wrapper i {
+    font-size: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover .stat-icon-wrapper i {
+    transform: scale(1.1);
+}
+
+/* Custom colors for stat cards */
+.stat-card:nth-child(1) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(75, 108, 183, 0.1), rgba(103, 129, 182, 0.1));
+    color: #4b6cb7;
+}
+
+.stat-card:nth-child(2) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.2));
+    color: #28a745;
+}
+
+.stat-card:nth-child(3) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.2));
+    color: #ffc107;
+}
+
+.stat-card:nth-child(4) .stat-icon-wrapper {
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.1), rgba(23, 162, 184, 0.2));
+    color: #17a2b8;
+}
+
+/* Content Card */
+.content-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+/* Table Styles */
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+    border-top: none;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: #2c3e50;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 500;
+    font-size: 0.75rem;
+    border-radius: 50px;
+}
+
+.stat-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0.7rem;
+}
+
+.stat-rows, .label-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    /* .dashboard-wrapper {
+        padding: 1.5rem;
+    } */
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 992px) {
+    .welcome-title {
+        font-size: 2rem;
+    }
+    
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+    .col-lg-4.d-flex.flex-column.gap-3 {
+        flex-direction: row !important;
+        gap: 1rem !important;
+    }
+    .stat-card.stat-highlight {
+        min-width: 48%;
+    }
+}
+
+@media (max-width: 768px) {
+    .sum-card {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.7rem;
+        margin-bottom: 1.2rem;
+    }
+    .stat-card {
+        width: 100%;
+        min-width: 0;
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-row {
+        display: flex;
+        flex-direction: row;
+        gap: 0.7rem;
+    }
+    .stat-rows {
+        display: flex;
+        flex-direction: row;
+        gap: 0.7rem;
+    }
+    .stat-card .card-body {
+        padding: 0.7rem 0.5rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-icon-wrapper {
+        width: 38px;
+        height: 38px;
+    }
+    .stat-icon-wrapper i {
+        font-size: 1.2rem;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    .stat-value {
+        font-size: 1.1rem;
+    }
+    .stat-content {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    .dashboard-flex-row {
+        flex-direction: column;
+        /* gap: 1.2rem; */
+        margin-bottom: 0rem;
+    }
+    .dashboard-graph {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        flex: 1 1 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .graph-card-custom {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        margin: 0;
+        border-radius: 0;
+        box-sizing: border-box;
+        height: auto;
+    }
+    .graph-card-body {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        padding: 0.5rem 0 1rem 0;
+        box-sizing: border-box;
+        height: auto;
+    }
+    .graph-canvas-wrapper {
+        width: 100vw;
+        min-width: 0;
+        max-width: 100vw;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0;
+    }
+    .graph-canvas-wrapper canvas {
+        min-width: 600px;
+        width: 100vw !important;
+        height: 350px !important;
+        max-width: 100vw;
+        display: block;
+    }
+    .dashboard-stats {
+        flex-direction: row;
+        gap: 0.7rem;
+        justify-content: space-between;
+        align-items: stretch;
+        
+    }
+    .stat-card-custom {
+        min-width: 0;
+        width: 100%;
+        height: auto;
+        padding: 0.5rem 0.3rem;
+        margin-bottom: 0;
+    }
+    .this-month-heading {
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        text-align: left;
+    }
+    .dashboard-bottom-row {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0rem;
+        max-width: 100%;
+        align-items: stretch;
+        margin: 0 auto 1.2rem auto;
+    }
+    .risk-batches-box, .batch-status-overview-box {
+        max-width: 100%;
+        min-width: 0;
+        min-height: unset;
+        height: auto;
+    }
+    .risk-card, .batch-status-card {
+        height: auto;
+        margin-left: -10px;
+    }
+    .risk-card-body, .batch-status-body {
+        padding: 0.7rem 0.5rem 1rem 0.5rem;
+    }
+    .risk-table-wrapper, .risk-table {
+        width: 100%;
+        overflow-x: auto;
+        font-size: 0.92rem;
+    }
+    .risk-table th, .risk-table td {
+        padding: 0.5em 0.5em;
+    }
+    .batch-status-legend {
+        flex-direction: row;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        margin-top: 0.7rem;
+        align-items: flex-start;
+    }
+}
+@media (max-width: 430px) {
+    .sum-card {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .welcome-title {
+        font-size: 1.5rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.75rem;
+    }
+}
+
+.stat-highlight {
+    border: 2px solid #e3e6f0;
+    box-shadow: 0 2px 12px rgba(40, 167, 69, 0.07);
+    background: #f9fafb;
+    transition: box-shadow 0.2s;
+}
+.stat-highlight:hover {
+    box-shadow: 0 6px 24px rgba(40, 167, 69, 0.13);
+}
+.stat-icon-wrapper i {
+    font-size: 1.7rem;
+}
+
+@media (min-width: 992px) {
+  .row.h-100 > .col-6 {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
+
+.dashboard-flex-row {
+    display: flex;
+    gap: 2rem;
+    align-items: stretch;
+    margin-bottom: 0rem;
+    flex-wrap: wrap;
+}
+.dashboard-graph {
+    flex: 2 1 400px;
+    min-width: 300px;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.dashboard-stats {
+    flex: 1 1 220px;
+    min-width: 220px;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    justify-content: flex-start;
+    height: 100%;
+}
+.stat-custom {
+    margin-bottom: 0 !important;
+}
+@media (max-width: 900px) {
+    .dashboard-flex-row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    .dashboard-graph, .dashboard-stats {
+        max-width: 100%;
+        min-width: 0;
+        height: auto;
+    }
+}
+.this-month-heading {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    margin-top: 0.2rem;
+    color: #2c3e50;
+    text-align: left;
+    letter-spacing: 0.5px;
+}
+.dashboard-bottom-row {
+    display: flex;
+    gap: 2.5rem;
+    justify-content: center;
+    align-items: flex-star;
+    margin: 0 auto 1.5rem auto;
+    max-width: 100%;
+}
+.risk-batches-box, .batch-status-overview-box {
+    flex: 1 1 0;
+    /* min-width: 320px;
+    max-width: 500px; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 500px;
+    height: 500px;
+}
+
+.risk-batches-box {
+    min-width: 50vw;
+    height: 500px;
+}
+.batch-status-overview-box {
+    margin: 0 auto 1.5rem auto;
+    max-width: fit-content;
+}
+.risk-card, .batch-status-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+@media (max-width: 1100px) {
+    .dashboard-bottom-row {
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 700px;
+    }
+    .risk-batches-box, .batch-status-overview-box {
+        max-width: 100%;
+        min-width: 0;
+        min-height: unset;
+        height: auto;
+    }
+    .risk-card, .batch-status-card {
+        height: auto;
+    }
+}
+.risk-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(231, 76, 60, 0.08);
+    border: 1.5px solid #f5eaea;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.risk-card-header {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #fbeee6 0%, #f9e6e6 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #f5eaea;
+}
+.risk-icon {
+    color: #e74c3c;
+    font-size: 1.5rem;
+    margin-right: 0.7rem;
+}
+.risk-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #c0392b;
+    letter-spacing: 0.5px;
+}
+.risk-card-body {
+    padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+    background: #fff;
+}
+.risk-table-wrapper {
+    overflow-x: auto;
+}
+.risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98rem;
+    background: #fff;
+}
+.risk-table th, .risk-table td {
+    padding: 0.7em 0.8em;
+    text-align: left;
+    border-bottom: 1px solid #f2dede;
+}
+.risk-table th {
+    background: #fbeee6;
+    color: #a94442;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.93rem;
+    letter-spacing: 0.5px;
+    border-top: none;
+}
+.risk-table tr:last-child td {
+    border-bottom: none;
+}
+.risk-badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.9em;
+    border-radius: 1em;
+    font-weight: 600;
+    text-transform: capitalize;
+    display: inline-block;
+}
+.risk-high {
+    background: #e74c3c;
+    color: #fff;
+}
+.risk-medium {
+    background: #f1c40f;
+    color: #222;
+}
+.risk-empty {
+    text-align: center;
+    color: #b2b2b2;
+    font-size: 1.05rem;
+    padding: 1.5rem 0 1rem 0;
+}
+.stat-card-custom {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(44, 62, 80, 0.07);
+    border: 1.5px solid #e8eaf6;
+    margin-bottom: 1.2rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: box-shadow 0.2s, border 0.2s;
+}
+.stat-card-custom:hover {
+    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.13);
+    border-color: #c5cae9;
+}
+.stat-fcr {
+    background: linear-gradient(120deg, #e3fcec 0%, #f8fffa 100%);
+    border-left: 5px solid #28a745;
+}
+.stat-profit {
+    background: linear-gradient(120deg, #fffbe6 0%, #fffdf5 100%);
+    border-left: 5px solid #ffc107;
+}
+.stat-icon-custom {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    margin: 0 auto 0.7rem auto;
+    font-size: 1.7rem;
+    background: #f4f6fb;
+}
+.stat-fcr-icon {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.25));
+    color: #28a745;
+}
+.stat-profit-icon {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.25));
+    color: #ffc107;
+}
+.graph-card-custom {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
+    border: 1.5px solid #e3e6f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* margin-bottom: 1.5rem; */
+    height: 100%;
+    width: 100%;
+}
+.graph-card-header {
+    background: linear-gradient(90deg, #e9f0fb 0%, #f3f6fb 100%);
+    padding: 1.1rem 1.5rem 1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+.graph-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4b6cb7;
+    letter-spacing: 0.5px;
+}
+.graph-card-body {
+    min-height: 260px;
+    height: 100%;
+    padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.graph-canvas-wrapper {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.graph-canvas-wrapper canvas {
+    min-width: 600px;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+@media (max-width: 700px) {
+    .graph-canvas-wrapper canvas {
+        min-width: 600px;
+        width: 600px;
+    }
+}
+.batch-status-overview-box {
+    margin: 0 auto 1.5rem auto;
+    max-width: fit-content;
+}
+.batch-status-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
+    border: 1.5px solid #e3e6f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.batch-status-header {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #e9f0fb 0%, #f3f6fb 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+.batch-status-icon {
+    color: #4b6cb7;
+    font-size: 1.5rem;
+    margin-right: 0.7rem;
+}
+.batch-status-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #4b6cb7;
+    letter-spacing: 0.5px;
+}
+.batch-status-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    width: fit-content;
+    padding: 10px 20px;
+    min-height: 250px;
+    box-sizing: border-box;
+}
+#batchStatusChart {
+    display: block;
+    margin: 0 auto;
+    max-width: 350px;
+    max-height: 350px;
+    width: 100% !important;
+    height: 100% !important;
+}
+.batch-status-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.2rem;
+    font-size: 1rem;
+    justify-content: center;
+}
+.legend-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-right: 0.5em;
+    vertical-align: middle;
+}
+.legend-ongoing { background: #4b6cb7; }
+.legend-closing { background: #ffc107; }
+.legend-closed { background: #e74c3c; }
+/* Add new styles for stat-mortality */
+.stat-mortality {
+    background: linear-gradient(120deg, #fff0f0 0%, #fff6f6 100%);
+    border-left: 5px solid #e74c3c;
+}
+.stat-mortality-icon {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(231, 76, 60, 0.25));
+    color: #e74c3c;
+}
+.stat-mortality .stat-value {
+    color: #e74c3c;
+}
+.stat-mortality .stat-desc {
+    font-size: 1rem;
+    color: #b2b2b2;
+    margin-top: 0.2rem;
+}
+
+.dashboard-stats .stat-card-custom {
+    width: 100%;
+    min-width: 0;
+    min-height: 140px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+@media (min-width: 600px) {
+    .dashboard-stats .stat-card-custom {
+        min-width: 220px;
+        max-width: 350px;
+        height: 160px;
+    }
+}
+.graph-card-custom,
+.dashboard-stats {
+    height: 500px;
+    max-height: 500px;
+}
+
+.dashboard-stats {
+    gap: 1rem;
+}
+
+.dashboard-stats .stat-card-custom {
+    min-height: 0;
+    height: 100px;
+    padding: 0.5rem 0.5rem;
+}
+
+.stat-info.text-center.py-4 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+.stat-icon-custom {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+}
+
+@media (max-width: 600px) {
+    .risk-card-header {
+        padding: 0.7rem 0.7rem;
+    }
+    .risk-card-title {
+        font-size: 1rem;
+    }
+    .risk-card-body {
+        padding: 0.7rem 0.7rem 1rem 0.7rem;
+    }
+    .risk-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .risk-table th, .risk-table td {
+        padding: 0.4em 0.4em;
+        font-size: 0.85rem;
+    }
+    .risk-table {
+        font-size: 0.9rem;
+        min-width: 500px;
+    }
+}
+@media (max-width: 430px) {
+    .risk-table, .risk-table thead, .risk-table tbody, .risk-table th, .risk-table td, .risk-table tr {
+        display: block;
+    }
+    .risk-table thead {
+        display: none;
+    }
+    .risk-table tr {
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #f2dede;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.04);
+        padding: 0.5em;
+    }
+    .risk-table td {
+        position: relative;
+        padding-left: 50%;
+        text-align: left;
+        border: none;
+        font-size: 0.95rem;
+    }
+    .risk-table td:before {
+        position: absolute;
+        left: 0.7em;
+        top: 0.7em;
+        width: 45%;
+        white-space: nowrap;
+        font-weight: 600;
+        color: #a94442;
+        content: attr(data-label);
+    }
+}
+/* Modern Risk Batches Section */
+.modern-risk-batches {
+    width: 100vw;
+    max-width: 100vw;
+    /* margin-left: calc(-1 * (100vw - 100%) / 2); */
+    /* padding: 0 0.5rem; */
+    box-sizing: border-box;
+}
+.modern-risk-card {
+    width: 100%;
+    max-width: 100vw;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(231, 76, 60, 0.10);
+    border: 1.5px solid #f5eaea;
+    background: #fff;
+    margin: 0 auto;
+}
+.modern-risk-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(90deg, #fbeee6 0%, #f9e6e6 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #f5eaea;
+    border-radius: 18px 18px 0 0;
+}
+.modern-risk-body {
+    padding: 1.2rem 1.2rem 1.5rem 1.2rem;
+    background: #fff;
+}
+.modern-risk-table-wrapper {
+    width: 100%;
+    max-width: 100vw;
+}
+.modern-risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98rem;
+    background: #fff;
+}
+.modern-risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.95em;
+    padding: 0.3em 0.8em;
+    border-radius: 1em;
+    font-weight: 600;
+    text-transform: capitalize;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.modern-risk-thead {
+    background: #fbeee6;
+}
+.modern-risk-row {
+    transition: background 0.2s;
+}
+.modern-risk-row:hover {
+    background: #f9e6e6;
+}
+.modern-risk-empty {
+    text-align: center;
+    color: #b2b2b2;
+    font-size: 1.1rem;
+    padding: 2rem 0 1rem 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+}
+/* Mobile Card Layout */
+.modern-risk-mobile-list {
+    display: none;
+}
+@media (max-width: 700px) {
+    .modern-risk-batches {
+        width: 90vw;
+        max-width: 100vw;
+        margin-left: calc(-1 * (100vw - 100%) / 2);
+        /* padding: 0 0.2rem; */
+    }
+    .modern-risk-card {
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(231, 76, 60, 0.10);
+        border: 1px solid #f5eaea;
+        margin: 0 auto;
+    }
+    .modern-risk-header {
+        padding: 0.7rem 1rem;
+        font-size: 1rem;
+    }
+    .modern-risk-body {
+        padding: 0.7rem 0.7rem 1rem 0.7rem;
+    }
+    .modern-risk-table {
+        display: none;
+    }
+    .modern-risk-mobile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    .modern-risk-mobile-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.08);
+        border: 1px solid #f5eaea;
+        padding: 1rem 1.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        font-size: 1rem;
+        position: relative;
+    }
+    .modern-risk-mobile-card.risk-high {
+        border-left: 5px solid #e74c3c;
+    }
+    .modern-risk-mobile-card.risk-medium {
+        border-left: 5px solid #f1c40f;
+    }
+    .modern-risk-mobile-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.1em 0;
+    }
+    .modern-risk-mobile-label {
+        font-weight: 600;
+        color: #a94442;
+        font-size: 0.97em;
+        min-width: 90px;
+    }
+    .modern-risk-mobile-value {
+        color: #2c3e50;
+        font-size: 1em;
+        word-break: break-word;
+        text-align: right;
+    }
+    .modern-risk-badge {
+        font-size: 0.95em;
+        padding: 0.2em 0.7em;
+    }
+}
+/* Modern Above 28 Days Section */
+.modern-above28-card {
+    /* width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(-1 * (100vw - 100%) / 2);
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
+    border: 1.5px solid #e3e6f0;
+    background: #fff;
+    margin: 0 auto; */
+    width: 100%;
+    max-width: 100vw;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(231, 76, 60, 0.10);
+    border: 1.5px solid #f5eaea;
+    background: #fff;
+    margin: 0 auto;
+}
+.modern-above28-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(90deg, #e6f0fb 0%, #e6f9fb 100%);
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid #e3e6f0;
+    border-radius: 18px 18px 0 0;
+}
+.modern-above28-body {
+    padding: 1.2rem 1.2rem 1.5rem 1.2rem;
+    background: #fff;
+}
+.modern-above28-table-wrapper {
+    width: 100%;
+    max-width: 100vw;
+}
+.modern-above28-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98rem;
+    background: #fff;
+}
+.modern-above28-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.95em;
+    padding: 0.3em 0.8em;
+    border-radius: 1em;
+    font-weight: 600;
+    text-transform: capitalize;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.modern-above28-thead {
+    background: #e6f0fb;
+}
+.modern-above28-row {
+    transition: background 0.2s;
+}
+.modern-above28-row:hover {
+    background: #e6f9fb;
+}
+.modern-above28-empty {
+    text-align: center;
+    color: #b2b2b2;
+    font-size: 1.1rem;
+    padding: 2rem 0 1rem 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+}
+/* Mobile Card Layout for Above 28 Days */
+.modern-above28-mobile-list {
+    display: none;
+}
+@media (max-width: 700px) {
+    .modern-above28-card {
+        width: 90vw;
+        max-width: 100vw;
+        margin-left: calc(-1 * (100vw - 100%) / 2);
+        padding: 0 0.2rem;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(75, 108, 183, 0.10);
+        border: 1px solid #e3e6f0;
+        margin: 0 auto;
+    }
+    .modern-above28-header {
+        padding: 0.7rem 1rem;
+        font-size: 1rem;
+    }
+    .modern-above28-body {
+        padding: 0.7rem 0.7rem 1rem 0.7rem;
+    }
+    .modern-above28-table {
+        display: none;
+    }
+    .modern-above28-mobile-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    .modern-above28-mobile-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(75, 108, 183, 0.08);
+        border: 1px solid #e3e6f0;
+        padding: 1rem 1.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        font-size: 1rem;
+        position: relative;
+    }
+    .modern-above28-mobile-card.risk-ongoing {
+        border-left: 5px solid #4b6cb7;
+    }
+    .modern-above28-mobile-card.risk-closing {
+        border-left: 5px solid #ffc107;
+    }
+    .modern-above28-mobile-card.risk-closed {
+        border-left: 5px solid #e74c3c;
+    }
+    .modern-above28-mobile-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.1em 0;
+    }
+    .modern-above28-mobile-label {
+        font-weight: 600;
+        color: #4b6cb7;
+        font-size: 0.97em;
+        min-width: 90px;
+    }
+    .modern-above28-mobile-value {
+        color: #2c3e50;
+        font-size: 1em;
+        word-break: break-word;
+        text-align: right;
+    }
+    .modern-above28-badge {
+        font-size: 0.95em;
+        padding: 0.2em 0.7em;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="application/json" id="jinja-vars-profit">{{ profit_by_month|tojson|safe }}</script>
+<script type="application/json" id="jinja-vars-fcr">{{ fcr_by_month|tojson|safe }}</script>
+<script type="application/json" id="jinja-vars-batch-status">{{ batch_status_counts|tojson|safe }}</script>
+<script type="text/javascript">
+    const profitByMonthData = JSON.parse(document.getElementById('jinja-vars-profit').textContent);
+    const fcrByMonthData = JSON.parse(document.getElementById('jinja-vars-fcr').textContent);
+    const batchStatusCounts = JSON.parse(document.getElementById('jinja-vars-batch-status').textContent);
+    const ctx = document.getElementById('profitByMonthChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: profitByMonthData.map(item => item.month),
+            datasets: [
+                {
+                    label: 'Profit',
+                    data: profitByMonthData.map(item => item.profit),
+                    borderColor: '#4b6cb7',
+                    backgroundColor: 'rgba(75, 108, 183, 0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#4b6cb7',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 7,
+                    pointHoverBackgroundColor: '#6781b6',
+                    pointStyle: 'circle',
+                    borderWidth: 3,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'FCR',
+                    data: fcrByMonthData.map(item => item.fcr),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.10)',
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#28a745',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 7,
+                    pointHoverBackgroundColor: '#218838',
+                    pointStyle: 'rectRot',
+                    borderWidth: 3,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 2,
+            layout: {
+                padding: {
+                    right: 40
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#4b6cb7',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#e3e6f0',
+                    borderWidth: 1,
+                    padding: 12,
+                    titleFont: { size: window.innerWidth < 600 ? 10 : 14 },
+                    bodyFont: { size: window.innerWidth < 600 ? 10 : 14 },
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label === 'Profit') {
+                                return 'Profit: ' + context.parsed.y.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                            } else if (context.dataset.label === 'FCR') {
+                                return 'FCR: ' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#e3e6f0',
+                        borderColor: '#e3e6f0',
+                        borderWidth: 2,
+                        drawTicks: false,
+                    },
+                    ticks: {
+                        color: '#4b6cb7',
+                        font: function(context) {
+                            return window.innerWidth < 600 ? { size: 10, weight: 600 } : { size: 12, weight: 600 };
+                        },
+                        padding: 16
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#e3e6f0',
+                        borderColor: '#e3e6f0',
+                        borderWidth: 2,
+                        drawTicks: false,
+                    },
+                    ticks: {
+                        color: '#4b6cb7',
+                        font: function(context) {
+                            return window.innerWidth < 600 ? { size: 10, weight: 600 } : { size: 12, weight: 600 };
+                        },
+                        callback: function(value) {
+                            return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Profit',
+                        color: '#4b6cb7',
+                        font: { weight: 700 }
+                    }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        color: '#28a745',
+                        font: function(context) {
+                            return window.innerWidth < 600 ? { size: 10, weight: 600 } : { size: 12, weight: 600 };
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'FCR',
+                        color: '#28a745',
+                        font: { weight: 700 }
+                    }
+                }
+            }
+        }
+    });
+    // Custom legend rendering
+    function renderCustomProfitLegend() {
+        const legendDiv = document.getElementById('customProfitLegend');
+        if (!legendDiv) return;
+        legendDiv.innerHTML = `
+            <span id="legend-profit" style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                <span style="display: inline-block; width: 24px; height: 8px; background: #4b6cb7; border-radius: 2px; border: 2px solid #4b6cb7;"></span>
+                <span style="color: #2c3e50; font-weight: 600; font-size: 1rem;">Profit</span>
+            </span>
+            <span id="legend-fcr" style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                <span style="display: inline-block; width: 24px; height: 8px; background: #28a745; border-radius: 2px; border: 2px solid #28a745;"></span>
+                <span style="color: #2c3e50; font-weight: 600; font-size: 1rem;">FCR</span>
+            </span>
+        `;
+        // Add click handlers for toggling datasets
+        setTimeout(() => {
+            const profitLegend = document.getElementById('legend-profit');
+            const fcrLegend = document.getElementById('legend-fcr');
+            if (profitLegend) {
+                profitLegend.onclick = function() {
+                    const meta = chart.getDatasetMeta(0);
+                    meta.hidden = meta.hidden === null ? !chart.data.datasets[0].hidden : null;
+                    chart.update();
+                    profitLegend.style.opacity = meta.hidden ? 0.4 : 1;
+                };
+            }
+            if (fcrLegend) {
+                fcrLegend.onclick = function() {
+                    const meta = chart.getDatasetMeta(1);
+                    meta.hidden = meta.hidden === null ? !chart.data.datasets[1].hidden : null;
+                    chart.update();
+                    fcrLegend.style.opacity = meta.hidden ? 0.4 : 1;
+                };
+            }
+        }, 0);
+    }
+    renderCustomProfitLegend();
+    // Fix legend click area after resize
+    window.addEventListener('resize', function() {
+        if (chart && typeof chart.resize === 'function') {
+            chart.resize();
+        }
+        renderCustomProfitLegend();
+    });
+    // Batch Status Donut Chart
+    const batchStatusCtx = document.getElementById('batchStatusChart').getContext('2d');
+    new Chart(batchStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Ongoing', 'Closing', 'Closed'],
+            datasets: [{
+                data: [batchStatusCounts.ongoing, batchStatusCounts.closing, batchStatusCounts.closed],
+                backgroundColor: [
+                    '#4b6cb7',
+                    '#ffc107',
+                    '#e74c3c'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' batches';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

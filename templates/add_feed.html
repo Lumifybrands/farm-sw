@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Add Feed - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Add New Feed</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Feeds</span> / <span>Add Feed</span>
+    </div>
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('add_feed') }}" method="POST" class="feed-form">
+        <div class="form-group">
+            <label for="brand">Brand Name</label>
+            <input type="text" id="brand" name="brand" required>
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="">Select Category</option>
+                <option value="pre-starter">Pre-Starter</option>
+                <option value="starter">Starter</option>
+                <option value="finisher">Finisher</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="weight">Weight Per Unit(kg)</label>
+            <input type="number" id="weight" name="weight" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+            <label for="price">Price Per Unit (₹)</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('feeds') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Add Feed</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

@@ -1,0 +1,757 @@
+{% extends "base.html" %}
+
+{% block title %}Farm Manager - Bismi Farms{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Farm Manager</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Farm Manager</span>
+    </div>
+</div>
+
+<div class="manager-container">
+    <div class="manager-header">
+        <div class="search-bar">
+            <input type="text" id="managerSearch" placeholder="Search managers...">
+            <i class="fas fa-search"></i>
+        </div>
+        <button class="add-manager-btn" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add Manager
+        </button>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="manager-table-container">
+        <table class="manager-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Phone Numbers</th>
+                    <th>Manager Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.employee.name if user.employee else 'N/A' }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        <div>Primary: {{ user.employee.phone_number if user.employee and user.employee.phone_number else 'N/A' }}</div>
+                        <div>Alternate: {{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else 'N/A' }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {% if user.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            {{ 'Senior Manager' if user.user_type == 'senior_manager' else 'Assistant Manager' }}
+                        </span>
+                    </td>
+                    <td class="action-buttons">
+                        <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete" onclick="deleteManager('{{ user.id }}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="manager-cards">
+        {% for user in users %}
+        <div class="manager-card">
+            <div class="manager-card-header">
+                <h3>{{ user.employee.name if user.employee else 'N/A' }}</h3>
+                <span class="badge {% if user.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">
+                    {{ 'Senior Manager' if user.user_type == 'senior_manager' else 'Assistant Manager' }}
+                </span>
+            </div>
+            <div class="manager-card-body">
+                <div class="manager-info">
+                    <div class="info-group">
+                        <label>Username</label>
+                        <span>{{ user.username }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Primary Phone</label>
+                        <span>{{ user.employee.phone_number if user.employee and user.employee.phone_number else 'N/A' }}</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Alternate Phone</label>
+                        <span>{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else 'N/A' }}</span>
+                    </div>
+                </div>
+                <div class="manager-actions">
+                    <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn delete" onclick="deleteManager('{{ user.id }}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add Manager Modal -->
+<div class="modal" id="addManagerModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Manager</h3>
+                <button type="button" class="close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addManagerForm" action="{{ url_for('add_manager') }}" method="POST">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone_number">Primary Phone Number</label>
+                        <input type="tel" id="phone_number" name="phone_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="alternate_phone_number">Alternate Phone Number (Optional)</label>
+                        <input type="tel" id="alternate_phone_number" name="alternate_phone_number">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user_type">Manager Type</label>
+                        <select id="user_type" name="user_type" required>
+                            <option value="assistant_manager">Assistant Manager</option>
+                            <option value="senior_manager">Senior Manager</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddForm()">Add Manager</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Manager Modal -->
+<div class="modal" id="editManagerModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Manager</h3>
+                <button type="button" class="close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editManagerForm" method="POST">
+                    <div class="form-group">
+                        <label for="edit_name">Full Name</label>
+                        <input type="text" id="edit_name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_username">Username</label>
+                        <input type="text" id="edit_username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_phone_number">Primary Phone Number</label>
+                        <input type="tel" id="edit_phone_number" name="phone_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_alternate_phone_number">Alternate Phone Number (Optional)</label>
+                        <input type="tel" id="edit_alternate_phone_number" name="alternate_phone_number">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_password">New Password (leave blank to keep current)</label>
+                        <input type="password" id="edit_password" name="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_user_type">Manager Type</label>
+                        <select id="edit_user_type" name="user_type" required>
+                            <option value="assistant_manager">Assistant Manager</option>
+                            <option value="senior_manager">Senior Manager</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditForm()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.content-header h1 {
+    color: #1a73e8;
+}
+
+.manager-container {
+    padding: 20px;
+}
+
+.manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.search-bar {
+    position: relative;
+    flex: 1;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 10px 15px;
+    padding-left: 40px;
+    border: 1px solid #1a73e8;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.search-bar i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #1a73e8;
+}
+
+.search-bar input:focus {
+    border-color: #1557b0;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+.add-manager-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.add-manager-btn:hover {
+    background-color: #1557b0;
+}
+
+/* Mobile Card View Styles */
+.manager-cards {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.manager-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.manager-card:active {
+    transform: scale(0.98);
+}
+
+.manager-card-header {
+    padding: 15px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.manager-card-header h3 {
+    margin: 0;
+    color: #1a73e8;
+    font-size: 18px;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.badge-primary {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.badge-secondary {
+    background-color: #f1f3f4;
+    color: #5f6368;
+}
+
+.manager-card-body {
+    padding: 15px;
+}
+
+.manager-info {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-group label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.info-group span {
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.manager-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.manager-actions .action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 14px;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .manager-table-container {
+        display: none;
+    }
+
+    .manager-cards {
+        display: grid;
+    }
+
+    .manager-header {
+        flex-direction: column;
+    }
+
+    .search-bar {
+        width: 100%;
+    }
+
+    .add-manager-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Improve touch targets */
+    .manager-card {
+        cursor: pointer;
+    }
+
+    .action-btn {
+        min-height: 44px;
+    }
+
+    /* Modal optimizations for mobile */
+    .modal-dialog {
+        width: 90%;
+        margin: 20px auto;
+    }
+
+    .modal-content {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
+
+/* Additional optimizations for very small screens */
+@media (max-width: 480px) {
+    .manager-container {
+        padding: 10px;
+    }
+
+    .manager-card-header h3 {
+        font-size: 16px;
+    }
+
+    .badge {
+        font-size: 11px;
+    }
+
+    .info-group label {
+        font-size: 11px;
+    }
+
+    .info-group span {
+        font-size: 13px;
+    }
+
+    .manager-actions .action-btn {
+        font-size: 13px;
+        padding: 8px;
+    }
+}
+
+/* Desktop Table View Styles */
+.manager-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.manager-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.manager-table th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 600;
+    padding: 15px;
+    text-align: left;
+    border-bottom: 2px solid #e0e0e0;
+    font-size: 14px;
+}
+
+.manager-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #2c3e50;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.manager-table tr:hover {
+    background-color: rgba(26, 115, 232, 0.05);
+}
+
+.manager-table .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.manager-table .badge-primary {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.manager-table .badge-secondary {
+    background-color: #f1f3f4;
+    color: #5f6368;
+}
+
+.manager-table .action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.manager-table .action-btn {
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.manager-table .action-btn.edit {
+    background-color: #1a73e8;
+}
+
+.manager-table .action-btn.edit:hover {
+    background-color: #1557b0;
+}
+
+.manager-table .action-btn.delete {
+    background-color: #dc3545;
+}
+
+.manager-table .action-btn.delete:hover {
+    background-color: #c82333;
+}
+
+.manager-table .action-btn i {
+    font-size: 12px;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.modal-dialog {
+    margin: 60px auto;
+    max-width: 500px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content {
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.close {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #1a73e8;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+}
+
+.btn-secondary {
+    background-color: #5f6368;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #494d51;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function openAddModal() {
+    document.getElementById('addManagerModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    document.getElementById('addManagerModal').style.display = 'none';
+    document.getElementById('addManagerForm').reset();
+}
+
+function submitAddForm() {
+    document.getElementById('addManagerForm').submit();
+}
+
+function editManager(id, username, name, userType, phoneNumber, alternatePhoneNumber) {
+    document.getElementById('editManagerForm').action = `/edit_manager/${id}`;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_user_type').value = userType;
+    document.getElementById('edit_phone_number').value = phoneNumber;
+    document.getElementById('edit_alternate_phone_number').value = alternatePhoneNumber;
+    document.getElementById('edit_password').value = '';
+    document.getElementById('editManagerModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editManagerModal').style.display = 'none';
+}
+
+function submitEditForm() {
+    document.getElementById('editManagerForm').submit();
+}
+
+function deleteManager(id) {
+    if (confirm('Are you sure you want to delete this manager?')) {
+        fetch(`/delete_manager/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Error deleting manager');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting manager');
+        });
+    }
+}
+
+// Search functionality
+document.getElementById('managerSearch').addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.manager-table tbody tr');
+    const cards = document.querySelectorAll('.manager-card');
+    
+    // Search in table
+    rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const username = row.cells[1].textContent.toLowerCase();
+        const phoneNumbers = row.cells[2].textContent.toLowerCase();
+        const managerType = row.cells[3].textContent.toLowerCase();
+        
+        if (name.includes(searchText) || 
+            username.includes(searchText) || 
+            phoneNumbers.includes(searchText) || 
+            managerType.includes(searchText)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Search in cards
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchText) ? '' : 'none';
+    });
+});
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addManagerModal');
+    const editModal = document.getElementById('editManagerModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+
+// Add touch feedback for mobile
+document.addEventListener('DOMContentLoaded', function() {
+    if ('ontouchstart' in window) {
+        const buttons = document.querySelectorAll('.action-btn');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.opacity = '0.8';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.opacity = '';
+            });
+        });
+    }
+});
+</script>
+{% endblock %} 

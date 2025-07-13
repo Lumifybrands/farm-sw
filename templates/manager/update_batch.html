@@ -1,0 +1,1111 @@
+{% extends "manager/base.html" %}
+
+{% block title %}Update Batch - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1>Daily Batch Update</h1>
+    <div class="breadcrumb">
+        <span>Home</span> / <span>Batches</span> / <span>Update Batch</span>
+    </div>
+</div>
+
+<div class="form-container">
+    {% if existing_update %}
+    <div class="update-exists-message">
+        <i class="fas fa-info-circle"></i>
+        <p>An update has already been submitted for this batch today.</p>
+        <p>You can only submit one update per day. Please try again tomorrow.</p>
+        <a href="{{ url_for('manager_batches') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Batches
+        </a>
+    </div>
+    {% else %}
+    <form action="{{ url_for('manager_update_batch', batch_id=batch.id) }}" method="POST" class="update-form">
+        <div class="batch-info">
+            <h2>Batch Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Farm Name</label>
+                    <span>{{ batch.farm.name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Batch Number</label>
+                    <span>{{ batch.batch_number }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Available Birds</label>
+                    <span>{{ batch.available_birds }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Age</label>
+                    <span>{{ batch.get_age_days() }} days</span>
+                </div>
+                <div class="info-item">
+                    <label>Feed Stock</label>
+                    <span>{{ batch.feed_stock }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-section">
+            <h2>Today's Update</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="mortality_count">Mortality Count</label>
+                    <input type="number" id="mortality_count" name="mortality_count" min="0" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="feed_used">Feed Used (Packets)</label>
+                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="male_weight">Male Weight (kg)</label>
+                    <input type="number" id="male_weight" name="male_weight" min="0" step="0.01" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="female_weight">Female Weight (kg)</label>
+                    <input type="number" id="female_weight" name="female_weight" min="0" step="0.01" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="avg_weight">Average Weight of Birds (kg)</label>
+                    <input type="number" id="avg_weight" name="avg_weight" min="0" step="0.01" value="0" required>
+                </div>
+            </div>
+
+            <!-- Feed Section -->
+            <div class="dynamic-section" id="feedSection">
+                <h3>Feed Allocation</h3>
+                <div class="dynamic-items" id="feedItems">
+                </div>
+                <button type="button" class="add-item" onclick="addFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
+
+            <!-- Feed Stock Return Section -->
+            <div class="dynamic-section" id="feedStockReturnSection">
+                <h3>Feed Stock Return</h3>
+                <div class="dynamic-items" id="feedReturnItems"></div>
+                <button type="button" class="add-item" onclick="addFeedReturnItem()">
+                    <i class="fas fa-plus"></i> Add Feed Return
+                </button>
+            </div>
+
+            <!-- Scheduled Items Section -->
+            <div class="dynamic-section" id="scheduledItemsSection">
+                <h3>Scheduled Items</h3>
+                <div class="scheduled-items-container">
+                    {% if medicine_schedules or health_material_schedules or vaccine_schedules %}
+                        <!-- Medicine Schedules -->
+                        {% if medicine_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-pills"></i> Medicine Schedules</h4>
+                            <div class="scheduled-items" id="medicineSchedules">
+                                {% for schedule in medicine_schedules %}
+                                <div class="scheduled-item {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[medicine][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'medicine_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.medicine.name }}</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.schedule_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.schedule_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="medicine_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[medicine][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'medicine')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Health Material Schedules -->
+                        {% if health_material_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-spray-can"></i> Health Material Schedules</h4>
+                            <div class="scheduled-items" id="healthMaterialSchedules">
+                                {% for schedule in health_material_schedules %}
+                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[health_material][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'health_material_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.health_material.name }}</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.scheduled_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="health_material_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[health_material][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'health_material')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Vaccine Schedules -->
+                        {% if vaccine_schedules %}
+                        <div class="scheduled-category">
+                            <h4><i class="fas fa-syringe"></i> Vaccine Schedules</h4>
+                            <div class="scheduled-items" id="vaccineSchedules">
+                                {% for schedule in vaccine_schedules %}
+                                <div class="scheduled-item {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                    <div class="scheduled-item-info">
+                                        <label class="checkbox-container">
+                                            <input type="checkbox" 
+                                                   name="scheduled_items[vaccine][{{ schedule.id }}][selected]" 
+                                                   value="1"
+                                                   onchange="toggleQuantityField(this, 'vaccine_quantity_{{ schedule.id }}')">
+                                            <span class="checkmark"></span>
+                                            <span class="item-name">{{ schedule.vaccine.name }} (Dose {{ schedule.dose_number }})</span>
+                                        </label>
+                                        <div class="schedule-details">
+                                            <span class="schedule-date {% if schedule.scheduled_date < today %}overdue{% endif %}">
+                                                Scheduled: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}
+                                                {% if schedule.scheduled_date < today %}
+                                                <span class="overdue-badge">Overdue</span>
+                                                {% endif %}
+                                            </span>
+                                            {% if schedule.notes %}
+                                            <span class="schedule-notes">{{ schedule.notes }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="scheduled-item-quantity" id="vaccine_quantity_{{ schedule.id }}" style="display: none;">
+                                        <input type="number" 
+                                               name="scheduled_items[vaccine][{{ schedule.id }}][quantity]" 
+                                               placeholder="Quantity" 
+                                               min="0" 
+                                               step="0.01" 
+                                               value="0"
+                                               onchange="validateScheduleQuantity(this, '{{ schedule.id }}', 'vaccine')">
+                                        <span class="unit-type">units</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="no-schedules-message">
+                            <i class="fas fa-calendar-check"></i>
+                            <p>No schedules for today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Other Items Section -->
+            <div class="dynamic-section" id="otherItemsSection">
+                <h3>Other Items</h3>
+                <div class="dynamic-items" id="otherItems"></div>
+                <div class="item-type-selector">
+                    <button type="button" onclick="addMedicineItem()">Add Medicine</button>
+                    <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                    <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                    <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="remarks">Remarks</label>
+                <div class="remarks-container">
+                    <select name="remarks_priority" id="remarks_priority" class="remarks-priority">
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                    <textarea id="remarks" name="remarks" rows="4" placeholder="Enter any additional remarks or observations..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('manager_batches') }}'">Cancel</button>
+            <button type="submit" class="submit-btn">Save Update</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<style>
+.form-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        margin: 10px auto;
+        padding: 10px;
+    }
+
+    .content-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .breadcrumb {
+        font-size: 0.9rem;
+    }
+}
+
+.batch-info {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+@media (max-width: 480px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.info-item label {
+    font-weight: 500;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-item span {
+    font-size: 1rem;
+    color: #333;
+}
+
+.update-section {
+    margin-bottom: 25px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 480px) {
+    .form-group input {
+        padding: 10px;
+        font-size: 16px;
+    }
+}
+
+.form-group input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+
+    .form-actions button {
+        width: 100%;
+        padding: 12px !important;
+    }
+}
+
+.cancel-btn {
+    padding: 10px 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.cancel-btn:hover {
+    background: #f5f5f5;
+}
+
+.submit-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background: #1a73e8;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.submit-btn:hover {
+    background: #1557b0;
+}
+
+h2 {
+    color: #1a73e8;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.update-exists-message {
+    text-align: center;
+    padding: 30px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+@media (max-width: 480px) {
+    .update-exists-message {
+        padding: 20px 15px;
+    }
+}
+
+.update-exists-message i {
+    font-size: 48px;
+    color: #1a73e8;
+    margin-bottom: 20px;
+}
+
+.update-exists-message p {
+    color: #666;
+    margin: 10px 0;
+    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+    .update-exists-message i {
+        font-size: 36px;
+    }
+
+    .update-exists-message p {
+        font-size: 0.95rem;
+    }
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background: #1a73e8;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.back-btn:hover {
+    background: #1557b0;
+}
+
+@media (max-width: 480px) {
+    .back-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+    }
+}
+
+.dynamic-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .dynamic-section {
+        padding: 15px;
+    }
+}
+
+.dynamic-section h3 {
+    color: #1a73e8;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.dynamic-items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.dynamic-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 480px) {
+    .dynamic-item {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .dynamic-item select,
+    .dynamic-item input {
+        width: 100%;
+    }
+    
+    .remove-item {
+        justify-self: flex-end;
+    }
+}
+
+.dynamic-item select,
+.dynamic-item input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    background: white;
+}
+
+.dynamic-item select:focus,
+.dynamic-item input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+.remove-item {
+    padding: 8px;
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    transition: all 0.3s ease;
+}
+
+.remove-item:hover {
+    background: #fecaca;
+    color: #b91c1c;
+}
+
+.add-item {
+    margin-top: 15px;
+    padding: 12px;
+    border: 1px dashed #1a73e8;
+    border-radius: 6px;
+    background: white;
+    color: #1a73e8;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.add-item:hover {
+    background: #e8f0fe;
+}
+
+.item-type-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .item-type-selector {
+        grid-template-columns: 1fr;
+    }
+}
+
+.item-type-selector button {
+    padding: 12px;
+    border: 1px solid #1a73e8;
+    border-radius: 6px;
+    background: white;
+    color: #1a73e8;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.item-type-selector button:hover {
+    background: #e8f0fe;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+}
+
+@media (max-width: 480px) {
+    textarea {
+        min-height: 80px;
+    }
+}
+
+textarea:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+.dynamic-item.vaccine-item {
+    grid-template-columns: 2fr 1fr auto auto;
+}
+
+@media (max-width: 480px) {
+    .dynamic-item.vaccine-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Add new styles for scheduled items */
+.scheduled-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.scheduled-category {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.scheduled-category h4 {
+    color: #1a73e8;
+    margin: 0 0 15px 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scheduled-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scheduled-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.scheduled-item.selected {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+}
+
+.scheduled-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.item-name {
+    font-weight: 500;
+    color: #2d3748;
+}
+
+.schedule-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.schedule-notes {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+.unit-type {
+    font-size: 0.9rem;
+    color: #666;
+    margin-left: 8px;
+}
+
+.scheduled-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.scheduled-item-quantity input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.scheduled-item.overdue {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.scheduled-item.overdue .item-name {
+    color: #dc2626;
+}
+
+.scheduled-item.overdue .schedule-date {
+    color: #dc2626;
+}
+
+.overdue-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #dc2626;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 8px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    padding-left: 35px;
+    user-select: none;
+}
+
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: #fff;
+    border: 2px solid #1a73e8;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+    background-color: #e8f0fe;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: #1a73e8;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.checkbox-container .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.miscellaneous-item {
+    grid-template-columns: 1fr 1fr 1fr 10vw 10vw auto auto;
+}
+
+.remarks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.remarks-priority {
+    width: 200px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: white;
+}
+
+.remarks-priority:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+@media (max-width: 768px) {
+    .scheduled-item {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .scheduled-item-quantity {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .remarks-priority {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+let medicineIndex = 0;
+let healthMaterialIndex = 0;
+let vaccineIndex = 0;
+
+function toggleQuantityField(checkbox, quantityFieldId) {
+    const quantityField = document.getElementById(quantityFieldId);
+    const scheduledItem = checkbox.closest('.scheduled-item');
+    
+    if (checkbox.checked) {
+        quantityField.style.display = 'flex';
+        scheduledItem.classList.add('selected');
+        quantityField.querySelector('input').focus();
+    } else {
+        quantityField.style.display = 'none';
+        scheduledItem.classList.remove('selected');
+        quantityField.querySelector('input').value = '0';
+    }
+}
+
+function validateScheduleQuantity(input, scheduleId, type) {
+    const quantity = parseFloat(input.value);
+    const checkbox = document.querySelector(`input[name="scheduled_items[${type}][${scheduleId}][selected]"]`);
+    const scheduledItem = input.closest('.scheduled-item');
+    
+    if (quantity > 0) {
+        scheduledItem.classList.add('selected');
+        checkbox.checked = true;
+    } else {
+        scheduledItem.classList.remove('selected');
+        checkbox.checked = false;
+        input.value = '0';
+        input.closest('.scheduled-item-quantity').style.display = 'none';
+    }
+}
+
+function removeItem(button) {
+    button.closest('.dynamic-item').remove();
+}
+
+function addFeedItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="feed_id[]">
+                <option value="">Select Feed</option>
+                {% for feed in feeds %}
+                <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('feedItems').insertAdjacentHTML('beforeend', template);
+}
+
+function addMiscellaneousItem() {
+    const template = `
+        <div class="dynamic-item miscellaneous-item">
+            <input type="text" name="misc_name[]" placeholder="Item Name" required>
+            <input type="number" name="misc_quantity_per_unit[]" placeholder="Quantity per Unit" min="0" step="0.01" required>
+            <select name="misc_unit_type[]" required>
+                <option value="">Select Unit</option>
+                <option value="piece">Piece</option>
+                <option value="kg">Kilogram</option>
+                <option value="g">Gram</option>
+                <option value="litre">Litre</option>
+                <option value="ml">Millilitre</option>
+                <option value="box">Box</option>
+                <option value="pack">Pack</option>
+            </select>
+            <input type="number" name="misc_price_per_unit[]" placeholder="Price per Unit" min="0" step="0.01" required>
+            <input type="number" name="misc_units_used[]" placeholder="Units Used" min="0" step="0.01" required>
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+}
+
+function addMedicineItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="other_items[medicine][${medicineIndex}][id]">
+                <option value="">Select Medicine</option>
+                {% for medicine in medicines %}
+                <option value="{{ medicine.id }}">{{ medicine.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="other_items[medicine][${medicineIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    medicineIndex++;
+}
+
+function addHealthMaterialItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="other_items[health_material][${healthMaterialIndex}][id]">
+                <option value="">Select Health Material</option>
+                {% for material in health_materials %}
+                <option value="{{ material.id }}">{{ material.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="other_items[health_material][${healthMaterialIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    healthMaterialIndex++;
+}
+
+function addVaccineItem() {
+    const template = `
+        <div class="dynamic-item vaccine-item">
+            <select name="other_items[vaccine][${vaccineIndex}][id]">
+                <option value="">Select Vaccine</option>
+                {% for vaccine in vaccines %}
+                <option value="{{ vaccine.id }}">{{ vaccine.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="other_items[vaccine][${vaccineIndex}][quantity]" placeholder="Quantity" min="0" step="0.01" value="0">
+            <input type="number" name="other_items[vaccine][${vaccineIndex}][dose_number]" placeholder="Dose Number" min="1" value="1" style="display: none;">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('otherItems').insertAdjacentHTML('beforeend', template);
+    vaccineIndex++;
+}
+
+function addFeedReturnItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="feed_return_id[]">
+                <option value="">Select Feed</option>
+                {% for feed in feeds %}
+                <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="feed_return_quantity[]" placeholder="Quantity Returned (Packets)" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('feedReturnItems').insertAdjacentHTML('beforeend', template);
+}
+
+// Form validation
+document.querySelector('.update-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate feeds
+    const feedItems = document.querySelectorAll('select[name="feed_id[]"]');
+    const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
+    const selectedFeeds = new Set();
+    
+    for (let i = 0; i < feedItems.length; i++) {
+        if (feedItems[i].value) {
+            if (selectedFeeds.has(feedItems[i].value)) {
+                alert('Please do not select the same feed multiple times.');
+                return;
+            }
+            selectedFeeds.add(feedItems[i].value);
+            
+            if (!feedQuantities[i].value || parseFloat(feedQuantities[i].value) <= 0) {
+                alert('Please enter valid quantities for all selected feed items.');
+                return;
+            }
+        }
+    }
+    
+    // Validate miscellaneous items
+    const miscNames = document.querySelectorAll('input[name="misc_name[]"]');
+    const miscQuantities = document.querySelectorAll('input[name="misc_quantity_per_unit[]"]');
+    const miscUnits = document.querySelectorAll('select[name="misc_unit_type[]"]');
+    const miscPrices = document.querySelectorAll('input[name="misc_price_per_unit[]"]');
+    const miscUsed = document.querySelectorAll('input[name="misc_units_used[]"]');
+    
+    for (let i = 0; i < miscNames.length; i++) {
+        if (!miscNames[i].value || !miscQuantities[i].value || !miscUnits[i].value || 
+            !miscPrices[i].value || !miscUsed[i].value) {
+            alert('Please fill in all fields for miscellaneous items.');
+            return;
+        }
+        
+        if (parseFloat(miscQuantities[i].value) <= 0 || parseFloat(miscPrices[i].value) <= 0 || 
+            parseFloat(miscUsed[i].value) <= 0) {
+            alert('Please enter valid quantities and prices for miscellaneous items.');
+            return;
+        }
+    }
+    
+    // If everything passes, submit the form
+    this.submit();
+});
+</script>
+{% endblock %} 

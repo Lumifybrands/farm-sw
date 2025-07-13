@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block title %}Bismi Farms - Poultry Management System{% endblock %}
+
+{% block full_content %}
+<main class="hero">
+    <div class="hero-content">
+        <h1>Bismi Farms</h1>
+        <p>Modern Poultry Management Solutions</p>
+        
+        <div class="login-box">
+            <div class="login-box-header" onclick="toggleLoginForm()">
+                <button type="button" class="login-toggle-btn">Login</button>
+            </div>
+            <div class="login-box-content" id="loginBoxContent">
+                <form id="loginForm" action="{{ url_for('login') }}" method="POST">
+                    <div class="form-group">
+                        <input type="text" id="username" name="username" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" name="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="login-submit-btn">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %} 
