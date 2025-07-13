@@ -16,14 +16,9 @@
             <input type="text" id="batchSearch" placeholder="Search batches...">
             <i class="fas fa-search"></i>
         </div>
-        <div class="status-filter">
-            <button class="filter-btn active" data-status="active">Active</button>
-            <button class="filter-btn" data-status="ongoing">Ongoing</button>
-            <button class="filter-btn" data-status="closing">Closing</button>
-            <button class="filter-btn" data-status="closed">Closed</button>
-            <button class="filter-btn" data-status="all">All</button>
-            <button class="filter-btn" data-status="risk">Risk</button>
-        </div>
+        <button class="filter-sort-btn" onclick="openFilterModal()">
+            <i class="fas fa-filter"></i> Filter and Sort
+        </button>
         <button class="add-batch-btn" onclick="location.href='{{ url_for('add_batch') }}'">
             <i class="fas fa-plus"></i> Add Batch
         </button>
@@ -47,7 +42,7 @@
             </thead>
             <tbody>
                 {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
-                <tr data-status="{{ batch.status }}">
+                <tr data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
                     <td>{{ batch.batch_number }}</td>
                     <td>{{ batch.farm.name }} - {{ batch.farm_batch_number }}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
                     <td>{{ batch.total_birds }}</td>
@@ -120,7 +115,7 @@
         <!-- Mobile Card View -->
         <div class="batches-cards">
             {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
-            <div class="batch-card" data-status="{{ batch.status }}">
+            <div class="batch-card" data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
                 <div class="card-header">
                     <div class="batch-title">
                         <h3>{{ batch.batch_number }}</h3>
@@ -219,6 +214,133 @@
     </div>
 </div>
 
+<!-- Filter Modal -->
+<div id="filterModal" class="filter-modal">
+    <div class="filter-modal-content">
+        <div class="filter-modal-header">
+            <h2>Filter and Sort</h2>
+            <button class="close-modal" onclick="closeFilterModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="filter-modal-body">
+            <div class="filter-sidebar">
+                <div class="sidebar-option active" data-section="batch-status">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Batch Status</span>
+                </div>
+                <div class="sidebar-option" data-section="age">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Age</span>
+                </div>
+                <div class="sidebar-option" data-section="risk">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Risk</span>
+                </div>
+                <div class="sidebar-option" data-section="managers">
+                    <i class="fas fa-users"></i>
+                    <span>Managers</span>
+                </div>
+                <div class="sidebar-option clear-all" onclick="clearAllFilters()">
+                    <i class="fas fa-eraser"></i>
+                    <span>Clear All</span>
+                </div>
+            </div>
+            
+            <div class="filter-content">
+                <!-- Batch Status Section -->
+                <div class="filter-section active" id="batch-status-section">
+                    <h3>Batch Status</h3>
+                    <div class="filter-options">
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="active" checked>
+                            <span class="checkmark"></span>
+                            <span class="option-text">Active</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="ongoing">
+                            <span class="checkmark"></span>
+                            <span class="option-text">Ongoing</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="closing">
+                            <span class="checkmark"></span>
+                            <span class="option-text">Closing</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="closed">
+                            <span class="checkmark"></span>
+                            <span class="option-text">Closed</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="all">
+                            <span class="checkmark"></span>
+                            <span class="option-text">All</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Age Section -->
+                <div class="filter-section" id="age-section">
+                    <h3>Age Sorting</h3>
+                    <div class="filter-options">
+                        <label class="filter-radio">
+                            <input type="radio" name="age-sort" value="low-to-high">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Low to High</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="age-sort" value="high-to-low">
+                            <span class="radiomark"></span>
+                            <span class="option-text">High to Low</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Risk Section -->
+                <div class="filter-section" id="risk-section">
+                    <h3>Risk Sorting</h3>
+                    <div class="filter-options">
+                        <label class="filter-radio">
+                            <input type="radio" name="risk-sort" value="high-to-low">
+                            <span class="radiomark"></span>
+                            <span class="option-text">High to Low</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="risk-sort" value="low-to-high">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Low to High</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Managers Section -->
+                <div class="filter-section" id="managers-section">
+                    <h3>Managers</h3>
+                    <div class="filter-options">
+                        {% for manager in managers %}
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="{{ manager.employee.name if manager.employee else manager.username }}" data-manager-id="{{ manager.id }}">
+                            <span class="checkmark"></span>
+                            <span class="option-text">
+                                {{ manager.employee.name if manager.employee else manager.username }}
+                                <small>({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})</small>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filter-modal-footer">
+            <button class="btn-secondary" onclick="closeFilterModal()">Cancel</button>
+            <button class="btn-primary" onclick="applyFilters()">Confirm</button>
+        </div>
+    </div>
+</div>
+
 <style>
     .content-header h1 {
         color: #1a73e8;
@@ -269,29 +391,300 @@
         background-color: #c82333;
     }
 
-    .status-filter {
+    /* Filter and Sort Button */
+    .filter-sort-btn {
+        padding: 10px 20px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
         display: flex;
-        gap: 10px;
-        margin: 10px 0;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
     }
 
-    .filter-btn {
-        padding: 6px 12px;
-        border: 1px solid #1a73e8;
-        background: white;
+    .filter-sort-btn:hover {
+        background-color: #218838;
+        transform: translateY(-1px);
+    }
+
+    /* Filter Modal Styles */
+    .filter-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+    }
+
+    .filter-modal-content {
+        position: relative;
+        background-color: white;
+        margin: 5% auto;
+        width: 90%;
+        max-width: 800px;
+        height: 80%;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .filter-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 30px;
+        border-bottom: 1px solid #e2e8f0;
+        background-color: #f8f9fa;
+    }
+
+    .filter-modal-header h2 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.5rem;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #718096;
+        padding: 5px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .close-modal:hover {
+        background-color: #e2e8f0;
+        color: #2d3748;
+    }
+
+    .filter-modal-body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .filter-sidebar {
+        width: 250px;
+        background-color: #f8f9fa;
+        border-right: 1px solid #e2e8f0;
+        padding: 20px 0;
+        overflow-y: auto;
+    }
+
+    .sidebar-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+
+    .sidebar-option:hover {
+        background-color: #e8f0fe;
+        border-left-color: #1a73e8;
+    }
+
+    .sidebar-option.active {
+        background-color: #e8f0fe;
+        border-left-color: #1a73e8;
         color: #1a73e8;
+    }
+
+    .sidebar-option.clear-all {
+        margin-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+        color: #dc3545;
+    }
+
+    .sidebar-option.clear-all:hover {
+        background-color: #ffebee;
+        border-left-color: #dc3545;
+    }
+
+    .sidebar-option i {
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .filter-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+    }
+
+    .filter-section {
+        display: none;
+    }
+
+    .filter-section.active {
+        display: block;
+    }
+
+    .filter-section h3 {
+        margin: 0 0 20px 0;
+        color: #2d3748;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+    }
+
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* Custom Checkbox Styles */
+    .filter-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-checkbox:hover {
+        background-color: #f8f9fa;
+    }
+
+    .filter-checkbox input[type="checkbox"] {
+        display: none;
+    }
+
+    .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e0;
         border-radius: 4px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .filter-checkbox input[type="checkbox"]:checked + .checkmark {
+        background-color: #1a73e8;
+        border-color: #1a73e8;
+    }
+
+    .filter-checkbox input[type="checkbox"]:checked + .checkmark::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .option-text {
+        font-size: 1rem;
+        color: #2d3748;
+    }
+
+    .option-text small {
+        color: #718096;
+        font-size: 0.85rem;
+        margin-left: 5px;
+    }
+
+    /* Custom Radio Styles */
+    .filter-radio {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-radio:hover {
+        background-color: #f8f9fa;
+    }
+
+    .filter-radio input[type="radio"] {
+        display: none;
+    }
+
+    .radiomark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e0;
+        border-radius: 50%;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .filter-radio input[type="radio"]:checked + .radiomark {
+        border-color: #1a73e8;
+    }
+
+    .filter-radio input[type="radio"]:checked + .radiomark::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #1a73e8;
+        border-radius: 50%;
+    }
+
+    .filter-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        padding: 20px 30px;
+        border-top: 1px solid #e2e8f0;
+        background-color: #f8f9fa;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 500;
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
-    .filter-btn:hover {
-        background-color: #e8f0fe;
-    }
-
-    .filter-btn.active {
+    .btn-primary {
         background-color: #1a73e8;
         color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
     }
 
     .status-badge {
@@ -595,21 +988,75 @@
             width: 100%;
         }
 
-        .status-filter {
+        .filter-sort-btn {
             width: 100%;
-            overflow-x: auto;
-            padding-bottom: 5px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .filter-btn {
-            white-space: nowrap;
-            padding: 8px 12px;
+            justify-content: center;
         }
 
         .add-batch-btn {
             width: 100%;
             justify-content: center;
+        }
+
+        /* Mobile Modal Styles */
+        .filter-modal-content {
+            width: 95%;
+            height: 90%;
+            margin: 2% auto;
+        }
+
+        .filter-sidebar {
+            width: 200px;
+        }
+
+        .filter-content {
+            padding: 20px;
+        }
+
+        .filter-modal-header {
+            padding: 15px 20px;
+        }
+
+        .filter-modal-footer {
+            padding: 15px 20px;
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .filter-modal-content {
+                width: 98%;
+                height: 95%;
+                margin: 1% auto;
+            }
+
+            .filter-sidebar {
+                width: 150px;
+            }
+
+            .filter-content {
+                padding: 15px;
+            }
+
+            .filter-modal-header {
+                padding: 10px 15px;
+            }
+
+            .filter-modal-footer {
+                padding: 10px 15px;
+            }
+
+            .sidebar-option {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            .filter-section h3 {
+                font-size: 1.1rem;
+            }
+
+            .option-text {
+                font-size: 0.9rem;
+            }
         }
     }
 
@@ -704,44 +1151,63 @@ function deleteBatch(batchId) {
     }
 }
 
+// Global variables for filter state
+let currentFilters = {
+    batchStatus: ['active'],
+    ageSort: null,
+    riskSort: null,
+    managers: []
+};
+
 // Function to filter batches
-function filterBatches(searchText, status) {
+function filterBatches(searchText, filters) {
     // Filter table rows
     const rows = document.querySelectorAll('.batches-table tbody tr');
     const sortedRows = Array.from(rows);
     
-    if (status === 'active') {
-        // Show only ongoing and closing batches
-        sortedRows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const rowStatus = row.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = rowStatus === 'ongoing' || rowStatus === 'closing';
-            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-        });
+    // Apply filters
+    sortedRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStatus = row.getAttribute('data-status');
+        const batchId = row.getAttribute('data-batch-id');
         
-        // Sort by batch number in descending order
+        const matchesSearch = text.includes(searchText.toLowerCase());
+        
+        // Handle status filtering with special case for 'active'
+        let matchesStatus = false;
+        if (filters.batchStatus.includes('all')) {
+            matchesStatus = true;
+        } else if (filters.batchStatus.includes('active')) {
+            // Active means ongoing or closing batches
+            matchesStatus = rowStatus === 'ongoing' || rowStatus === 'closing';
+        } else {
+            matchesStatus = filters.batchStatus.includes(rowStatus);
+        }
+        
+        // For manager filtering, check if the batch's manager ID matches any selected manager
+        const batchManagerId = row.getAttribute('data-manager-id');
+        const matchesManager = filters.managers.length === 0 || 
+            (batchManagerId && filters.managers.some(managerName => {
+                // Find the manager ID that corresponds to the selected manager name
+                const managerCheckbox = document.querySelector(`input[value="${managerName}"]`);
+                return managerCheckbox && managerCheckbox.getAttribute('data-manager-id') === batchManagerId;
+            }));
+        
+        row.style.display = matchesSearch && matchesStatus && matchesManager ? '' : 'none';
+    });
+
+    // Apply sorting
+    if (filters.ageSort) {
         sortedRows.sort((a, b) => {
-            const aBatchNumber = a.querySelector('td:first-child').textContent;
-            const bBatchNumber = b.querySelector('td:first-child').textContent;
-            return bBatchNumber.localeCompare(aBatchNumber);
+            const aAge = parseInt(a.querySelector('td:nth-child(6)').textContent);
+            const bAge = parseInt(b.querySelector('td:nth-child(6)').textContent);
+            return filters.ageSort === 'low-to-high' ? aAge - bAge : bAge - aAge;
         });
-    } else if (status === 'risk') {
-        // Sort by priority and show only ongoing and closing batches
+    } else if (filters.riskSort) {
         sortedRows.sort((a, b) => {
-            const aStatus = a.getAttribute('data-status');
-            const bStatus = b.getAttribute('data-status');
-            
-            // Only consider ongoing and closing batches
-            if ((aStatus !== 'ongoing' && aStatus !== 'closing') || 
-                (bStatus !== 'ongoing' && bStatus !== 'closing')) {
-                return 0;
-            }
-            
             const aRemarks = a.querySelector('.remarks-badge');
             const bRemarks = b.querySelector('.remarks-badge');
             
-            // Priority order: high > medium > low > no remarks
             const getPriority = (badge) => {
                 if (!badge) return 4;
                 if (badge.classList.contains('priority-high')) return 1;
@@ -753,28 +1219,10 @@ function filterBatches(searchText, status) {
             const aPriority = getPriority(aRemarks);
             const bPriority = getPriority(bRemarks);
             
-            return aPriority - bPriority;
-        });
-        
-        // Apply search filter and show/hide rows
-        sortedRows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const rowStatus = row.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = rowStatus === 'ongoing' || rowStatus === 'closing';
-            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            return filters.riskSort === 'high-to-low' ? aPriority - bPriority : bPriority - aPriority;
         });
     } else {
-        // Original filtering logic for other statuses
-        sortedRows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const rowStatus = row.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = status === 'all' || rowStatus === status;
-            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-        });
-        
-        // Sort by batch number in descending order
+        // Default sort by batch number in descending order
         sortedRows.sort((a, b) => {
             const aBatchNumber = a.querySelector('td:first-child').textContent;
             const bBatchNumber = b.querySelector('td:first-child').textContent;
@@ -794,31 +1242,43 @@ function filterBatches(searchText, status) {
     const cards = document.querySelectorAll('.batch-card');
     const sortedCards = Array.from(cards);
     
-    if (status === 'active') {
-        sortedCards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            const cardStatus = card.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = cardStatus === 'ongoing' || cardStatus === 'closing';
-            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
-        });
+    sortedCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const cardStatus = card.getAttribute('data-status');
+        const batchManagerId = card.getAttribute('data-manager-id');
         
-        // Sort by batch number in descending order
+        const matchesSearch = text.includes(searchText.toLowerCase());
+        
+        // Handle status filtering with special case for 'active'
+        let matchesStatus = false;
+        if (filters.batchStatus.includes('all')) {
+            matchesStatus = true;
+        } else if (filters.batchStatus.includes('active')) {
+            // Active means ongoing or closing batches
+            matchesStatus = cardStatus === 'ongoing' || cardStatus === 'closing';
+        } else {
+            matchesStatus = filters.batchStatus.includes(cardStatus);
+        }
+        
+        const matchesManager = filters.managers.length === 0 || 
+            (batchManagerId && filters.managers.some(managerName => {
+                // Find the manager ID that corresponds to the selected manager name
+                const managerCheckbox = document.querySelector(`input[value="${managerName}"]`);
+                return managerCheckbox && managerCheckbox.getAttribute('data-manager-id') === batchManagerId;
+            }));
+        
+        card.style.display = matchesSearch && matchesStatus && matchesManager ? '' : 'none';
+    });
+
+    // Apply sorting to cards
+    if (filters.ageSort) {
         sortedCards.sort((a, b) => {
-            const aBatchNumber = a.querySelector('.batch-title h3').textContent;
-            const bBatchNumber = b.querySelector('.batch-title h3').textContent;
-            return bBatchNumber.localeCompare(aBatchNumber);
+            const aAge = parseInt(a.querySelector('.stat-value').textContent);
+            const bAge = parseInt(b.querySelector('.stat-value').textContent);
+            return filters.ageSort === 'low-to-high' ? aAge - bAge : bAge - aAge;
         });
-    } else if (status === 'risk') {
+    } else if (filters.riskSort) {
         sortedCards.sort((a, b) => {
-            const aStatus = a.getAttribute('data-status');
-            const bStatus = b.getAttribute('data-status');
-            
-            if ((aStatus !== 'ongoing' && aStatus !== 'closing') || 
-                (bStatus !== 'ongoing' && bStatus !== 'closing')) {
-                return 0;
-            }
-            
             const aRemarks = a.querySelector('.remarks-badge');
             const bRemarks = b.querySelector('.remarks-badge');
             
@@ -833,26 +1293,10 @@ function filterBatches(searchText, status) {
             const aPriority = getPriority(aRemarks);
             const bPriority = getPriority(bRemarks);
             
-            return aPriority - bPriority;
-        });
-        
-        sortedCards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            const cardStatus = card.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = cardStatus === 'ongoing' || cardStatus === 'closing';
-            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            return filters.riskSort === 'high-to-low' ? aPriority - bPriority : bPriority - aPriority;
         });
     } else {
-        sortedCards.forEach(card => {
-            const text = card.textContent.toLowerCase();
-            const cardStatus = card.getAttribute('data-status');
-            const matchesSearch = text.includes(searchText.toLowerCase());
-            const matchesStatus = status === 'all' || cardStatus === status;
-            card.style.display = matchesSearch && matchesStatus ? '' : 'none';
-        });
-        
-        // Sort by batch number in descending order
+        // Default sort by batch number in descending order
         sortedCards.sort((a, b) => {
             const aBatchNumber = a.querySelector('.batch-title h3').textContent;
             const bBatchNumber = b.querySelector('.batch-title h3').textContent;
@@ -869,34 +1313,114 @@ function filterBatches(searchText, status) {
     });
 }
 
+// Modal functions
+function openFilterModal() {
+    document.getElementById('filterModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFilterModal() {
+    document.getElementById('filterModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function clearAllFilters() {
+    // Reset all checkboxes and radio buttons
+    document.querySelectorAll('.filter-checkbox input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.filter-radio input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+    
+    // Set default active status
+    document.querySelector('input[value="active"]').checked = true;
+    
+    // Reset current filters
+    currentFilters = {
+        batchStatus: ['active'],
+        ageSort: null,
+        riskSort: null,
+        managers: []
+    };
+    
+    // Apply default filter
+    const searchText = document.getElementById('batchSearch').value;
+    filterBatches(searchText, currentFilters);
+    
+    closeFilterModal();
+}
+
+function applyFilters() {
+    // Collect batch status filters
+    const batchStatusFilters = [];
+    document.querySelectorAll('#batch-status-section input[type="checkbox"]:checked').forEach(checkbox => {
+        batchStatusFilters.push(checkbox.value);
+    });
+    
+    // Collect age sort
+    const ageSort = document.querySelector('input[name="age-sort"]:checked')?.value || null;
+    
+    // Collect risk sort
+    const riskSort = document.querySelector('input[name="risk-sort"]:checked')?.value || null;
+    
+    // Collect manager filters
+    const managerFilters = [];
+    document.querySelectorAll('#managers-section input[type="checkbox"]:checked').forEach(checkbox => {
+        managerFilters.push(checkbox.value);
+    });
+    
+    // Update current filters
+    currentFilters = {
+        batchStatus: batchStatusFilters.length > 0 ? batchStatusFilters : ['active'],
+        ageSort: ageSort,
+        riskSort: riskSort,
+        managers: managerFilters
+    };
+    
+    // Apply filters
+    const searchText = document.getElementById('batchSearch').value;
+    filterBatches(searchText, currentFilters);
+    
+    closeFilterModal();
+}
+
 // Search functionality
 document.getElementById('batchSearch').addEventListener('input', function(e) {
     const searchText = e.target.value;
-    const activeStatus = document.querySelector('.filter-btn.active').getAttribute('data-status');
-    filterBatches(searchText, activeStatus);
+    filterBatches(searchText, currentFilters);
 });
 
-// Status filter functionality
-document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        // Update active button
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        
-        // Filter batches
-        const status = this.getAttribute('data-status');
-        const searchText = document.getElementById('batchSearch').value;
-        filterBatches(searchText, status);
-    });
-});
-
-// Add mobile-specific event handlers
+// Sidebar navigation
 document.addEventListener('DOMContentLoaded', function() {
-    // Trigger the active filter by default
-    const activeFilter = document.querySelector('.filter-btn[data-status="active"]');
-    if (activeFilter) {
-        activeFilter.click();
-    }
+    // Sidebar option click handlers
+    document.querySelectorAll('.sidebar-option').forEach(option => {
+        option.addEventListener('click', function() {
+            if (this.classList.contains('clear-all')) return;
+            
+            // Update active sidebar option
+            document.querySelectorAll('.sidebar-option').forEach(opt => opt.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show corresponding section
+            const sectionId = this.getAttribute('data-section') + '-section';
+            document.querySelectorAll('.filter-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+        });
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('filterModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeFilterModal();
+        }
+    });
+
+    // Apply default filter on page load
+    const searchText = document.getElementById('batchSearch').value;
+    filterBatches(searchText, currentFilters);
 
     if ('ontouchstart' in window) {
         // Improve touch feedback for cards
