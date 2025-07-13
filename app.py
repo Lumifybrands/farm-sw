@@ -1279,8 +1279,12 @@ def delete_farm(farm_id):
 @login_required
 def batches():
     batches = Batch.query.all()
+    farms = Farm.query.all()
+    managers = User.query.filter(User.user_type.in_(['assistant_manager', 'senior_manager'])).all()
     return render_template('batches.html', 
                          batches=batches,
+                         farms=farms,
+                         managers=managers,
                          now=datetime.now(),
                          timedelta=timedelta,  # Add timedelta to template context
                          get_body_weight_and_feed_consumption=get_body_weight_and_feed_consumption)  # Pass function to template
