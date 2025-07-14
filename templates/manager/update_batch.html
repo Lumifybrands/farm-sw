@@ -45,6 +45,15 @@
                     <label>Feed Stock</label>
                     <span>{{ batch.feed_stock }}</span>
                 </div>
+                <div class="info-item">
+                    <label>Last Update</label>
+                    {% if batch.updates %}
+                        {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+                        <span>{{ last_update.date.strftime('%d-%m-%Y') }}</span>
+                    {% else %}
+                        <span>No updates yet</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
 

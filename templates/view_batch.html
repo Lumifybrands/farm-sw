@@ -230,7 +230,7 @@
         width: 100%;
     }
 
-    .today-btn {
+    .Batch-btn {
         width: 100%;
         justify-content: center;
         padding: 10px;
@@ -445,7 +445,7 @@
     pointer-events: none;
 }
 
-.today-btn {
+.Batch-btn {
     padding: 12px 24px;
     background: #4299e1;
     color: white;
@@ -461,12 +461,12 @@
     white-space: nowrap;
 }
 
-.today-btn:hover {
+.Batch-btn:hover {
     background: #3182ce;
     transform: translateY(-1px);
 }
 
-.today-btn:active {
+.Batch-btn:active {
     transform: translateY(0);
 }
 
@@ -816,7 +816,7 @@
         width: 100%;
     }
 
-    .today-btn {
+    .Batch-btn {
         width: 100%;
         justify-content: center;
     }
@@ -1312,6 +1312,12 @@
     color: #2d3748;
 }
 
+.add-btn {
+    text-decoration: none;
+    max-width: fit-content;
+    margin-top: 1.6vh;
+}
+
 @keyframes modalSlideIn {
     from {
         transform: translateY(-20px);
@@ -1613,6 +1619,10 @@
                 <div class="info-value">{{ "%.2f"|format(batch.feed_stock) }} packets</div>
             </div>
             <div class="info-box">
+                <div class="info-label">Feed Delivered</div>
+                <div class="info-value">{{ "%.2f"|format(batch.feed_usage + batch.feed_stock) }}</div>
+            </div>
+            <div class="info-box">
                 <div class="info-label">Manager</div>
                 <div class="info-value">
                     {% if batch.manager %}
@@ -1794,13 +1804,19 @@
 
 <!-- Batch Updates Section -->
 <div id="batch-updates" class="section-content">
-        <div class="update-selector">
+    
+    <div class="update-selector">
         <div class="date-picker-container">
             <input type="text" id="updateDate" value="{{ (batch.updates|sort(attribute='date', reverse=true)|first).date|strftime('%Y-%m-%d') if batch.updates else '' }}" readonly>
         </div>
-            <button onclick="setToday()" class="today-btn">
-                <i class="fas fa-calendar-day"></i> Today
-            </button>
+        <button onclick="setToday()" class="Batch-btn">
+            <i class="fas fa-calendar-day"></i> Today
+        </button>
+        <div style="margin-bottom: 16px; text-align: right;">
+            <a href="/batches/{{ batch.id }}/update" class="Batch-btn add-btn">
+                <i class="fas fa-plus"></i> Add Batch Update
+            </a>
+        </div>
         <div class="date-picker-legend">
             <div class="legend-item">
                 <span class="legend-dot schedule"></span>
@@ -1811,396 +1827,396 @@
                 <span>Batch Start</span>
             </div>
         </div>
-        </div>
-        <div id="updateDetails" class="update-details">
-            {% if batch.updates %}
-                {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
-                <div class="update-header">
-                    <div class="update-date">
-                        <i class="fas fa-calendar"></i>
-                        <span>{{ last_update.date.strftime('%Y-%m-%d') }}</span>
-                    </div>
-                    <div class="update-actions">
-                        <a href="/batches/{{ batch.id }}/update/{{ last_update.date.strftime('%Y-%m-%d') }}/edit" class="edit-update-btn">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                        <button onclick="deleteBatchUpdate('{{ last_update.date.strftime('%Y-%m-%d') }}')" class="delete-update-btn">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-                <div class="update-content">
-                    <div class="info-section">
-                        <div class="info-section-title">
-                            <i class="fas fa-info-circle"></i>
-                            Basic Information
-                        </div>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <label>Mortality Count</label>
-                                <span>{{ last_update.mortality_count }}</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Feed Used</label>
-                                <span>{{ "%.2f"|format(last_update.feed_used) }} packets</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Average Weight</label>
-                                <span>{{ "%.2f"|format(last_update.avg_weight) }} kg</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Male Weight</label>
-                                <span>{{ "%.2f"|format(last_update.male_weight) }} kg</span>
-                            </div>
-                            <div class="info-item">
-                                <label>Female Weight</label>
-                                <span>{{ "%.2f"|format(last_update.female_weight) }} kg</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {% if last_update.remarks %}
-                    <div class="info-section">
-                        <div class="info-section-title">
-                            <i class="fas fa-sticky-note"></i>
-                            Remarks
-                            {% if last_update.remarks_priority %}
-                            <span class="priority-badge priority-{{ last_update.remarks_priority }}">
-                                {{ last_update.remarks_priority|title }}
-                            </span>
-                            {% endif %}
-                        </div>
-                        <div class="remarks-content">
-                            {{ last_update.remarks }}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if last_update.feeds %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fa-solid fa-seedling"></i>
-                                <span>Feeds Used</span>
-                            </div>
-                            <div class="summary">
-                                {% for feed in last_update.feeds %}
-                                <div class="item">
-                                    <i class="fas fa-box"></i>
-                                    <span>{{ feed.brand }} - {{ feed.category }} ({{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for feed in last_update.feeds %}
-                                <div class="item-card feed-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ feed.brand }} - {{ feed.category }}</span>
-                                        <span class="quantity-badge">
-                                            <i class="fas fa-box"></i>
-                                            {{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets
-                                        </span>
-                                    </div>
-                                    <div class="item-details">
-                                        <div class="detail-row">
-                                            <label>Quantity Per Unit</label>
-                                            <span>{{ "%.2f"|format(last_update.get_feed_quantity_per_unit(feed.id)) }} kg</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <label>Price at Time</label>
-                                            <span>₹{{ "%.2f"|format(last_update.get_feed_price(feed.id)) }}</span>
-                                        </div>
-                                        <div class="detail-row highlight">
-                                            <label>Total Cost</label>
-                                            <span>₹{{ "%.2f"|format(last_update.get_feed_quantity(feed.id) * last_update.get_feed_price(feed.id)) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if last_update.items %}
-                    {% set medicine_items = last_update.items | selectattr('item_type', 'equalto', 'medicine') | list %}
-                    {% if medicine_items %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fas fa-pills"></i>
-                                <span>Medicines</span>
-                            </div>
-                            <div class="summary">
-                                {% for item in medicine_items %}
-                                {% set medicine = item.get_item() %}
-                                <div class="item">
-                                    <i class="fas fa-capsules"></i>
-                                    <span>{{ medicine.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                            
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for item in medicine_items %}
-                                {% set medicine = item.get_item() %}
-                                <div class="item-card medicine-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ medicine.name }}</span>
-                                        <span class="quantity-badge">
-                                            <i class="fas fa-capsules"></i>
-                                            {{ "%.2f"|format(item.quantity) }} units
-                                        </span>
-                                    </div>
-                                    <div class="item-details">
-                                        <div class="detail-row">
-                                            <label>Quantity Per Unit</label>
-                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <label>Price at Time</label>
-                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
-                                        </div>
-                                        <div class="detail-row highlight">
-                                            <label>Total Cost</label>
-                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% set health_items = last_update.items | selectattr('item_type', 'equalto', 'health_material') | list %}
-                    {% if health_items %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fas fa-medkit"></i>
-                                <span>Health Materials</span>
-                            </div>
-                            <div class="summary">
-                                {% for item in health_items %}
-                                {% set material = item.get_item() %}
-                                <div class="item">
-                                    <i class="fas fa-box-medical"></i>
-                                    <span>{{ material.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                            
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for item in health_items %}
-                                {% set material = item.get_item() %}
-                                <div class="item-card health-material-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ material.name }}</span>
-                                        <span class="quantity-badge">
-                                            <i class="fas fa-box-medical"></i>
-                                            {{ "%.2f"|format(item.quantity) }} units
-                                        </span>
-                                    </div>
-                                    <div class="item-details">
-                                        <div class="detail-row">
-                                            <label>Quantity Per Unit</label>
-                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <label>Price at Time</label>
-                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
-                                        </div>
-                                        <div class="detail-row highlight">
-                                            <label>Total Cost</label>
-                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% set vaccine_items = last_update.items | selectattr('item_type', 'equalto', 'vaccine') | list %}
-                    {% if vaccine_items %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fas fa-syringe"></i>
-                                <span>Vaccines</span>
-                            </div>
-                            <div class="summary">
-                                {% for item in vaccine_items %}
-                                {% set vaccine = item.get_item() %}
-                                <div class="item">
-                                    <i class="fas fa-syringe"></i>
-                                    <span>{{ vaccine.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                            
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for item in vaccine_items %}
-                                {% set vaccine = item.get_item() %}
-                                <div class="item-card vaccine-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ vaccine.name }}</span>
-                                        <div class="item-badges">
-                                            {% if item.schedule_id %}
-                                                <span class="scheduled-badge">
-                                                    <i class="fas fa-calendar-check"></i> Scheduled
-                                                </span>
-                                            {% else %}
-                                                <span class="extra-badge">
-                                                    <i class="fas fa-plus-circle"></i> Extra
-                                                </span>
-                                            {% endif %}
-                                            <span class="quantity-badge">
-                                                <i class="fas fa-syringe"></i>
-                                                {{ "%.2f"|format(item.quantity) }} units
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="item-details">
-                                        {% if item.schedule_id %}
-                                            <div class="detail-row">
-                                                <label>Dose Number</label>
-                                                <span>{{ item.dose_number }}</span>
-                                            </div>
-                                        {% endif %}
-                                        <div class="detail-row">
-                                            <label>Quantity Per Unit</label>
-                                            <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <label>Price at Time</label>
-                                            <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
-                                        </div>
-                                        <div class="detail-row highlight">
-                                            <label>Total Cost</label>
-                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
-                                        </div>
-                                        {% if item.notes %}
-                                            <div class="detail-row notes">
-                                                <label>Notes</label>
-                                                <span>{{ item.notes }}</span>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endif %}
-
-                    {% if last_update.miscellaneous_items %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fas fa-box-open"></i>
-                                <span>Miscellaneous Items</span>
-                            </div>
-                            <div class="summary">
-                                {% for item in last_update.miscellaneous_items %}
-                                <div class="item">
-                                    <i class="fas fa-boxes"></i>
-                                    <span>{{ item.name }} ({{ "%.2f"|format(item.units_used) }} units)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                            
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for item in last_update.miscellaneous_items %}
-                                <div class="item-card misc-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ item.name }}</span>
-                                        <span class="quantity-badge">
-                                            <i class="fas fa-boxes"></i>
-                                            {{ "%.2f"|format(item.units_used) }} units
-                                        </span>
-                                    </div>
-                                    <div class="item-details">
-                                        <div class="detail-row">
-                                            <label>Quantity Per Unit</label>
-                                            <span>{{ "%.2f"|format(item.quantity_per_unit) }} {{ item.unit_type }}</span>
-                                        </div>
-                                        <div class="detail-row">
-                                            <label>Price at Time</label>
-                                            <span>₹{{ "%.2f"|format(item.price_per_unit) }}</span>
-                                        </div>
-                                        <div class="detail-row highlight">
-                                            <label>Total Cost</label>
-                                            <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if last_update.feed_returns %}
-                    <div class="expandable-item">
-                        <div class="expandable-header" onclick="toggleExpandable(this)">
-                            <div class="title">
-                                <i class="fas fa-undo"></i>
-                                <span>Feed Stock Returns</span>
-                            </div>
-                            <div class="summary">
-                                {% for ret in last_update.feed_returns %}
-                                <div class="item">
-                                    <i class="fas fa-box"></i>
-                                    <span>{{ ret.feed.brand }} - {{ ret.feed.category }} ({{ "%.2f"|format(ret.quantity) }} packets)</span>
-                                </div>
-                                {% endfor %}
-                                <i class="fas fa-chevron-down expand-icon"></i>
-                            </div>
-                        </div>
-                        <div class="expandable-content">
-                            <div class="items-grid">
-                                {% for ret in last_update.feed_returns %}
-                                <div class="item-card feed-card">
-                                    <div class="item-header">
-                                        <span class="item-name">{{ ret.feed.brand }} - {{ ret.feed.category }}</span>
-                                        <span class="quantity-badge">
-                                            <i class="fas fa-box"></i>
-                                            {{ "%.2f"|format(ret.quantity) }} packets
-                                        </span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            {% else %}
-                <div class="no-updates">
-                    <i class="fas fa-info-circle"></i>
-                    <p>No updates available for this batch</p>
-                </div>
-            {% endif %}
-        </div>
     </div>
+    <div id="updateDetails" class="update-details">
+        {% if batch.updates %}
+            {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
+            <div class="update-header">
+                <div class="update-date">
+                    <i class="fas fa-calendar"></i>
+                    <span>{{ last_update.date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <div class="update-actions">
+                    <a href="/batches/{{ batch.id }}/update/{{ last_update.date.strftime('%Y-%m-%d') }}/edit" class="edit-update-btn">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button onclick="deleteBatchUpdate('{{ last_update.date.strftime('%Y-%m-%d') }}')" class="delete-update-btn">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+            <div class="update-content">
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas fa-info-circle"></i>
+                        Basic Information
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Mortality Count</label>
+                            <span>{{ last_update.mortality_count }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Feed Used</label>
+                            <span>{{ "%.2f"|format(last_update.feed_used) }} packets</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Average Weight</label>
+                            <span>{{ "%.2f"|format(last_update.avg_weight) }} kg</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Male Weight</label>
+                            <span>{{ "%.2f"|format(last_update.male_weight) }} kg</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Female Weight</label>
+                            <span>{{ "%.2f"|format(last_update.female_weight) }} kg</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if last_update.remarks %}
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas fa-sticky-note"></i>
+                        Remarks
+                        {% if last_update.remarks_priority %}
+                        <span class="priority-badge priority-{{ last_update.remarks_priority }}">
+                            {{ last_update.remarks_priority|title }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="remarks-content">
+                        {{ last_update.remarks }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if last_update.feeds %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fa-solid fa-seedling"></i>
+                            <span>Feeds Used</span>
+                        </div>
+                        <div class="summary">
+                            {% for feed in last_update.feeds %}
+                            <div class="item">
+                                <i class="fas fa-box"></i>
+                                <span>{{ feed.brand }} - {{ feed.category }} ({{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for feed in last_update.feeds %}
+                            <div class="item-card feed-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ feed.brand }} - {{ feed.category }}</span>
+                                    <span class="quantity-badge">
+                                        <i class="fas fa-box"></i>
+                                        {{ "%.2f"|format(last_update.get_feed_quantity(feed.id)) }} packets
+                                    </span>
+                                </div>
+                                <div class="item-details">
+                                    <div class="detail-row">
+                                        <label>Quantity Per Unit</label>
+                                        <span>{{ "%.2f"|format(last_update.get_feed_quantity_per_unit(feed.id)) }} kg</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <label>Price at Time</label>
+                                        <span>₹{{ "%.2f"|format(last_update.get_feed_price(feed.id)) }}</span>
+                                    </div>
+                                    <div class="detail-row highlight">
+                                        <label>Total Cost</label>
+                                        <span>₹{{ "%.2f"|format(last_update.get_feed_quantity(feed.id) * last_update.get_feed_price(feed.id)) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if last_update.items %}
+                {% set medicine_items = last_update.items | selectattr('item_type', 'equalto', 'medicine') | list %}
+                {% if medicine_items %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fas fa-pills"></i>
+                            <span>Medicines</span>
+                        </div>
+                        <div class="summary">
+                            {% for item in medicine_items %}
+                            {% set medicine = item.get_item() %}
+                            <div class="item">
+                                <i class="fas fa-capsules"></i>
+                                <span>{{ medicine.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                        
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for item in medicine_items %}
+                            {% set medicine = item.get_item() %}
+                            <div class="item-card medicine-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ medicine.name }}</span>
+                                    <span class="quantity-badge">
+                                        <i class="fas fa-capsules"></i>
+                                        {{ "%.2f"|format(item.quantity) }} units
+                                    </span>
+                                </div>
+                                <div class="item-details">
+                                    <div class="detail-row">
+                                        <label>Quantity Per Unit</label>
+                                        <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <label>Price at Time</label>
+                                        <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                    </div>
+                                    <div class="detail-row highlight">
+                                        <label>Total Cost</label>
+                                        <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% set health_items = last_update.items | selectattr('item_type', 'equalto', 'health_material') | list %}
+                {% if health_items %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fas fa-medkit"></i>
+                            <span>Health Materials</span>
+                        </div>
+                        <div class="summary">
+                            {% for item in health_items %}
+                            {% set material = item.get_item() %}
+                            <div class="item">
+                                <i class="fas fa-box-medical"></i>
+                                <span>{{ material.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                        
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for item in health_items %}
+                            {% set material = item.get_item() %}
+                            <div class="item-card health-material-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ material.name }}</span>
+                                    <span class="quantity-badge">
+                                        <i class="fas fa-box-medical"></i>
+                                        {{ "%.2f"|format(item.quantity) }} units
+                                    </span>
+                                </div>
+                                <div class="item-details">
+                                    <div class="detail-row">
+                                        <label>Quantity Per Unit</label>
+                                        <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <label>Price at Time</label>
+                                        <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                    </div>
+                                    <div class="detail-row highlight">
+                                        <label>Total Cost</label>
+                                        <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% set vaccine_items = last_update.items | selectattr('item_type', 'equalto', 'vaccine') | list %}
+                {% if vaccine_items %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fas fa-syringe"></i>
+                            <span>Vaccines</span>
+                        </div>
+                        <div class="summary">
+                            {% for item in vaccine_items %}
+                            {% set vaccine = item.get_item() %}
+                            <div class="item">
+                                <i class="fas fa-syringe"></i>
+                                <span>{{ vaccine.name }} ({{ "%.2f"|format(item.quantity) }} units)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                        
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for item in vaccine_items %}
+                            {% set vaccine = item.get_item() %}
+                            <div class="item-card vaccine-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ vaccine.name }}</span>
+                                    <div class="item-badges">
+                                        {% if item.schedule_id %}
+                                            <span class="scheduled-badge">
+                                                <i class="fas fa-calendar-check"></i> Scheduled
+                                            </span>
+                                        {% else %}
+                                            <span class="extra-badge">
+                                                <i class="fas fa-plus-circle"></i> Extra
+                                            </span>
+                                        {% endif %}
+                                        <span class="quantity-badge">
+                                            <i class="fas fa-syringe"></i>
+                                            {{ "%.2f"|format(item.quantity) }} units
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="item-details">
+                                    {% if item.schedule_id %}
+                                        <div class="detail-row">
+                                            <label>Dose Number</label>
+                                            <span>{{ item.dose_number }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <div class="detail-row">
+                                        <label>Quantity Per Unit</label>
+                                        <span>{{ "%.2f"|format(item.quantity_per_unit_at_time) }} {{ item.unit_type }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <label>Price at Time</label>
+                                        <span>₹{{ "%.2f"|format(item.price_at_time) }}</span>
+                                    </div>
+                                    <div class="detail-row highlight">
+                                        <label>Total Cost</label>
+                                        <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                    </div>
+                                    {% if item.notes %}
+                                        <div class="detail-row notes">
+                                            <label>Notes</label>
+                                            <span>{{ item.notes }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                {% if last_update.miscellaneous_items %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fas fa-box-open"></i>
+                            <span>Miscellaneous Items</span>
+                        </div>
+                        <div class="summary">
+                            {% for item in last_update.miscellaneous_items %}
+                            <div class="item">
+                                <i class="fas fa-boxes"></i>
+                                <span>{{ item.name }} ({{ "%.2f"|format(item.units_used) }} units)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                        
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for item in last_update.miscellaneous_items %}
+                            <div class="item-card misc-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ item.name }}</span>
+                                    <span class="quantity-badge">
+                                        <i class="fas fa-boxes"></i>
+                                        {{ "%.2f"|format(item.units_used) }} units
+                                    </span>
+                                </div>
+                                <div class="item-details">
+                                    <div class="detail-row">
+                                        <label>Quantity Per Unit</label>
+                                        <span>{{ "%.2f"|format(item.quantity_per_unit) }} {{ item.unit_type }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <label>Price at Time</label>
+                                        <span>₹{{ "%.2f"|format(item.price_per_unit) }}</span>
+                                    </div>
+                                    <div class="detail-row highlight">
+                                        <label>Total Cost</label>
+                                        <span>₹{{ "%.2f"|format(item.total_cost) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if last_update.feed_returns %}
+                <div class="expandable-item">
+                    <div class="expandable-header" onclick="toggleExpandable(this)">
+                        <div class="title">
+                            <i class="fas fa-undo"></i>
+                            <span>Feed Stock Returns</span>
+                        </div>
+                        <div class="summary">
+                            {% for ret in last_update.feed_returns %}
+                            <div class="item">
+                                <i class="fas fa-box"></i>
+                                <span>{{ ret.feed.brand }} - {{ ret.feed.category }} ({{ "%.2f"|format(ret.quantity) }} packets)</span>
+                            </div>
+                            {% endfor %}
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    <div class="expandable-content">
+                        <div class="items-grid">
+                            {% for ret in last_update.feed_returns %}
+                            <div class="item-card feed-card">
+                                <div class="item-header">
+                                    <span class="item-name">{{ ret.feed.brand }} - {{ ret.feed.category }}</span>
+                                    <span class="quantity-badge">
+                                        <i class="fas fa-box"></i>
+                                        {{ "%.2f"|format(ret.quantity) }} packets
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="no-updates">
+                <i class="fas fa-info-circle"></i>
+                <p>No updates available for this batch</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
