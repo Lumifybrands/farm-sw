@@ -3686,6 +3686,7 @@ def add_harvest(batch_id):
     
     if request.method == 'POST':
         try:
+            date = request.form.get('harvest_date', datetime.now().date())
             quantity = int(request.form.get('quantity', 0))
             weight = float(request.form.get('weight', 0))
             selling_price = float(request.form.get('selling_price', 0))
@@ -3699,7 +3700,7 @@ def add_harvest(batch_id):
             
             harvest = Harvest(
                 batch_id=batch_id,
-                date=datetime.now().date(),
+                date=date,
                 quantity=quantity,
                 weight=weight,
                 selling_price=selling_price,
