@@ -66,7 +66,7 @@
             <div class="info-box"><div class="info-label">FCR (Feed Conversion Ratio)</div><div class="info-value">{{ "%.2f"|format(selected_batch.financial_summary.fcr_value) }}</div></div>
             <div class="info-box"><div class="info-label">Mortality Rate</div><div class="info-value">{{ "%.2f"|format((selected_batch.total_mortality / selected_batch.total_birds * 100) if selected_batch.total_birds > 0 else 0) }}%</div></div>
             <div class="info-box"><div class="info-label">Total Feed Used</div><div class="info-value">{{ "%.2f"|format(selected_batch.feed_usage) }} packets</div></div>
-            <div class="info-box"><div class="info-label">Farmer Cost</div><div class="info-value">{{ "%.2f"|format(selected_batch.financial_summary.fcr_price) }} kg</div></div>
+            <div class="info-box"><div class="info-label">Farmer Cost</div><div class="info-value">₹{{ "%.2f"|format(selected_batch.financial_summary.fcr_price) }}</div></div>
             <div class="info-box"><div class="info-label">Average Weight</div><div class="info-value">{% if selected_batch.harvests and selected_batch.harvests|sum(attribute='quantity') > 0 %}{{ "%.2f"|format(selected_batch.harvests|sum(attribute='weight') / selected_batch.harvests|sum(attribute='quantity')) }} kg/bird{% else %}-{% endif %}</div></div>
         </div>
         {% else %}

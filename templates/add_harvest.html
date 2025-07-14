@@ -5,13 +5,20 @@
 {% block content %}
 <div class="content-header">
     <h1>Add Harvest - Batch {{ batch.batch_number }}</h1>
-    <div class="breadcrumb">
+    <div class="breadcrumb"> 
         <span>Home</span> / <span>Batches</span> / <span>Harvesting</span> / <span>Add Harvest</span>
     </div>
 </div>
 
 <div class="add-harvest-container">
     <form method="POST" class="harvest-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="harvest_date">Harvest Date</label>
+                <input type="date" id="harvest_date" name="harvest_date" required value="{{ today|default('') }}">
+            </div>
+        </div>
+        
         <div class="form-row">
             <div class="form-group">
                 <label for="quantity">Quantity</label>
