@@ -3796,7 +3796,7 @@ def harvest_batch(batch_id):
         return redirect(url_for('batches'))
     
     harvests = Harvest.query.filter_by(batch_id=batch_id).order_by(Harvest.date.desc()).all()
-    return render_template('harvesting.html', batch=batch, harvests=harvests)
+    return render_template('harvesting.html', batch=batch, harvests=harvests, today=datetime.now().date())
 
 @app.route('/batches/<int:batch_id>/harvest/add', methods=['GET', 'POST'])
 @login_required
@@ -3808,18 +3808,22 @@ def add_harvest(batch_id):
     
     if request.method == 'POST':
         try:
-            date = request.form.get('harvest_date', datetime.now().date())
+            date_str = request.form.get('harvest_date')
+            if date_str:
+                try:
+                    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    date = datetime.now().date()
+            else:
+                date = datetime.now().date()
             quantity = int(request.form.get('quantity', 0))
             weight = float(request.form.get('weight', 0))
             selling_price = float(request.form.get('selling_price', 0))
             notes = request.form.get('notes', '')
-            
             if quantity > batch.available_birds:
                 flash('Harvest quantity cannot exceed available birds', 'error')
                 return redirect(url_for('add_harvest', batch_id=batch_id))
-            
             total_value = weight * selling_price
-            
             harvest = Harvest(
                 batch_id=batch_id,
                 date=date,
