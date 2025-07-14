@@ -1,3 +1,4 @@
 "*.db" 
 /instance
 instance/bismi_farm.db
+.venv/
