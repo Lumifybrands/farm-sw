@@ -234,6 +234,10 @@
                     <i class="fas fa-calendar-alt"></i>
                     <span>Age</span>
                 </div>
+                <div class="sidebar-option" data-section="update-date">
+                    <i class="fas fa-clock"></i>
+                    <span>Update Date</span>
+                </div>
                 <div class="sidebar-option" data-section="risk">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Risk</span>
@@ -294,6 +298,22 @@
                             <input type="radio" name="age-sort" value="high-to-low">
                             <span class="radiomark"></span>
                             <span class="option-text">High to Low</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Update Date Section -->
+                <div class="filter-section" id="update-date-section">
+                    <h3>Update Date Sorting</h3>
+                    <div class="filter-options">
+                        <label class="filter-radio">
+                            <input type="radio" name="update-date-sort" value="oldest-to-newest">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Oldest to Newest</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="update-date-sort" value="newest-to-oldest">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Newest to Oldest</span>
                         </label>
                     </div>
                 </div>
@@ -1156,6 +1176,7 @@ let currentFilters = {
     batchStatus: ['active'],
     ageSort: null,
     riskSort: null,
+    updateDateSort: null,
     managers: []
 };
 
@@ -1220,6 +1241,27 @@ function filterBatches(searchText, filters) {
             const bPriority = getPriority(bRemarks);
             
             return filters.riskSort === 'high-to-low' ? aPriority - bPriority : bPriority - aPriority;
+        });
+    } else if (filters.updateDateSort) {
+        sortedRows.sort((a, b) => {
+            // Get last update date for each row
+            const getDate = (row) => {
+                const badge = row.querySelector('.update-badge:not(.no-updates)');
+                if (!badge) return new Date(0); // No updates, treat as oldest
+                if (badge.classList.contains('today')) return new Date(); // Today
+                if (badge.classList.contains('yesterday')) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 1);
+                    return d;
+                }
+                // Otherwise, parse dd-mm-yyyy
+                const dateText = badge.textContent.trim();
+                const [day, month, year] = dateText.split('-');
+                return new Date(`${year}-${month}-${day}`);
+            };
+            const aDate = getDate(a);
+            const bDate = getDate(b);
+            return filters.updateDateSort === 'oldest-to-newest' ? aDate - bDate : bDate - aDate;
         });
     } else {
         // Default sort by batch number in descending order
@@ -1295,6 +1337,25 @@ function filterBatches(searchText, filters) {
             
             return filters.riskSort === 'high-to-low' ? aPriority - bPriority : bPriority - aPriority;
         });
+    } else if (filters.updateDateSort) {
+        sortedCards.sort((a, b) => {
+            const getDate = (card) => {
+                const badge = card.querySelector('.update-badge:not(.no-updates)');
+                if (!badge) return new Date(0);
+                if (badge.classList.contains('today')) return new Date();
+                if (badge.classList.contains('yesterday')) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 1);
+                    return d;
+                }
+                const dateText = badge.textContent.trim();
+                const [day, month, year] = dateText.split('-');
+                return new Date(`${year}-${month}-${day}`);
+            };
+            const aDate = getDate(a);
+            const bDate = getDate(b);
+            return filters.updateDateSort === 'oldest-to-newest' ? aDate - bDate : bDate - aDate;
+        });
     } else {
         // Default sort by batch number in descending order
         sortedCards.sort((a, b) => {
@@ -1332,6 +1393,9 @@ function clearAllFilters() {
     document.querySelectorAll('.filter-radio input[type="radio"]').forEach(radio => {
         radio.checked = false;
     });
+    document.querySelectorAll('input[name="update-date-sort"]').forEach(radio => {
+        radio.checked = false;
+    });
     
     // Set default active status
     document.querySelector('input[value="active"]').checked = true;
@@ -1341,6 +1405,7 @@ function clearAllFilters() {
         batchStatus: ['active'],
         ageSort: null,
         riskSort: null,
+        updateDateSort: null,
         managers: []
     };
     
@@ -1364,6 +1429,9 @@ function applyFilters() {
     // Collect risk sort
     const riskSort = document.querySelector('input[name="risk-sort"]:checked')?.value || null;
     
+    // Collect update date sort
+    const updateDateSort = document.querySelector('input[name="update-date-sort"]:checked')?.value || null;
+    
     // Collect manager filters
     const managerFilters = [];
     document.querySelectorAll('#managers-section input[type="checkbox"]:checked').forEach(checkbox => {
@@ -1375,6 +1443,7 @@ function applyFilters() {
         batchStatus: batchStatusFilters.length > 0 ? batchStatusFilters : ['active'],
         ageSort: ageSort,
         riskSort: riskSort,
+        updateDateSort: updateDateSort,
         managers: managerFilters
     };
     

@@ -1050,7 +1050,8 @@ def farms():
             'completely_available_sheds': completely_available_sheds
         }
     
-    return render_template('farms.html', farms=farms, farm_stats=farm_stats)
+    managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+    return render_template('farms.html', farms=farms, farm_stats=farm_stats, managers=managers)
 
 @app.route('/farms/add', methods=['GET', 'POST'])
 @login_required

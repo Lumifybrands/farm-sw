@@ -17,6 +17,9 @@
             <i class="fas fa-search"></i>
         </div>
         <div class="action-buttons-container">
+            <button class="filter-sort-btn" onclick="openFarmFilterModal()">
+                <i class="fas fa-filter"></i> Filter and Sort
+            </button>
             <button class="add-farm-btn" onclick="openFCRModal()">
                 <i class="fas fa-chart-line"></i> FCR Rates
             </button>
@@ -44,7 +47,7 @@
             </thead>
             <tbody>
                 {% for farm in farms %}
-                <tr>
+                <tr data-manager-name="{{ farm.manager.employee.name if farm.manager and farm.manager.employee else (farm.manager.username if farm.manager else '') }}">
                     <td>{{ farm.name }}</td>
                     <td>{{ farm.total_capacity }}</td>
                     <!-- <td>{{ farm.num_sheds }}</td> -->
@@ -68,7 +71,7 @@
                         <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
                             <i class="fas fa-edit"></i> Edit Details
                         </button>
-                        <button class="action-btn delete" onclick="deleteFarm({{ farm.id }})">
+                        <button class="action-btn delete" onclick="deleteFarm('{{ farm.id }}')">
                             <i class="fas fa-trash"></i> Delete Farm
                         </button>
                     </td>
@@ -81,7 +84,7 @@
     <!-- Mobile Card View -->
     <div class="farms-cards">
         {% for farm in farms %}
-        <div class="farm-card">
+        <div class="farm-card" data-manager-name="{{ farm.manager.employee.name if farm.manager and farm.manager.employee else (farm.manager.username if farm.manager else '') }}">
             <div class="farm-card-header">
                 <h3>{{ farm.name }}</h3>
                 <span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span>
@@ -116,7 +119,7 @@
                     <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="action-btn delete" onclick="deleteFarm({{ farm.id }})">
+                    <button class="action-btn delete" onclick="deleteFarm('{{ farm.id }}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -154,6 +157,102 @@
         </div>
         <div class="modal-footer">
             <button class="save-btn" onclick="saveFCRRates()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div id="farmFilterModal" class="filter-modal">
+    <div class="filter-modal-content">
+        <div class="filter-modal-header">
+            <h2>Filter and Sort</h2>
+            <button class="close-modal" onclick="closeFarmFilterModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="filter-modal-body">
+            <div class="filter-sidebar">
+                <div class="sidebar-option active" data-section="managers">
+                    <i class="fas fa-users"></i>
+                    <span>Managers</span>
+                </div>
+                <div class="sidebar-option" data-section="shed-availability">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Shed Availability</span>
+                </div>
+                <div class="sidebar-option" data-section="sort">
+                    <i class="fas fa-sort"></i>
+                    <span>Sort</span>
+                </div>
+                <div class="sidebar-option clear-all" onclick="clearAllFarmFilters()">
+                    <i class="fas fa-eraser"></i>
+                    <span>Clear All</span>
+                </div>
+            </div>
+            <div class="filter-content">
+                <!-- Managers Section -->
+                <div class="filter-section active" id="managers-section">
+                    <h3>Managers</h3>
+                    <div class="filter-options">
+                        {% for manager in managers %}
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="{{ manager.employee.name if manager.employee else manager.username }}" data-manager-id="{{ manager.id }}">
+                            <span class="checkmark"></span>
+                            <span class="option-text">
+                                {{ manager.employee.name if manager.employee else manager.username }}
+                                <small>({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})</small>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- Shed Availability Section -->
+                <div class="filter-section" id="shed-availability-section">
+                    <h3>Shed Availability</h3>
+                    <div class="filter-options">
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="available">
+                            <span class="checkmark"></span>
+                            <span class="option-text">Available Sheds</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="full">
+                            <span class="checkmark"></span>
+                            <span class="option-text">No Available Sheds</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Sort Section -->
+                <div class="filter-section" id="sort-section">
+                    <h3>Sort By</h3>
+                    <div class="filter-options">
+                        <label class="filter-radio">
+                            <input type="radio" name="sort-by" value="total-capacity-asc">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Total Capacity (Low to High)</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="sort-by" value="total-capacity-desc">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Total Capacity (High to Low)</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="sort-by" value="active-batches-asc">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Active Batches (Low to High)</span>
+                        </label>
+                        <label class="filter-radio">
+                            <input type="radio" name="sort-by" value="active-batches-desc">
+                            <span class="radiomark"></span>
+                            <span class="option-text">Active Batches (High to Low)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="filter-modal-footer">
+            <button class="btn-secondary" onclick="closeFarmFilterModal()">Cancel</button>
+            <button class="btn-primary" onclick="applyFarmFilters()">Confirm</button>
         </div>
     </div>
 </div>
@@ -559,6 +658,259 @@
             padding: 8px;
         }
     }
+
+    /* Filter and Sort Modal Styles */
+    .filter-sort-btn {
+        padding: 10px 20px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+    .filter-sort-btn:hover {
+        background-color: #218838;
+        transform: translateY(-1px);
+    }
+    .filter-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+    }
+    .filter-modal-content {
+        position: relative;
+        background-color: white;
+        margin: 5% auto;
+        width: 90%;
+        max-width: 800px;
+        height: 80%;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .filter-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 30px;
+        border-bottom: 1px solid #e2e8f0;
+        background-color: #f8f9fa;
+    }
+    .filter-modal-header h2 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.5rem;
+    }
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #718096;
+        padding: 5px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+    .close-modal:hover {
+        background-color: #e2e8f0;
+        color: #2d3748;
+    }
+    .filter-modal-body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+    .filter-sidebar {
+        width: 250px;
+        background-color: #f8f9fa;
+        border-right: 1px solid #e2e8f0;
+        padding: 20px 0;
+        overflow-y: auto;
+    }
+    .sidebar-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+    .sidebar-option:hover {
+        background-color: #e8f0fe;
+        border-left-color: #1a73e8;
+    }
+    .sidebar-option.active {
+        background-color: #e8f0fe;
+        border-left-color: #1a73e8;
+        color: #1a73e8;
+    }
+    .sidebar-option.clear-all {
+        margin-top: 20px;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+        color: #dc3545;
+    }
+    .sidebar-option.clear-all:hover {
+        background-color: #ffebee;
+        border-left-color: #dc3545;
+    }
+    .sidebar-option i {
+        font-size: 1.1rem;
+        width: 20px;
+        text-align: center;
+    }
+    .filter-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+    }
+    .filter-section {
+        display: none;
+    }
+    .filter-section.active {
+        display: block;
+    }
+    .filter-section h3 {
+        margin: 0 0 20px 0;
+        color: #2d3748;
+        font-size: 1.3rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+    }
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .filter-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .filter-checkbox:hover {
+        background-color: #f8f9fa;
+    }
+    .filter-checkbox input[type="checkbox"] {
+        display: none;
+    }
+    .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e0;
+        border-radius: 4px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    .filter-checkbox input[type="checkbox"]:checked + .checkmark {
+        background-color: #1a73e8;
+        border-color: #1a73e8;
+    }
+    .filter-checkbox input[type="checkbox"]:checked + .checkmark::after {
+        content: '✓';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .option-text {
+        font-size: 1rem;
+        color: #2d3748;
+    }
+    .option-text small {
+        color: #718096;
+        font-size: 0.85rem;
+        margin-left: 5px;
+    }
+    .filter-radio {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .filter-radio:hover {
+        background-color: #f8f9fa;
+    }
+    .filter-radio input[type="radio"] {
+        display: none;
+    }
+    .radiomark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e0;
+        border-radius: 50%;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    .filter-radio input[type="radio"]:checked + .radiomark {
+        border-color: #1a73e8;
+    }
+    .filter-radio input[type="radio"]:checked + .radiomark::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 10px;
+        height: 10px;
+        background-color: #1a73e8;
+        border-radius: 50%;
+    }
+    .filter-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        padding: 20px 30px;
+        border-top: 1px solid #e2e8f0;
+        background-color: #f8f9fa;
+    }
+    .btn-primary, .btn-secondary {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+    }
+    .btn-primary:hover {
+        background-color: #1557b0;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
 </style>
 {% endblock %}
 
@@ -706,5 +1058,169 @@ window.onclick = function(event) {
         closeFCRModal();
     }
 }
+
+// Filter and Sort Modal Logic
+let currentFarmFilters = {
+    managers: [],
+    shedAvailability: [],
+    sortBy: null
+};
+function openFarmFilterModal() {
+    document.getElementById('farmFilterModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+function closeFarmFilterModal() {
+    document.getElementById('farmFilterModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+function clearAllFarmFilters() {
+    document.querySelectorAll('#farmFilterModal .filter-checkbox input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('#farmFilterModal .filter-radio input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+    currentFarmFilters = {
+        managers: [],
+        shedAvailability: [],
+        sortBy: null
+    };
+    const searchText = document.getElementById('farmSearch').value;
+    filterFarms(searchText, currentFarmFilters);
+    closeFarmFilterModal();
+}
+function applyFarmFilters() {
+    // Managers
+    const managerFilters = [];
+    document.querySelectorAll('#managers-section input[type="checkbox"]:checked').forEach(checkbox => {
+        managerFilters.push(checkbox.value);
+    });
+    // Shed Availability
+    const shedFilters = [];
+    document.querySelectorAll('#shed-availability-section input[type="checkbox"]:checked').forEach(checkbox => {
+        shedFilters.push(checkbox.value);
+    });
+    // Sort By
+    const sortBy = document.querySelector('input[name="sort-by"]:checked')?.value || null;
+    currentFarmFilters = {
+        managers: managerFilters,
+        shedAvailability: shedFilters,
+        sortBy: sortBy
+    };
+    const searchText = document.getElementById('farmSearch').value;
+    filterFarms(searchText, currentFarmFilters);
+    closeFarmFilterModal();
+}
+function filterFarms(searchText, filters) {
+    // Table rows
+    const rows = document.querySelectorAll('.farms-table tbody tr');
+    const sortedRows = Array.from(rows);
+    sortedRows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        // Manager filter (if available in row data)
+        let matchesManager = true;
+        if (filters.managers.length > 0) {
+            const managerCell = row.querySelector('td[data-manager-name]');
+            matchesManager = managerCell && filters.managers.includes(managerCell.getAttribute('data-manager-name'));
+        }
+        // Shed availability
+        let matchesShed = true;
+        if (filters.shedAvailability.length > 0) {
+            const shedCell = row.querySelector('.shed-count');
+            if (shedCell) {
+                const available = shedCell.classList.contains('available');
+                matchesShed = (filters.shedAvailability.includes('available') && available) || (filters.shedAvailability.includes('full') && !available);
+            }
+        }
+        row.style.display = text.includes(searchText.toLowerCase()) && matchesManager && matchesShed ? '' : 'none';
+    });
+    // Sorting
+    if (filters.sortBy) {
+        sortedRows.sort((a, b) => {
+            if (filters.sortBy === 'total-capacity-asc' || filters.sortBy === 'total-capacity-desc') {
+                const aVal = parseInt(a.children[1].textContent);
+                const bVal = parseInt(b.children[1].textContent);
+                return filters.sortBy === 'total-capacity-asc' ? aVal - bVal : bVal - aVal;
+            } else if (filters.sortBy === 'active-batches-asc' || filters.sortBy === 'active-batches-desc') {
+                const aVal = parseInt(a.children[2].textContent);
+                const bVal = parseInt(b.children[2].textContent);
+                return filters.sortBy === 'active-batches-asc' ? aVal - bVal : bVal - aVal;
+            }
+            return 0;
+        });
+    }
+    const tbody = document.querySelector('.farms-table tbody');
+    sortedRows.forEach(row => {
+        if (row.style.display !== 'none') {
+            tbody.appendChild(row);
+        }
+    });
+    // Card view
+    const cards = document.querySelectorAll('.farm-card');
+    const sortedCards = Array.from(cards);
+    sortedCards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        // Manager filter (if available in card data)
+        let matchesManager = true;
+        if (filters.managers.length > 0) {
+            const managerName = card.getAttribute('data-manager-name');
+            matchesManager = managerName && filters.managers.includes(managerName);
+        }
+        // Shed availability
+        let matchesShed = true;
+        if (filters.shedAvailability.length > 0) {
+            const shed = card.querySelector('.shed-count');
+            if (shed) {
+                const available = shed.classList.contains('available');
+                matchesShed = (filters.shedAvailability.includes('available') && available) || (filters.shedAvailability.includes('full') && !available);
+            }
+        }
+        card.style.display = text.includes(searchText.toLowerCase()) && matchesManager && matchesShed ? '' : 'none';
+    });
+    // Sorting cards
+    if (filters.sortBy) {
+        sortedCards.sort((a, b) => {
+            if (filters.sortBy === 'total-capacity-asc' || filters.sortBy === 'total-capacity-desc') {
+                const aVal = parseInt(a.querySelector('.info-group span').textContent);
+                const bVal = parseInt(b.querySelector('.info-group span').textContent);
+                return filters.sortBy === 'total-capacity-asc' ? aVal - bVal : bVal - aVal;
+            } else if (filters.sortBy === 'active-batches-asc' || filters.sortBy === 'active-batches-desc') {
+                const aVal = parseInt(a.querySelector('.batch-count').textContent);
+                const bVal = parseInt(b.querySelector('.batch-count').textContent);
+                return filters.sortBy === 'active-batches-asc' ? aVal - bVal : bVal - aVal;
+            }
+            return 0;
+        });
+    }
+    const cardsContainer = document.querySelector('.farms-cards');
+    sortedCards.forEach(card => {
+        if (card.style.display !== 'none') {
+            cardsContainer.appendChild(card);
+        }
+    });
+}
+// Sidebar navigation for modal
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('#farmFilterModal .sidebar-option').forEach(option => {
+            option.addEventListener('click', function() {
+                if (this.classList.contains('clear-all')) return;
+                document.querySelectorAll('#farmFilterModal .sidebar-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                const sectionId = this.getAttribute('data-section') + '-section';
+                document.querySelectorAll('#farmFilterModal .filter-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+        document.getElementById('farmFilterModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeFarmFilterModal();
+            }
+        });
+        // Apply default filter on page load
+        const searchText = document.getElementById('farmSearch').value;
+        filterFarms(searchText, currentFarmFilters);
+    });
 </script>
 {% endblock %} 
