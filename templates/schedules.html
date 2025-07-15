@@ -53,7 +53,7 @@
                         <h4>{{ schedule.health_material.name }}</h4>
                         <p>Batches: 
                             {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                                Farm: {{ batch.farm.name }} | #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
                             {% endfor %}
                         </p>
                         <p>Date: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}</p>
@@ -92,7 +92,7 @@
                         <h4>{{ schedule.medicine.name }}</h4>
                         <p>Batches: 
                             {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                                Farm: {{ batch.farm.name }} | #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
                             {% endfor %}
                         </p>
                         <p>Date: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}</p>
@@ -131,7 +131,7 @@
                         <h4>{{ schedule.vaccine.name }}</h4>
                         <p>Batches: 
                             {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
+                                Farm: {{ batch.farm.name }} | #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
                             {% endfor %}
                         </p>
                         <p>Dose: {{ schedule.dose_number }}</p>
@@ -1019,7 +1019,7 @@ function showPendingSchedules() {
                         </div>
                         <div class="pending-schedule-details">
                             <h4>${schedule.name}</h4>
-                            <p>${type} for Batch ${schedule.batch_number}</p>
+                            <p>${type} for Farm: ${schedule.farm_name || ''} | Batch: ${schedule.batch_number}</p>
                             <p class="pending-schedule-date">Scheduled for: ${schedule.scheduled_date}</p>
                         </div>
                         
