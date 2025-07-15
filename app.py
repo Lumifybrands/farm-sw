@@ -794,6 +794,22 @@ def get_body_weight_and_feed_consumption(age):
         return None
     return age_data.get(age)
 
+def calculate_projected_feed_consumption(batch, days):
+    """
+    Calculate total feed consumption (in kg) for the batch from today to N days ahead
+    using the Vencobb chart and the current available birds.
+    """
+    total_feed_grams = 0
+    current_age = batch.get_age_days()
+    for i in range(days):
+        age = current_age + i
+        data = get_body_weight_and_feed_consumption(age)
+        if data:
+            total_feed_grams += data['feed_consumption']
+    # Multiply by available birds and convert to kg
+    total_feed_kg = (total_feed_grams * batch.available_birds) / 1000
+    return total_feed_kg
+
 @app.before_request
 def before_request():
     session.permanent = True  # Make session permanent
@@ -1864,6 +1880,8 @@ def update_batch(batch_id):
         VaccineSchedule.completed == False
     ).all()
 
+    age_data = get_body_weight_and_feed_consumption(batch.get_age_days())
+
     return render_template('update_batch.html', 
                          batch=batch, 
                          medicine_schedules=medicine_schedules,
@@ -1875,7 +1893,9 @@ def update_batch(batch_id):
                          feeds=feeds,
                          today=datetime.now().date(),
                          selected_date=selected_date,
-                         existing_update=existing_update)
+                         existing_update=existing_update,
+                         age_data=age_data,
+                         calculate_projected_feed_consumption=calculate_projected_feed_consumption)  # Pass function to template
 
 @app.route('/batches/<int:batch_id>/update/<date>')
 @login_required
@@ -3457,7 +3477,95 @@ def manager_dashboard():
                          pending_medicines=pending_medicines,
                          recent_activities=recent_activities)
 
-# Manager-specific routes
+@app.route('/manager/batches/add', methods=['GET', 'POST'])
+@login_required
+def manager_add_batch():
+    if session.get('user_type') != 'senior_manager':
+        flash('Access denied. Only senior managers can add batches.', 'error')
+        return redirect(url_for('manager_dashboard'))
+
+    if request.method == 'POST':
+        try:
+            farm_id = request.form.get('farm_id')
+            manager_id = request.form.get('manager_id')
+            brand = request.form.get('brand')
+            total_birds = int(request.form.get('total_birds'))
+            extra_chicks = int(request.form.get('extra_chicks', 0))
+            created_at = datetime.strptime(request.form.get('created_at'), '%Y-%m-%dT%H:%M')
+            cost_per_chicken = float(request.form.get('cost_per_chicken'))
+
+            # Generate batch number
+            batch_number = generate_batch_number()
+            farm_batch_number = get_next_farm_batch_number(farm_id)
+
+            # Get shed distribution
+            shed_birds = []
+            farm = Farm.query.get(farm_id)
+            for i in range(farm.num_sheds):
+                birds = int(request.form.get(f'shed_{i+1}_birds', 0))
+                shed_birds.append(birds)
+
+            # Create new batch
+            batch = Batch(
+                farm_id=farm_id,
+                manager_id=manager_id if manager_id else None,
+                batch_number=batch_number,
+                farm_batch_number=farm_batch_number,
+                brand=brand,
+                total_birds=total_birds,
+                extra_chicks=extra_chicks,
+                available_birds=total_birds,
+                shed_birds=json.dumps(shed_birds),
+                cost_per_chicken=cost_per_chicken,
+                created_at=created_at
+            )
+
+            db.session.add(batch)
+            db.session.flush()  # Get the batch ID without committing
+
+            # Create schedules for the batch
+            create_schedules_for_batch(batch)
+
+            db.session.commit()
+            flash('Batch added successfully!', 'success')
+            return redirect(url_for('manager_batches'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding batch: ' + str(e), 'error')
+            return redirect(url_for('manager_add_batch'))
+    
+    # GET request - show form
+    farms = Farm.query.all()
+    managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+    
+    # Create farm_sheds dictionary with proper JSON serializable values
+    farm_sheds = {}
+    for farm in farms:
+        try:
+            shed_capacities = farm.get_shed_capacities()
+            shed_available = farm.get_shed_available_capacities()
+            shed_status = []
+            
+            for cap, avail in zip(shed_capacities, shed_available):
+                shed_status.append({
+                    'is_partially_allocated': bool(cap > avail)
+                })
+            
+            farm_sheds[str(farm.id)] = {
+                'num_sheds': int(farm.num_sheds),
+                'shed_capacities': [int(cap) for cap in shed_capacities],
+                'shed_available': [int(avail) for avail in shed_available],
+                'shed_status': shed_status
+            }
+        except Exception as e:
+            print(f"Error processing farm {farm.id}: {str(e)}")
+            continue
+    
+    return render_template('manager/add_batch.html', 
+                         farms=farms, 
+                         managers=managers, 
+                         farm_sheds=farm_sheds)
+
 @app.route('/manager/batches')
 @login_required
 def manager_batches():
@@ -4503,88 +4611,6 @@ def create_schedules_for_batch(batch):
         print(f"Error creating schedules for batch: {str(e)}")
         raise
 
-# # Modify the add_batch route to include auto-scheduling
-# @app.route('/batches/add', methods=['GET', 'POST'])
-# @login_required
-# def add_batch():
-#     if request.method == 'POST':
-#         try:
-#             farm_id = request.form.get('farm_id')
-#             manager_id = request.form.get('manager_id')
-#             brand = request.form.get('brand')
-#             total_birds = int(request.form.get('total_birds'))
-#             extra_chicks = int(request.form.get('extra_chicks', 0))
-#             created_at = datetime.strptime(request.form.get('created_at'), '%Y-%m-%dT%H:%M')
-#             cost_per_chicken = float(request.form.get('cost_per_chicken'))
-
-#             # Generate batch number
-#             batch_number = generate_batch_number()
-#             farm_batch_number = get_next_farm_batch_number(farm_id)
-
-#             # Get shed distribution
-#             shed_birds = []
-#             farm = Farm.query.get(farm_id)
-#             for i in range(farm.num_sheds):
-#                 birds = int(request.form.get(f'shed_{i+1}_birds', 0))
-#                 shed_birds.append(birds)
-
-#             # Create new batch
-#             batch = Batch(
-#                 farm_id=farm_id,
-#                 manager_id=manager_id if manager_id else None,
-#                 batch_number=batch_number,
-#                 farm_batch_number=farm_batch_number,
-#                 brand=brand,
-#                 total_birds=total_birds,
-#                 extra_chicks=extra_chicks,
-#                 available_birds=total_birds,
-#                 shed_birds=json.dumps(shed_birds),
-#                 cost_per_chicken=cost_per_chicken,
-#                 created_at=created_at
-#             )
-
-#             db.session.add(batch)
-#             db.session.flush()  # Get the batch ID without committing
-
-#             # Get all vaccines and create schedules based on their dose ages
-#             vaccines = Vaccine.query.all()
-#             for vaccine in vaccines:
-#                 dose_ages = vaccine.get_dose_ages()
-#                 for dose_number, age_days in enumerate(dose_ages, 1):
-#                     # Calculate schedule date based on batch creation date and age in days
-#                     schedule_date = created_at.date() + timedelta(days=age_days)
-                    
-#                     # Create vaccine schedule
-#                     schedule = VaccineSchedule(
-#                         vaccine_id=vaccine.id,
-#                         dose_number=dose_number,
-#                         scheduled_date=schedule_date,
-#                         notes=f"Automatically scheduled for {vaccine.name} dose {dose_number}"
-#                     )
-#                     schedule.batches.append(batch)
-#                     db.session.add(schedule)
-
-#             db.session.commit()
-            
-            
-            
-#             flash('Batch added successfully!', 'success')
-#             return redirect(url_for('batches'))
-#         except Exception as e:
-#             db.session.rollback()
-#             flash('Error adding batch: ' + str(e), 'error')
-    
-#     # GET request - show form
-#     farms = Farm.query.all()
-#     managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
-#     farm_sheds = {farm.id: {
-#         'num_sheds': farm.num_sheds,
-#         'shed_capacities': farm.get_shed_capacities(),
-#         'shed_available': farm.get_shed_available_capacities(),
-#         'shed_status': [{'is_partially_allocated': cap > avail} for cap, avail in zip(farm.get_shed_capacities(), farm.get_shed_available_capacities())]
-#     } for farm in farms}
-#     return render_template('add_batch.html', farms=farms, managers=managers, farm_sheds=farm_sheds)
-
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
@@ -4645,6 +4671,24 @@ def farm_report():
             'avg_fcr': avg_fcr
         }
     return render_template('farmreport.html', farms=farms, selected_farm=selected_farm, report=report)
+
+@app.route('/api/batch/<int:batch_id>/projected-feed')
+@login_required
+def api_projected_feed(batch_id):
+    batch = Batch.query.get_or_404(batch_id)
+    try:
+        days = int(request.args.get('days', 1))
+        if days < 1:
+            days = 1
+        feed_kg = calculate_projected_feed_consumption(batch, days)
+        return jsonify({
+            'success': True,
+            'feed_kg': feed_kg,
+            'available_birds': batch.available_birds,
+            'days': days
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
