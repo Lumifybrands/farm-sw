@@ -3847,6 +3847,7 @@ def pending_schedules():
                     'type': 'health-material',
                     'name': schedule.health_material.name,
                     'batch_number': batch.batch_number,
+                    'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.scheduled_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-spray-can'
                 })
@@ -3865,6 +3866,7 @@ def pending_schedules():
                     'type': 'medicine',
                     'name': schedule.medicine.name,
                     'batch_number': batch.batch_number,
+                    'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.schedule_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-pills'
                 })
@@ -3883,6 +3885,7 @@ def pending_schedules():
                     'type': 'vaccine',
                     'name': schedule.vaccine.name,
                     'batch_number': batch.batch_number,
+                    'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.scheduled_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-syringe'
             })
