@@ -97,7 +97,7 @@
                             {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
                             {{ (last_update.feed_used * batch.available_birds)|round(2) }} / {{ (std_data['feed_consumption'] * batch.available_birds)|round(2) }}
                         {% else %}
-                            - / {{ std_data['feed_consumption'] if std_data else '-' }}
+                            - / {{ (std_data['feed_consumption']  * batch.available_birds) if std_data else '-' }}
                         {% endif %}
                     </td>
                     <td class="action-buttons">

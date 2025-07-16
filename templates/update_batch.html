@@ -95,7 +95,9 @@
                 <label for="feed_days" style="font-weight: 500; color: #1976d2; margin-right: 0.5em;">Feed calculation for</label>
                 <input type="number" id="feed_days" name="feed_days" min="1" max="{{ 42 - batch.get_age_days() }}" value="1" style="width: 48px; padding: 0.2em 0.4em; border: 1px solid #bdbdbd; border-radius: 5px; font-size: 1em; text-align: center; margin-right: 0.5em;">
                 <span style="color: #333;">days is</span>
-                <span id="feed_calculation_result" style="font-weight: 600; color: #1976d2; margin-left: 0.5em;">{{ '%.2f' % calculate_projected_feed_consumption(batch, 1) }} kg</span>
+                <span id="feed_calculation_result" style="font-weight: 600; color: #1976d2; margin-left: 0.5em;">
+                    {{ ('%.2f' % (calculate_projected_feed_consumption(batch, 1) / 50)) }} packets
+                </span>
             </div>
             <script>
                 function updateFeedCalculationBackend() {
@@ -103,7 +105,8 @@
                     fetch(`/api/batch/{{ batch.id }}/projected-feed?days=${days}`)
                         .then(response => response.json())
                         .then(data => {
-                            document.getElementById('feed_calculation_result').textContent = data.feed_kg.toFixed(2) + ' kg';
+                            var feedPackets = data.feed_kg / 50;
+                            document.getElementById('feed_calculation_result').textContent = feedPackets.toFixed(2) + ' packets';
                         });
                 }
                 document.getElementById('feed_days').addEventListener('input', updateFeedCalculationBackend);
