@@ -61,9 +61,21 @@
             <input type="text" id="batch_number" name="batch_number" readonly disabled>
         </div>
 
-        <div class="form-group">
-            <label for="brand">Brand</label>
-            <input type="text" class="form-control" id="brand" name="brand">
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group">
+                <label for="farm_batch_number">Farm Batch Number</label>
+                <input type="number" class="form-control" id="farm_batch_number" name="farm_batch_number" value="0" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="brand">Brand</label>
+                <input type="text" class="form-control" id="brand" name="brand">
+            </div>
+
+            <div class="form-group">
+                <label for="created_at">Batch Start Date</label>
+                <input type="datetime-local" id="created_at" name="created_at" required>
+            </div>
         </div>
 
         <div class="form-group">
@@ -83,11 +95,6 @@
             <label for="extra_chicks">Extra Chicks (Optional)</label>
             <input type="number" class="form-control" id="extra_chicks" name="extra_chicks" min="0" value="0">
             <small class="form-text text-muted">Additional chicks kept as backup</small>
-        </div>
-
-        <div class="form-group">
-            <label for="created_at">Batch Start Date</label>
-            <input type="datetime-local" id="created_at" name="created_at" required>
         </div>
 
         <div class="form-group">
@@ -156,6 +163,9 @@ $(document).ready(function() {
         width: 'resolve'
     });
 
+    // Move farmSheds definition outside the function
+    var farmSheds = {{ farm_sheds|tojson|safe }};
+
     // Unified handler for farm selection
     function updateOnFarmChange() {
         var selectedOption = $('#farm_id').find('option:selected');
@@ -180,7 +190,6 @@ $(document).ready(function() {
 
         // Update shed distribution
         var farmId = $('#farm_id').val();
-        var farmSheds = {{ farm_sheds|tojson|safe }};
         var shedDistribution = $('#shed_distribution');
         shedDistribution.empty();
         if (farmSheds[farmId]) {
