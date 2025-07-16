@@ -1228,7 +1228,35 @@ def generate_batch_number():
     # Format the new batch number with leading zeros
     return f"BATCH-{new_number:04d}"
 
-def get_next_farm_batch_number(farm_id):
+def get_next_farm_batch_number(farm_id, new_shed_allocation=None):
+    farm = Farm.query.get(farm_id)
+    if not farm:
+        return 1  # fallback
+
+    # 1. If the farm only contains one shed, set its farm_number as zero
+    if farm.num_sheds == 1:
+        return 0
+
+    # 2. If the farm doesn't have any ongoing or closing batches and all sheds are either partially filled or fully filled, set farm_number as zero
+    active_batches = Batch.query.filter(
+        Batch.farm_id == farm_id,
+        Batch.status.in_(['ongoing', 'closing'])
+    ).all()
+    print(active_batches)
+    shed_capacities = farm.get_shed_capacities() if hasattr(farm, 'get_shed_capacities') else []
+    print(shed_capacities)
+    shed_available = farm.get_shed_available_capacities() if hasattr(farm, 'get_shed_available_capacities') else []
+    # Subtract the allocation for the currently entering batch if provided
+    if new_shed_allocation and len(new_shed_allocation) == len(shed_available):
+        shed_available = [avail - alloc for avail, alloc in zip(shed_available, new_shed_allocation)]
+    print(shed_available)
+    # A shed is fully empty if its available space equals its full capacity
+    fully_empty_sheds = [avail for avail, cap in zip(shed_available, shed_capacities) if avail == cap]
+    print(fully_empty_sheds)
+    # If there are no ongoing/closing batches and there are no fully empty sheds, treat as not available for new batch
+    if not active_batches and not fully_empty_sheds:
+        return 0
+
     # Get all batch numbers for this farm
     farm_batches = Batch.query.filter_by(farm_id=farm_id).all()
     
@@ -1268,10 +1296,7 @@ def add_batch():
             extra_chicks = int(request.form.get('extra_chicks', 0))
             created_at = datetime.strptime(request.form.get('created_at'), '%Y-%m-%dT%H:%M')
             cost_per_chicken = float(request.form.get('cost_per_chicken'))
-
-            # Generate batch number
-            batch_number = generate_batch_number()
-            farm_batch_number = get_next_farm_batch_number(farm_id)
+            farm_number = int(request.form.get('farm_batch_number'))
 
             # Get shed distribution
             shed_birds = []
@@ -1279,6 +1304,14 @@ def add_batch():
             for i in range(farm.num_sheds):
                 birds = int(request.form.get(f'shed_{i+1}_birds', 0))
                 shed_birds.append(birds)
+
+            print(shed_birds)
+            # Generate batch number
+            batch_number = generate_batch_number()
+            if farm_number != 0:
+                farm_batch_number = farm_number
+            else:
+                farm_batch_number = get_next_farm_batch_number(farm_id, shed_birds)
 
             # Create new batch
             batch = Batch(
@@ -3121,7 +3154,16 @@ def internal_server_error(e):
 @admin_required
 def farm_manager():
     users = User.query.filter(User.user_type.in_(['assistant_manager', 'senior_manager'])).all()
-    return render_template('farm_manager.html', users=users)
+    # Get all batches and farms
+    batches = Batch.query.all()
+    farms = Farm.query.all()
+    # Calculate total chicks assigned to each manager
+    manager_chick_counts = {}
+    for user in users:
+        # Sum total_birds for all batches managed by this user
+        total_chicks = sum(batch.total_birds for batch in batches if batch.manager_id == user.id)
+        manager_chick_counts[user.id] = total_chicks
+    return render_template('farm_manager.html', users=users, batches=batches, farms=farms, manager_chick_counts=manager_chick_counts)
 
 @app.route('/add_manager', methods=['POST'])
 @login_required

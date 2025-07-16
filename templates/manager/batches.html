@@ -38,7 +38,7 @@
                             <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
                         </div>
                         <div class="farm-info">
-                            <h3>{{ batch.farm.name }} - {{ batch.farm_batch_number }}</h3>
+                            <h3>{{ batch.farm.name }}{% if batch.farm_batch_number != 0 %} - {{ batch.farm_batch_number }}{% endif %}</h3>
                         </div>
                     </div>
                     <div class="batch-details">
