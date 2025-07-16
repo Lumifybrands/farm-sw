@@ -29,24 +29,42 @@
                     <th>Name</th>
                     <th>Username</th>
                     <th>Phone Numbers</th>
-                    <th>Manager Type</th>
+                    <th>Batches</th>
+                    <th>Farms</th>
+                    <th>Chicks</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.employee.name if user.employee else 'N/A' }}</td>
+                    <td>{{ user.employee.name if user.employee else 'N/A' }}<br>
+                        <span class="badge {% if user.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            {{ 'Senior Manager' if user.user_type == 'senior_manager' else 'Assistant Manager' }}
+                        </span>
+                    </td>
                     <td>{{ user.username }}</td>
                     <td>
                         <div>Primary: {{ user.employee.phone_number if user.employee and user.employee.phone_number else 'N/A' }}</div>
                         <div>Alternate: {{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else 'N/A' }}</div>
                     </td>
                     <td>
-                        <span class="badge {% if user.user_type == 'senior_manager' %}badge-primary{% else %}badge-secondary{% endif %}">
-                            {{ 'Senior Manager' if user.user_type == 'senior_manager' else 'Assistant Manager' }}
-                        </span>
+                        {% set user_batches = batches | selectattr('manager_id', 'equalto', user.id) | list %}
+                        {% if user_batches|length > 0 %}
+                            {{ user_batches|length }}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
                     </td>
+                    <td>
+                        {% set user_farms = farms | selectattr('manager_id', 'equalto', user.id) | list %}
+                        {% if user_farms|length > 0 %}
+                            {{ user_farms|length }}
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ manager_chick_counts[user.id] }}</td>
                     <td class="action-buttons">
                         <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
                             <i class="fas fa-edit"></i> Edit

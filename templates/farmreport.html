@@ -62,4 +62,21 @@
 {% else %}
     <p style="text-align: center; margin-top: 2rem; color: #888;">Select a farm to view its report. Detailed farm analytics and export options will appear here.</p>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(function() {
+    $('#farm_id').select2({
+        placeholder: '-- Select a Farm --',
+        allowClear: true,
+        width: 'resolve'
+    });
+});
+</script>
 {% endblock %} 
