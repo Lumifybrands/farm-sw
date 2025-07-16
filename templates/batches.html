@@ -44,14 +44,8 @@
                 {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
                 <tr data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
                     <td>{{ batch.batch_number }}</td>
-<<<<<<< HEAD
                     <td>{{ batch.farm.name }} - {{ batch.farm_batch_number }}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
                     <td>{{ batch.available_birds }}/{{ batch.total_birds }}</td>
-=======
-                    <td>{{ batch.farm.name }}{% if batch.farm_batch_number != 0 %} - {{ batch.farm_batch_number }}{% endif %}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
-                    <td>{{ batch.total_birds }}</td>
-                    <td>{{ batch.available_birds }}</td>
->>>>>>> add02b4 (search option for reports, manager section update, batch number control update, filter and sort bug update)
                     <td>{{ batch.total_mortality }}</td>
                     <td>{{ batch.get_age_days() }}</td>
                     <td>
