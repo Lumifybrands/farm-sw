@@ -1315,8 +1315,21 @@ function filterBatches(searchText, filters) {
     // Apply sorting to cards
     if (filters.ageSort) {
         sortedCards.sort((a, b) => {
-            const aAge = parseInt(a.querySelector('.stat-value').textContent);
-            const bAge = parseInt(b.querySelector('.stat-value').textContent);
+            function getAge(card) {
+                const statItems = card.querySelectorAll('.stat-item');
+                for (let item of statItems) {
+                    const label = item.querySelector('.stat-label');
+                    if (label && label.textContent.trim().toLowerCase() === 'age') {
+                        // The value may be like "12 days", so extract the number
+                        const valueText = item.querySelector('.stat-value').textContent.trim();
+                        const ageMatch = valueText.match(/\d+/);
+                        return ageMatch ? parseInt(ageMatch[0]) : 0;
+                    }
+                }
+                return 0;
+            }
+            const aAge = getAge(a);
+            const bAge = getAge(b);
             return filters.ageSort === 'low-to-high' ? aAge - bAge : bAge - aAge;
         });
     } else if (filters.riskSort) {
