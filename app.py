@@ -539,36 +539,61 @@ class FinancialSummary(db.Model):
     def calculate_fcr(self, batch):
         """Calculate FCR (Feed Conversion Ratio) and determine the appropriate rate"""
         # Calculate total feed used in kg
-        total_feed_used = 0
+        total_feed_used = 0.0
         for update in batch.updates:
             for feed in update.feeds:
                 feed_quantity = update.get_feed_quantity(feed.id)
                 quantity_per_unit = update.get_feed_quantity_per_unit(feed.id)
                 if feed_quantity and quantity_per_unit:
                     total_feed_used += feed_quantity * quantity_per_unit
-
+        print(total_feed_used)
         # Subtract feed stock from total feed used
         if batch.feed_stock > 0:
             # Get the latest feed quantity per unit
-            latest_update = batch.updates[-1] if batch.updates else None
-            if latest_update and latest_update.feeds:
-                latest_feed = latest_update.feeds[0]
-                quantity_per_unit = latest_update.get_feed_quantity_per_unit(latest_feed.id)
-                if quantity_per_unit:
-                    total_feed_used -= batch.feed_stock * quantity_per_unit
+            i=-1
+            while i != -5:
+                latest_update = batch.updates[i] if batch.updates else None
+                print(latest_update)
+                print(latest_update.feeds)
+                if latest_update and latest_update.feeds:
+                    latest_feed = latest_update.feeds[0]
+                    quantity_per_unit = latest_update.get_feed_quantity_per_unit(latest_feed.id)
+                    print(quantity_per_unit)
+                    if quantity_per_unit:
+                        total_feed_used -= batch.feed_stock * quantity_per_unit
+                        break
+                else:
+                    i=i-1
+        # count = 0
+        # quantity_unit = 0
+        # for update in batch.updates:
+        #     for feed in update.feeds:
+        #         quantity_per_unit = update.get_feed_quantity_per_unit(feed.id)
+        #         if quantity_per_unit:
+        #             quantity_unit += quantity_per_unit
+        #             count += 1
+        # quantity_per_unit = quantity_unit/count
+        # total_feed_used = batch.feed_usage * quantity_per_unit
+        # print(quantity_per_unit)
+        print(batch.feed_stock)
+        print(total_feed_used)
 
         # Calculate total weight sold
         total_weight_sold = batch.get_total_weight_sold()
+        self.total_weight_sold = total_weight_sold
 
         # Calculate FCR
         if total_weight_sold > 0:
             self.fcr_value = total_feed_used / total_weight_sold
         else:
             self.fcr_value = 0.0
+        self.fcr_value = round(self.fcr_value, 2)
+        print("fcr value",self.fcr_value)
 
         # Determine FCR rate based on the calculated FCR value
         if self.fcr_value > 0:
             fcr_rates = FCRRate.query.order_by(FCRRate.lower_limit).all()
+            print(fcr_rates)
             for rate in fcr_rates:
                 if self.fcr_value >= rate.lower_limit and (rate.upper_limit is None or self.fcr_value < rate.upper_limit):
                     self.fcr_rate = rate.rate
@@ -577,6 +602,7 @@ class FinancialSummary(db.Model):
         else:
             self.fcr_rate = 0.0
             self.fcr_price = 0.0
+        print(self.fcr_rate,", ",self.fcr_price)
 
     def calculate_summary(self, batch):
         """Calculate financial summary for a batch"""
