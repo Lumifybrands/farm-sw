@@ -1751,14 +1751,26 @@
             {% endif %}
             
         </div>
-        <div class="info-box">
-            <div class="info-label">Average Rate</div>
-            <div class="info-value">
-                {% if batch.harvests and batch.harvests|sum(attribute='weight') > 0 %}
-                    ₹{{ "%.2f"|format(batch.harvests|sum(attribute='total_value') / batch.harvests|sum(attribute='weight')) }}/kg
-                {% else %}
-                    -
-                {% endif %}
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">Average Rate</div>
+                <div class="info-value">
+                    {% if batch.harvests and batch.harvests|sum(attribute='weight') > 0 %}
+                        ₹{{ "%.2f"|format(batch.harvests|sum(attribute='total_value') / batch.harvests|sum(attribute='weight')) }}/kg
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Total Weight Harvested</div>
+                <div class="info-value">
+                    {% if batch.harvests and batch.harvests|sum(attribute='weight') > 0 %}
+                        {{ "%.2f"|format(batch.harvests|sum(attribute='weight')) }} Kg
+                    {% else %}
+                        0.00 Kg
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -1790,10 +1802,74 @@
             </div>
             <div class="info-box">
                 <div class="info-label">Farmer Cost</div>
-                <div class="info-value">{{ "%.2f"|format(batch.financial_summary.fcr_price if batch.financial_summary else 0) }} kg</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.financial_summary.fcr_price if batch.financial_summary else 0) }}</div>
             </div>
         </div>
 
+        <!-- 2x2 Grid of Item Usage Cards -->
+        <h4 class="section-subtitle">Batch Item Usage by Date</h4>
+        <div class="info-grid" style="grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 32px;">
+            <!-- Feed Card -->
+            <div class="info-box">
+                <div class="info-label"><i class="fa-solid fa-seedling"></i> Feed Usage</div>
+                <div class="info-value" style="margin-bottom: 8px;">Date & Units</div>
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% for feed in update.feeds %}
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 2px;">
+                            <span>{{ update.date.strftime('%Y-%m-%d') }} - {{ feed.brand }} {{ feed.category }}</span>
+                            <span>{{ "%.2f"|format(update.get_feed_quantity(feed.id)) }} packets</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #888;">No feed usage recorded</div>
+                {% endfor %}
+            </div>
+            <!-- Medicine Card -->
+            <div class="info-box">
+                <div class="info-label"><i class="fas fa-pills"></i> Medicine Usage</div>
+                <div class="info-value" style="margin-bottom: 8px;">Date & Units</div>
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% for item in update.items if item.item_type == 'medicine' %}
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 2px;">
+                            <span>{{ update.date.strftime('%Y-%m-%d') }} - {{ item.get_item().name }}</span>
+                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #888;">No medicine usage recorded</div>
+                {% endfor %}
+            </div>
+            <!-- Health Materials Card -->
+            <div class="info-box">
+                <div class="info-label"><i class="fas fa-medkit"></i> Health Materials Usage</div>
+                <div class="info-value" style="margin-bottom: 8px;">Date & Units</div>
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% for item in update.items if item.item_type == 'health_material' %}
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 2px;">
+                            <span>{{ update.date.strftime('%Y-%m-%d') }} - {{ item.get_item().name }}</span>
+                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #888;">No health material usage recorded</div>
+                {% endfor %}
+            </div>
+            <!-- Vaccine Card -->
+            <div class="info-box">
+                <div class="info-label"><i class="fas fa-syringe"></i> Vaccine Usage</div>
+                <div class="info-value" style="margin-bottom: 8px;">Date & Units</div>
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% for item in update.items if item.item_type == 'vaccine' %}
+                        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 2px;">
+                            <span>{{ update.date.strftime('%Y-%m-%d') }} - {{ item.get_item().name }}</span>
+                            <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #888;">No vaccine usage recorded</div>
+                {% endfor %}
+            </div>
+        </div>
     {% else %}
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i>
