@@ -551,14 +551,14 @@ class FinancialSummary(db.Model):
         if batch.feed_stock > 0:
             # Get the latest feed quantity per unit
             i=-1
-            while i != -5:
+            while i != -40:
                 latest_update = batch.updates[i] if batch.updates else None
                 print(latest_update)
                 print(latest_update.feeds)
                 if latest_update and latest_update.feeds:
                     latest_feed = latest_update.feeds[0]
                     quantity_per_unit = latest_update.get_feed_quantity_per_unit(latest_feed.id)
-                    print(quantity_per_unit)
+                    print("quantity",quantity_per_unit)
                     if quantity_per_unit:
                         total_feed_used -= batch.feed_stock * quantity_per_unit
                         break
@@ -595,7 +595,7 @@ class FinancialSummary(db.Model):
             fcr_rates = FCRRate.query.order_by(FCRRate.lower_limit).all()
             print(fcr_rates)
             for rate in fcr_rates:
-                if self.fcr_value >= rate.lower_limit and (rate.upper_limit is None or self.fcr_value < rate.upper_limit):
+                if self.fcr_value >= rate.lower_limit and (rate.upper_limit is None or self.fcr_value <= rate.upper_limit):
                     self.fcr_rate = rate.rate
                     break
             self.fcr_price = total_weight_sold * (self.fcr_rate or 0.0)
