@@ -247,6 +247,20 @@ class Batch(db.Model):
         """Calculate total weight sold across all harvests"""
         return sum(harvest.weight for harvest in self.harvests)
 
+    def get_total_feed_delivered(self):
+        """Calculate total feed delivered from all batch updates"""
+        total = 0
+        for update in self.updates:
+            # Query the batch_update_feeds table to get feed quantities for this update
+            feed_quantities = db.session.query(batch_update_feeds.c.quantity).filter(
+                batch_update_feeds.c.batch_update_id == update.id
+            ).all()
+            
+            for quantity_row in feed_quantities:
+                total += quantity_row[0]  # quantity_row is a tuple, get the first element
+        
+        return total
+
 class Feed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     brand = db.Column(db.String(100), nullable=False)
@@ -1362,47 +1376,32 @@ def get_next_farm_batch_number(farm_id, new_shed_allocation=None):
         Batch.farm_id == farm_id,
         Batch.status.in_(['ongoing', 'closing'])
     ).all()
-    print(active_batches)
     shed_capacities = farm.get_shed_capacities() if hasattr(farm, 'get_shed_capacities') else []
-    print(shed_capacities)
     shed_available = farm.get_shed_available_capacities() if hasattr(farm, 'get_shed_available_capacities') else []
+
     # Subtract the allocation for the currently entering batch if provided
     if new_shed_allocation and len(new_shed_allocation) == len(shed_available):
         shed_available = [avail - alloc for avail, alloc in zip(shed_available, new_shed_allocation)]
-    print(shed_available)
+
     # A shed is fully empty if its available space equals its full capacity
     fully_empty_sheds = [avail for avail, cap in zip(shed_available, shed_capacities) if avail == cap]
-    print(fully_empty_sheds)
+
     # If there are no ongoing/closing batches and there are no fully empty sheds, treat as not available for new batch
     if not active_batches and not fully_empty_sheds:
         return 0
 
-    # Get all batch numbers for this farm
+    # Get all batch numbers for this farm (used by any batch)
     farm_batches = Batch.query.filter_by(farm_id=farm_id).all()
-    
-    # Get all used batch numbers
-    used_numbers = {batch.farm_batch_number for batch in farm_batches if batch.farm_batch_number is not None}
-    
-    # Get all closed batch numbers
-    closed_numbers = {batch.farm_batch_number for batch in farm_batches 
-                     if batch.farm_batch_number is not None and batch.status == 'closed'}
-    
-    # Get all ongoing batch numbers
-    ongoing_numbers = {batch.farm_batch_number for batch in farm_batches 
-                      if batch.farm_batch_number is not None and batch.status == 'ongoing'}
-    
-    # Find available closed numbers (closed numbers not used by ongoing batches)
-    available_closed_numbers = closed_numbers - ongoing_numbers
-    
-    # Find the first available number, prioritizing available closed batch numbers
-    if available_closed_numbers:
-        # If there are available closed batches, use the lowest available closed batch number
-        return min(available_closed_numbers)
-    else:
-        # If no available closed batches, use the next available number
-        if used_numbers:
-            return max(used_numbers) + 1
-        return 1
+    used_numbers = sorted({batch.farm_batch_number for batch in farm_batches if batch.farm_batch_number is not None and batch.farm_batch_number > 0})
+
+    # Find the lowest missing positive integer
+    next_number = 1
+    for num in used_numbers:
+        if num == next_number:
+            next_number += 1
+        elif num > next_number:
+            break
+    return next_number
 
 @app.route('/batches/add', methods=['GET', 'POST'])
 @login_required
@@ -2112,23 +2111,7 @@ def edit_batch_update(batch_id, date):
             flash('Update not found', 'error')
             return redirect(url_for('view_batch', batch_id=batch.id))
         
-        # Get all scheduled items
-        medicine_schedules = MedicineSchedule.query.filter(
-            MedicineSchedule.schedule_date <= update_date,
-            MedicineSchedule.batches.contains(batch),
-        ).all()
-        
-        health_material_schedules = HealthMaterialSchedule.query.filter(
-            HealthMaterialSchedule.scheduled_date <= update_date,
-            HealthMaterialSchedule.batches.contains(batch),
-        ).all()
-        
-        vaccine_schedules = VaccineSchedule.query.filter(
-            VaccineSchedule.scheduled_date <= update_date,
-            VaccineSchedule.batches.contains(batch),
-        ).all()
-        
-        # Get selected schedules
+        # Get selected schedules from current batch update first
         selected_medicine_schedules = set()
         selected_health_material_schedules = set()
         selected_vaccine_schedules = set()
@@ -2141,6 +2124,34 @@ def edit_batch_update(batch_id, date):
                     selected_health_material_schedules.add(item.schedule_id)
                 elif item.item_type == 'vaccine':
                     selected_vaccine_schedules.add(item.schedule_id)
+        
+        # Get all scheduled items (incomplete ones + ones completed by this batch update)
+        medicine_schedules = MedicineSchedule.query.filter(
+            MedicineSchedule.schedule_date <= update_date,
+            MedicineSchedule.batches.contains(batch),
+            db.or_(
+                MedicineSchedule.completed == False,
+                MedicineSchedule.id.in_(selected_medicine_schedules)
+            )
+        ).all()
+        
+        health_material_schedules = HealthMaterialSchedule.query.filter(
+            HealthMaterialSchedule.scheduled_date <= update_date,
+            HealthMaterialSchedule.batches.contains(batch),
+            db.or_(
+                HealthMaterialSchedule.completed == False,
+                HealthMaterialSchedule.id.in_(selected_health_material_schedules)
+            )
+        ).all()
+        
+        vaccine_schedules = VaccineSchedule.query.filter(
+            VaccineSchedule.scheduled_date <= update_date,
+            VaccineSchedule.batches.contains(batch),
+            db.or_(
+                VaccineSchedule.completed == False,
+                VaccineSchedule.id.in_(selected_vaccine_schedules)
+            )
+        ).all()
         
         if request.method == 'POST':
             try:

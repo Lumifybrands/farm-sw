@@ -1620,7 +1620,7 @@
             </div>
             <div class="info-box">
                 <div class="info-label">Feed Delivered</div>
-                <div class="info-value">{{ "%.2f"|format(batch.feed_usage + batch.feed_stock) }}</div>
+                <div class="info-value">{{ "%.2f"|format(batch.get_total_feed_delivered()) }} packets</div>
             </div>
             <div class="info-box">
                 <div class="info-label">Manager</div>
