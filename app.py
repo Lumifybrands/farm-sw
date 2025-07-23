@@ -1449,7 +1449,9 @@ def edit_batch(batch_id):
             batch.brand = brand
             batch.total_birds = total_birds
             batch.extra_chicks = extra_chicks
-            batch.available_birds = total_birds - batch.total_mortality
+            # Calculate total harvested birds
+            total_harvested = sum(harvest.quantity for harvest in batch.harvests)
+            batch.available_birds = total_birds - batch.total_mortality - total_harvested
             batch.shed_birds = json.dumps(shed_birds)
             batch.cost_per_chicken = cost_per_chicken
             batch.created_at = new_created_at
