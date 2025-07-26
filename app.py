@@ -144,6 +144,7 @@ class Batch(db.Model):
     status = db.Column(db.String(20), nullable=False, default='ongoing')  # 'ongoing', 'closing', 'closed'
     created_at = db.Column(db.DateTime, nullable=False)  # Remove default to make it editable
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    closed_at = db.Column(db.DateTime, nullable=True)  # Track when batch was closed
 
     # Relationships
     farm = db.relationship('Farm', backref=db.backref('batches', lazy=True))
@@ -151,9 +152,17 @@ class Batch(db.Model):
 
     def get_shed_birds(self):
         try:
-            return json.loads(self.shed_birds) if self.shed_birds else []
+            shed_birds = json.loads(self.shed_birds) if self.shed_birds else []
         except (json.JSONDecodeError, TypeError):
-            return []
+            shed_birds = []
+        
+        # Ensure the list matches the current number of sheds in the farm
+        if self.farm:
+            current_num_sheds = self.farm.num_sheds
+            while len(shed_birds) < current_num_sheds:
+                shed_birds.append(0)  # Pad with zeros for new sheds
+        
+        return shed_birds
 
     def set_shed_birds(self, birds):
         try:
@@ -163,14 +172,21 @@ class Batch(db.Model):
 
     def get_age_days(self):
         # Use local timezone instead of UTC
-        today = datetime.now().date()
+        if self.status == 'closed' and self.closed_at:
+            # If batch is closed, calculate age from creation to closed date
+            end_date = self.closed_at.date()
+        else:
+            # If batch is ongoing or closing, calculate age from creation to today
+            end_date = datetime.now().date()
+        
         created_date = self.created_at.date()
-        return (today - created_date).days + 1
+        return (end_date - created_date).days + 1
 
     def check_and_update_status(self):
         """Check if batch should be marked as closed based on available birds"""
         if self.available_birds <= 0 and self.status == 'closing':
             self.status = 'closed'
+            self.closed_at = datetime.now()  # Set the closed date
             financial_summary = self.financial_summary or FinancialSummary(batch_id=self.id)
             financial_summary.calculate_summary(self)
             db.session.add(financial_summary)
@@ -1583,6 +1599,7 @@ def update_batch_status(batch_id):
         
         # If changing to closed, create or update financial summary
         if new_status == 'closed':
+            batch.closed_at = datetime.now()  # Set the closed date
             financial_summary = batch.financial_summary or FinancialSummary(batch_id=batch.id)
             financial_summary.calculate_summary(batch)
             db.session.add(financial_summary)
@@ -4408,7 +4425,7 @@ def create_schedules_for_batch(batch):
             try:
                 # Get schedule ages and ensure they are integers
                 ages = [int(age) for age in auto_schedule.get_schedule_ages() if age is not None]
-                batch_created_date = batch.created_at.date()
+                batch_created_date = batch.created_at.date() - timedelta(days=1)
                 
                 for age in ages:
                     schedule_date = batch_created_date + timedelta(days=age)
