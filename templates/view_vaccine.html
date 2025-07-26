@@ -40,7 +40,7 @@
         <label><i class="fas fa-calendar-check"></i> Scheduled Applications</label>
         {% if vaccine.schedules %}
         <div class="schedules-grid">
-            {% for schedule in vaccine.schedules %}
+            {% for schedule in vaccine.schedules if not schedule.completed %}
             <div class="schedule-card">
                 <div class="schedule-header">
                     <div class="schedule-date">
