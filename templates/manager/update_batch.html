@@ -88,15 +88,6 @@
                 </div>
             </div>
 
-            <!-- Feed Section -->
-            <div class="dynamic-section" id="feedSection">
-                <h3>Feed Allocation</h3>
-                <div class="dynamic-items" id="feedItems">
-                </div>
-                <button type="button" class="add-item" onclick="addFeedItem()">
-                    <i class="fas fa-plus"></i> Add Feed
-                </button>
-            </div>
             <!-- Show Advanced Toggle (Checkbox) -->
             <div class="show-advanced-toggle" style="margin-bottom: 1em;">
                 <label for="advancedToggle" style="cursor:pointer; color:#1a73e8; font-weight:500;">
@@ -301,6 +292,39 @@
         </div>
     </form>
     {% endif %}
+</div>
+
+<!-- Past Update Modal -->
+<div id="pastUpdateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Past Feed Allocation</h2>
+            <span class="close" onclick="closePastUpdateModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="date-selector-section">
+                <h3>Select Date</h3>
+                <p>Choose a date from the past 5 days to add feed allocation:</p>
+                <div class="date-grid" id="dateGrid">
+                    <!-- Dates will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="feed-allocation-section" id="feedAllocationSection" style="display: none;">
+                <h3>Feed Allocation for <span id="selectedDateDisplay"></span></h3>
+                <div class="feed-items-container" id="pastFeedItems">
+                    <!-- Feed items will be added here -->
+                </div>
+                <button type="button" class="add-feed-btn" onclick="addPastFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="cancel-btn" onclick="closePastUpdateModal()">Cancel</button>
+            <button type="button" class="submit-btn" onclick="savePastFeedAllocation()">Save Feed Allocation</button>
+        </div>
+    </div>
 </div>
 
 <!-- Past Update Modal -->
