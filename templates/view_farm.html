@@ -54,9 +54,9 @@
     </div>
 
     <div class="detail-group">
-        <label><i class="fas fa-user-tie"></i> Assigned Manager</label>
+        <label><i class="fas fa-user-tie"></i> Assigned Supervisor</label>
         {% if farm.manager %}
-            <span>{{ farm.manager.employee.name if farm.manager.employee else farm.manager.username }} ({{ 'Senior Manager' if farm.manager.user_type == 'senior_manager' else 'Assistant Manager' }})</span>
+            <span>{{ farm.manager.employee.name if farm.manager.employee else farm.manager.username }} ({{ 'Senior Supervisor' if farm.manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }})</span>
         {% else %}
             <span>Not assigned</span>
         {% endif %}
