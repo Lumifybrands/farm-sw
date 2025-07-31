@@ -56,17 +56,20 @@
                 </div>
             </div>
         </div>
+        <button type="button" class="past-update-btn" onclick="openPastUpdateModal()">
+            <i class="fas fa-history"></i> Add Past Feed Allocation
+        </button>
 
         <div class="update-section">
             <h2>Today's Update</h2>
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="mortality_count">Mortality Count</label>
+                    <label for="mortality_count">Mortality Count (CM : {{ batch.mortality_count }})</label>
                     <input type="number" id="mortality_count" name="mortality_count" min="0" value="0" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="feed_used">Feed Used (Packets)</label>
+                    <label for="feed_used">Feed Used (CS : {{ batch.feed_stock }} packets)</label>
                     <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
                 </div>
 
@@ -85,6 +88,15 @@
                 </div>
             </div>
 
+            <!-- Feed Section -->
+            <div class="dynamic-section" id="feedSection">
+                <h3>Feed Allocation</h3>
+                <div class="dynamic-items" id="feedItems">
+                </div>
+                <button type="button" class="add-item" onclick="addFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
             <!-- Show Advanced Toggle (Checkbox) -->
             <div class="show-advanced-toggle" style="margin-bottom: 1em;">
                 <label for="advancedToggle" style="cursor:pointer; color:#1a73e8; font-weight:500;">
@@ -100,15 +112,6 @@
                     </div>
                     <button type="button" class="add-item" onclick="addFeedItem()">
                         <i class="fas fa-plus"></i> Add Feed
-                    </button>
-                </div>
-
-                <!-- Feed Stock Return Section -->
-                <div class="dynamic-section" id="feedStockReturnSection">
-                    <h3>Feed Stock Return</h3>
-                    <div class="dynamic-items" id="feedReturnItems"></div>
-                    <button type="button" class="add-item" onclick="addFeedReturnItem()">
-                        <i class="fas fa-plus"></i> Add Feed Return
                     </button>
                 </div>
 
@@ -257,17 +260,26 @@
                     </div>
                 </div>
 
-                <!-- Other Items Section -->
-                <div class="dynamic-section" id="otherItemsSection">
-                    <h3>Other Items</h3>
-                    <div class="dynamic-items" id="otherItems"></div>
-                    <div class="item-type-selector">
-                        <button type="button" onclick="addMedicineItem()">Add Medicine</button>
-                        <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
-                        <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
-                        <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
-                    </div>
+            <!-- Other Items Section -->
+            <div class="dynamic-section" id="otherItemsSection">
+                <h3>Other Items</h3>
+                <div class="dynamic-items" id="otherItems"></div>
+                <div class="item-type-selector">
+                    <button type="button" onclick="addMedicineItem()">Add Medicine</button>
+                    <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                    <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                    <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
                 </div>
+            </div>
+
+            <!-- Feed Stock Return Section -->
+            <div class="dynamic-section" id="feedStockReturnSection">
+                <h3>Feed Stock Return</h3>
+                <div class="dynamic-items" id="feedReturnItems"></div>
+                <button type="button" class="add-item" onclick="addFeedReturnItem()">
+                    <i class="fas fa-plus"></i> Add Feed Return
+                </button>
+            </div>
 
                 <div class="form-group full-width">
                     <label for="remarks">Remarks</label>
@@ -289,6 +301,39 @@
         </div>
     </form>
     {% endif %}
+</div>
+
+<!-- Past Update Modal -->
+<div id="pastUpdateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Past Feed Allocation</h2>
+            <span class="close" onclick="closePastUpdateModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="date-selector-section">
+                <h3>Select Date</h3>
+                <p>Choose a date from the past 5 days to add feed allocation:</p>
+                <div class="date-grid" id="dateGrid">
+                    <!-- Dates will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="feed-allocation-section" id="feedAllocationSection" style="display: none;">
+                <h3>Feed Allocation for <span id="selectedDateDisplay"></span></h3>
+                <div class="feed-items-container" id="pastFeedItems">
+                    <!-- Feed items will be added here -->
+                </div>
+                <button type="button" class="add-feed-btn" onclick="addPastFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="cancel-btn" onclick="closePastUpdateModal()">Cancel</button>
+            <button type="button" class="submit-btn" onclick="savePastFeedAllocation()">Save Feed Allocation</button>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -920,6 +965,262 @@ textarea:focus {
 }
 
 .advanced-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; background: #f8f9fa; margin-bottom: 1em; }
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        max-height: 85vh;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #1a73e8;
+    font-size: 1.3rem;
+}
+
+.close {
+    color: #666;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: #dc2626;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 15px;
+    }
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+}
+
+@media (max-width: 480px) {
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+    }
+}
+
+.date-selector-section h3 {
+    color: #1a73e8;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.date-selector-section p {
+    color: #666;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+}
+
+.date-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+    .date-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.date-option {
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.date-option:hover {
+    border-color: #1a73e8;
+    background: #e8f0fe;
+}
+
+.date-option.selected {
+    border-color: #1a73e8;
+    background: #1a73e8;
+    color: white;
+}
+
+.date-option.has-update {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.date-option.has-update:hover {
+    border-color: #10b981;
+    background: #dcfce7;
+}
+
+.date-option.no-feed {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.date-option.no-feed:hover {
+    border-color: #f59e0b;
+    background: #fef3c7;
+}
+
+.feed-allocation-section h3 {
+    color: #1a73e8;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.feed-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.past-feed-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 480px) {
+    .past-feed-item {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
+.past-feed-item select,
+.past-feed-item input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    background: white;
+}
+
+.past-feed-item select:focus,
+.past-feed-item input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    outline: none;
+}
+
+.add-feed-btn {
+    padding: 12px;
+    border: 1px dashed #1a73e8;
+    border-radius: 6px;
+    background: white;
+    color: #1a73e8;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.add-feed-btn:hover {
+    background: #e8f0fe;
+}
+
+.past-update-btn {
+    padding: 10px 20px;
+    border: 1px solid #1a73e8;
+    border-radius: 6px;
+    background: white;
+    color: #1a73e8;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.past-update-btn:hover {
+    background: #e8f0fe;
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .form-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+}
 </style>
 
 <script>
@@ -1077,6 +1378,211 @@ function addFeedReturnItem() {
         </div>
     `;
     document.getElementById('feedReturnItems').insertAdjacentHTML('beforeend', template);
+}
+
+// Modal functionality
+let selectedPastDate = null;
+let pastFeedIndex = 0;
+
+function openPastUpdateModal() {
+    const modal = document.getElementById('pastUpdateModal');
+    modal.style.display = 'block';
+    populateDateGrid();
+}
+
+function closePastUpdateModal() {
+    const modal = document.getElementById('pastUpdateModal');
+    modal.style.display = 'none';
+    selectedPastDate = null;
+    document.getElementById('feedAllocationSection').style.display = 'none';
+    document.getElementById('pastFeedItems').innerHTML = '';
+    pastFeedIndex = 0;
+}
+
+function populateDateGrid() {
+    const dateGrid = document.getElementById('dateGrid');
+    dateGrid.innerHTML = '';
+    
+    const today = new Date();
+    const feedsData = {{ feeds|map(attribute='id')|list|tojson }};
+    const feedsNames = {{ feeds|map(attribute='brand')|list|tojson }};
+    const feedsCategories = {{ feeds|map(attribute='category')|list|tojson }};
+    const batchUpdatesData = {{ batch_updates_data|tojson }};
+    
+    for (let i = 1; i <= 5; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const formattedDate = date.toLocaleDateString('en-GB', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+        });
+        
+        // Check if update exists for this date
+        const existingUpdate = batchUpdatesData.find(update => 
+            update.date === dateStr
+        );
+        
+        // Check if feed allocation exists
+        const hasFeedAllocation = existingUpdate && 
+            existingUpdate.feed_allocations && 
+            existingUpdate.feed_allocations.length > 0;
+        
+        // Check if past feed allocation was already added today
+        const hasPastAllocation = existingUpdate && 
+            existingUpdate.has_past_allocation;
+        
+        // Only show dates that don't have feed allocations and haven't been processed today
+        if (!hasFeedAllocation && !hasPastAllocation) {
+            let className = 'date-option';
+            let statusText = '';
+            
+            if (existingUpdate) {
+                className += ' no-feed';
+                statusText = '⚠ No Feed';
+            } else {
+                statusText = 'No Update';
+            }
+            
+            const dateOption = document.createElement('div');
+            dateOption.className = className;
+            dateOption.innerHTML = `
+                <div>${formattedDate}</div>
+                <small>${statusText}</small>
+            `;
+            dateOption.onclick = () => selectPastDate(dateStr, formattedDate, existingUpdate);
+            dateGrid.appendChild(dateOption);
+        }
+    }
+}
+
+function selectPastDate(dateStr, formattedDate, existingUpdate) {
+    // Remove previous selection
+    document.querySelectorAll('.date-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Add selection to clicked option
+    event.target.closest('.date-option').classList.add('selected');
+    
+    selectedPastDate = dateStr;
+    document.getElementById('selectedDateDisplay').textContent = formattedDate;
+    
+    // Show feed allocation section
+    document.getElementById('feedAllocationSection').style.display = 'block';
+    
+    // Clear previous feed items
+    document.getElementById('pastFeedItems').innerHTML = '';
+    pastFeedIndex = 0;
+    
+    // If existing update has feed allocations, populate them
+    if (existingUpdate && existingUpdate.feed_allocations && existingUpdate.feed_allocations.length > 0) {
+        existingUpdate.feed_allocations.forEach(allocation => {
+            addPastFeedItem(allocation.feed_id, allocation.quantity);
+        });
+    } else {
+        // Add one empty feed item
+        addPastFeedItem();
+    }
+}
+
+function addPastFeedItem(feedId = '', quantity = '') {
+    const feedsData = {{ feeds|map(attribute='id')|list|tojson }};
+    const feedsNames = {{ feeds|map(attribute='brand')|list|tojson }};
+    const feedsCategories = {{ feeds|map(attribute='category')|list|tojson }};
+    let optionsHtml = '<option value="">Select Feed</option>';
+    
+    feedsData.forEach((feedIdValue, index) => {
+        const selected = feedId == feedIdValue ? 'selected' : '';
+        optionsHtml += `<option value="${feedIdValue}" ${selected}>${feedsNames[index]} - ${feedsCategories[index]}</option>`;
+    });
+    
+    const template = `
+        <div class="past-feed-item">
+            <select name="past_feed_id[]" ${feedId ? 'disabled' : ''}>
+                ${optionsHtml}
+            </select>
+            <input type="number" name="past_feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="${quantity}" ${feedId ? 'disabled' : ''}>
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removePastFeedItem(this)" ${feedId ? 'style="display: none;"' : ''}>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    document.getElementById('pastFeedItems').insertAdjacentHTML('beforeend', template);
+    pastFeedIndex++;
+}
+
+function removePastFeedItem(button) {
+    button.closest('.past-feed-item').remove();
+}
+
+function savePastFeedAllocation() {
+    if (!selectedPastDate) {
+        alert('Please select a date first.');
+        return;
+    }
+    
+    const feedSelects = document.querySelectorAll('#pastFeedItems select[name="past_feed_id[]"]');
+    const feedQuantities = document.querySelectorAll('#pastFeedItems input[name="past_feed_quantity[]"]');
+    
+    let hasValidData = false;
+    const feedData = [];
+    
+    for (let i = 0; i < feedSelects.length; i++) {
+        const feedId = feedSelects[i].value;
+        const quantity = parseFloat(feedQuantities[i].value);
+        
+        if (feedId && quantity > 0) {
+            hasValidData = true;
+            feedData.push({
+                feed_id: feedId,
+                quantity: quantity
+            });
+        }
+    }
+    
+    if (!hasValidData) {
+        alert('Please add at least one feed with valid quantity.');
+        return;
+    }
+    
+    // Send data to server
+    fetch(`{{ url_for('manager_update_batch', batch_id=batch.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'add_past_feed_allocation',
+            date: selectedPastDate,
+            feed_allocations: feedData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Feed allocation saved successfully!');
+            closePastUpdateModal();
+            // Optionally refresh the page or update the UI
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the feed allocation.');
+    });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('pastUpdateModal');
+    if (event.target === modal) {
+        closePastUpdateModal();
+    }
 }
 
 // Form validation

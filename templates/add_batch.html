@@ -37,7 +37,7 @@
                 {% for manager in managers %}
                 <option value="{{ manager.id }}">
                     {{ manager.employee.name if manager.employee else manager.username }} 
-                    ({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})
+                    ({{ 'Senior Supervisor' if manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }})
                 </option>
                 {% endfor %}
             </select>

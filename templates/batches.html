@@ -409,7 +409,7 @@
                             <span class="checkmark"></span>
                             <span class="option-text">
                                 {{ manager.employee.name if manager.employee else manager.username }}
-                                <small>({{ 'Senior Manager' if manager.user_type == 'senior_manager' else 'Assistant Manager' }})</small>
+                                <small>({{ 'Senior Supervisor' if manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }})</small>
                             </span>
                         </label>
                         {% endfor %}
