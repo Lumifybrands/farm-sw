@@ -593,17 +593,10 @@
 
 .update-stats {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    gap: 20px;
     flex: 1;
     margin: 0 20px;
-}
-
-.stats-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
 }
 
 .stat-item {
@@ -740,12 +733,8 @@
     
     .update-stats {
         margin: 0;
-        gap: 8px;
-    }
-    
-    .stats-row {
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 12px;
     }
     
     .update-actions {
@@ -2098,181 +2087,81 @@
 
 <!-- Basic Information Section -->
 <div id="basic-info" class="section-content active">
-    <div class="info-grid">
-        <div class="info-box">
-            <div class="info-label">Batch Number</div>
-            <div class="info-value">{{ batch.batch_number }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Farm Batch Number</div>
-            <div class="info-value">#{{ batch.farm_batch_number }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Farm Name</div>
-            <div class="info-value">{{ batch.farm.name }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Age</div>
-            <div class="info-value">{{ batch.get_age_days() }} days</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Available Birds</div>
-            <div class="info-value">{{ batch.available_birds }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Mortality</div>
-            <div class="info-value">
-                {{ batch.total_mortality }} 
-                <span class="mortality-rate">({{ "%.2f"|format((batch.total_mortality / batch.total_birds * 100) if batch.total_birds > 0 else 0) }}%)</span>
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">Batch Number</div>
+                <div class="info-value">{{ batch.batch_number }}</div>
             </div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Feed Used</div>
-            <div class="info-value">{{ "%.2f"|format(batch.feed_usage) }} packets</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Current Feed Stock</div>
-            <div class="info-value">{{ "%.2f"|format(batch.feed_stock) }} packets</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Feed Delivered</div>
-            <div class="info-value">{{ "%.2f"|format(batch.get_total_feed_delivered()) }} packets</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Manager</div>
-            <div class="info-value">
-                {% if batch.manager %}
-                    {{ batch.manager.employee.name if batch.manager.employee else batch.manager.username }}
-                    <span class="badge {% if batch.manager.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
-                        {{ 'Senior Supervisor' if batch.manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }}
-                    </span>
-                {% else %}
-                    <span class="text-muted">No manager assigned</span>
-                {% endif %}
+            <div class="info-box">
+                <div class="info-label">Farm Batch Number</div>
+                <div class="info-value">#{{ batch.farm_batch_number }}</div>
             </div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Status</div>
-            <div class="info-value">
-                <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+            <div class="info-box">
+                <div class="info-label">Farm Name</div>
+                <div class="info-value">{{ batch.farm.name }}</div>
             </div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Chicks Brand</div>
-            <div class="info-value">{{ batch.brand if batch.brand else 'Not specified' }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Total Birds</div>
-            <div class="info-value">{{ batch.total_birds }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Cost per Chick</div>
-            <div class="info-value">₹{{ "%.2f"|format(batch.cost_per_chicken) }}</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">Created On</div>
-            <div class="info-value">{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-        </div>
-    </div>
-
-    <!-- 2x2 Grid of Item Usage Cards -->
-    <h4 class="section-subtitle" style="margin-top: 30px; margin-bottom: 20px;">Batch Item Usage by Date</h4>
-    <div class="usage-grid">
-        <!-- Feed Card -->
-        <div class="usage-card feed-usage">
-            <div class="usage-card-header">
-                <i class="fa-solid fa-seedling"></i>
-                <span>Feed Usage</span>
+            <div class="info-box">
+                <div class="info-label">Age</div>
+                <div class="info-value">{{ batch.get_age_days() }} days</div>
             </div>
-            <div class="usage-card-content">
-                {% for update in batch.updates|sort(attribute='date') %}
-                    {% for feed in update.feeds %}
-                        <div class="usage-item">
-                            <div class="usage-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
-                            <div class="usage-details">
-                                <span class="usage-name">{{ feed.brand }} {{ feed.category }}</span>
-                                <span class="usage-quantity">{{ "%.2f"|format(update.get_feed_quantity(feed.id)) }} packets</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-usage">No feed usage recorded</div>
-                {% endfor %}
+            <div class="info-box">
+                <div class="info-label">Available Birds</div>
+                <div class="info-value">{{ batch.available_birds }}</div>
             </div>
-        </div>
-        
-        <!-- Medicine Card -->
-        <div class="usage-card medicine-usage">
-            <div class="usage-card-header">
-                <i class="fas fa-pills"></i>
-                <span>Medicine Usage</span>
+            <div class="info-box">
+                <div class="info-label">Mortality</div>
+                <div class="info-value">{{ batch.total_mortality }}</div>
             </div>
-            <div class="usage-card-content">
-                {% for update in batch.updates|sort(attribute='date') %}
-                    {% for item in update.items if item.item_type == 'medicine' %}
-                        <div class="usage-item">
-                            <div class="usage-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
-                            <div class="usage-details">
-                                <span class="usage-name">{{ item.get_item().name }}</span>
-                                <span class="usage-quantity">{{ "%.2f"|format(item.quantity) }} units</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-usage">No medicine usage recorded</div>
-                {% endfor %}
+            <div class="info-box">
+                <div class="info-label">Feed Used</div>
+                <div class="info-value">{{ "%.2f"|format(batch.feed_usage) }} packets</div>
             </div>
-        </div>
-        
-        <!-- Health Materials Card -->
-        <div class="usage-card health-usage">
-            <div class="usage-card-header">
-                <i class="fas fa-medkit"></i>
-                <span>Health Materials Usage</span>
+            <div class="info-box">
+                <div class="info-label">Current Feed Stock</div>
+                <div class="info-value">{{ "%.2f"|format(batch.feed_stock) }} packets</div>
             </div>
-            <div class="usage-card-content">
-                {% for update in batch.updates|sort(attribute='date') %}
-                    {% for item in update.items if item.item_type == 'health_material' %}
-                        <div class="usage-item">
-                            <div class="usage-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
-                            <div class="usage-details">
-                                <span class="usage-name">{{ item.get_item().name }}</span>
-                                <span class="usage-quantity">{{ "%.2f"|format(item.quantity) }} units</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-usage">No health material usage recorded</div>
-                {% endfor %}
+            <div class="info-box">
+                <div class="info-label">Feed Delivered</div>
+                <div class="info-value">{{ "%.2f"|format(batch.get_total_feed_delivered()) }} packets</div>
             </div>
-        </div>
-        
-        <!-- Vaccine Card -->
-        <div class="usage-card vaccine-usage">
-            <div class="usage-card-header">
-                <i class="fas fa-syringe"></i>
-                <span>Vaccine Usage</span>
+            <div class="info-box">
+                <div class="info-label">Manager</div>
+                <div class="info-value">
+                    {% if batch.manager %}
+                        {{ batch.manager.employee.name if batch.manager.employee else batch.manager.username }}
+                        <span class="badge {% if batch.manager.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            {{ 'Senior Supervisor' if batch.manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">No manager assigned</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="usage-card-content">
-                {% for update in batch.updates|sort(attribute='date') %}
-                    {% for item in update.items if item.item_type == 'vaccine' %}
-                        <div class="usage-item">
-                            <div class="usage-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
-                            <div class="usage-details">
-                                <span class="usage-name">{{ item.get_item().name }}</span>
-                                <span class="usage-quantity">{{ "%.2f"|format(item.quantity) }} units</span>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="no-usage">No vaccine usage recorded</div>
-                {% endfor %}
+            <div class="info-box">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    <span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span>
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Chicks Brand</div>
+                <div class="info-value">{{ batch.brand if batch.brand else 'Not specified' }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Total Birds</div>
+                <div class="info-value">{{ batch.total_birds }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Cost per Chick</div>
+                <div class="info-value">₹{{ "%.2f"|format(batch.cost_per_chicken) }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Created On</div>
+                <div class="info-value">{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
             </div>
         </div>
     </div>
-</div>
 
-{% if session.get('user_type') in ['admin'] %}
 <!-- Financial Summary Section -->
 <div id="financial-summary" class="section-content financial-summary">
     {% if batch.status == 'closed' %}
@@ -2465,6 +2354,128 @@
                         <div class="update-date">
                             <i class="fas fa-calendar"></i>
                             <span>{{ update.date.strftime('%d-%m-%Y') }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="color: #888;">No vaccine usage recorded</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Financial summary will be available after the batch is closed.
+        </div>
+    {% endif %}
+</div>
+
+<!-- Batch Updates Section -->
+<div id="batch-updates" class="section-content">
+    <div class="updates-header">
+        <h3>Batch Updates</h3>
+        <div class="updates-controls">
+            {% if batch.updates %}
+            <div class="date-dropdown-container">
+                <select id="updateDateDropdown" onchange="jumpToUpdate(this.value)">
+                    <option value="">Select Date to View</option>
+                    {% for update in batch.updates|sort(attribute='date', reverse=true) %}
+                    <option value="{{ update.date.strftime('%Y-%m-%d') }}">
+                        {{ update.date.strftime('%d-%m-%Y') }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <a href="/batches/{{ batch.id }}/update" class="add-update-btn">
+                <i class="fas fa-plus"></i> Add Update
+            </a>
+        </div>
+    </div>
+    
+    <div class="updates-list">
+        {% if batch.updates %}
+            {% for update in batch.updates|sort(attribute='date', reverse=true) %}
+            <div class="update-row" onclick="toggleUpdateDetails(this, '{{ update.date.strftime('%Y-%m-%d') }}')">
+                <div class="update-summary">
+                    <div class="update-header-info">
+                        <div class="update-date">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ update.date.strftime('%d-%m-%Y') }}</span>
+                        </div>
+                        {% if update.past_feed_allocations %}
+                        <div class="past-allocation-date">
+                            (Past: {{ update.past_feed_allocations[0].allocation_date.strftime('%d-%m-%Y') }})
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="update-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-skull"></i>
+                            <span class="stat-label">Mortality:</span>
+                            <span class="stat-value">{{ update.mortality_count }}</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-seedling"></i>
+                            <span class="stat-label">Feed Used:</span>
+                            <span class="stat-value">{{ "%.2f"|format(update.feed_used) }} packets</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-weight-hanging"></i>
+                            <span class="stat-label">Avg Weight:</span>
+                            <span class="stat-value">{{ "%.2f"|format(update.avg_weight) }} kg</span>
+                        </div>
+                        {% if update.feeds %}
+                        <div class="stat-item">
+                            <i class="fas fa-box"></i>
+                            <span class="stat-label">Feed Allocated:</span>
+                            <span class="stat-value">{{ "%.2f"|format(update.get_total_feed_packets()) }} packets</span>
+                        </div>
+                        {% endif %}
+                        {% if update.items %}
+                        <div class="stat-item">
+                            <i class="fas fa-pills"></i>
+                            <span class="stat-label">Items Used:</span>
+                            <span class="stat-value">{{ update.items|length }} items</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="update-actions">
+                        <a href="/batches/{{ batch.id }}/update/{{ update.date.strftime('%Y-%m-%d') }}/edit" class="edit-btn" onclick="event.stopPropagation()">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button onclick="deleteBatchUpdate('{{ update.date.strftime('%Y-%m-%d') }}')" class="delete-btn" onclick="event.stopPropagation()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <i class="fas fa-chevron-down expand-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="update-details" style="display: none;">
+                    <div class="details-content">
+                        <div class="basic-info">
+                            <h4>Basic Information</h4>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>Mortality Count</label>
+                                    <span>{{ update.mortality_count }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Feed Used</label>
+                                    <span>{{ "%.2f"|format(update.feed_used) }} packets</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Average Weight</label>
+                                    <span>{{ "%.2f"|format(update.avg_weight) }} kg</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Male Weight</label>
+                                    <span>{{ "%.2f"|format(update.male_weight) }} kg</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>Female Weight</label>
+                                    <span>{{ "%.2f"|format(update.female_weight) }} kg</span>
+                                </div>
+                            </div>
                         </div>
                         {% if update.past_feed_allocations %}
                         <div class="past-allocation-date">

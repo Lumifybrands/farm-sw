@@ -56,7 +56,7 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="past-update-btn" onclick="openPastUpdateModal()" style="margin-bottom: 10px;">
+        <button type="button" class="past-update-btn" onclick="openPastUpdateModal()">
             <i class="fas fa-history"></i> Add Past Feed Allocation
         </button>
 
@@ -75,13 +75,13 @@
             
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="mortality_count">Mortality Count (CM : <span id="current_mortality">{{ batch.total_mortality }}</span>)</label>
-                    <input type="number" id="mortality_count" name="mortality_count" min="0" value="0" required onchange="updateMortality()" oninput="updateMortality()">
+                    <label for="mortality_count">Mortality Count (CM : {{ batch.mortality_count }})</label>
+                    <input type="number" id="mortality_count" name="mortality_count" min="0" value="0" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="feed_used">Feed Used (CS : <span id="current_feed_stock">{{ batch.feed_stock }}</span> packets)</label>
-                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required onchange="updateFeedUsed()" oninput="updateFeedUsed()">
+                    <label for="feed_used">Feed Used (CS : {{ batch.feed_stock }} packets)</label>
+                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
                 </div>
 
                 <div class="form-group">
@@ -99,23 +99,15 @@
                 </div>
             </div>
 
-            <!-- Show Advanced Toggle (Checkbox) -->
-            <div class="show-advanced-toggle" style="margin-bottom: 1em;">
-                <label for="advancedToggle" style="cursor:pointer; color:#1a73e8; font-weight:500;">
-                    <input type="checkbox" id="advancedToggle" style="margin-right:8px;"> Show Advanced
-                </label>
-            </div>
-            <div id="advancedSection" class="advanced-section" style="display:none;">
-                <div style="color: red; font-weight: bold; margin-bottom: 1em;">If you see this, the advanced section is visible!</div>
-                <!-- Feed Section -->
-                <div class="dynamic-section" id="feedSection">
-                    <h3>Feed Allocation</h3>
-                    <div class="dynamic-items" id="feedItems">
-                    </div>
-                    <button type="button" class="add-item" onclick="addFeedItem()">
-                        <i class="fas fa-plus"></i> Add Feed
-                    </button>
+            <!-- Feed Section -->
+            <div class="dynamic-section" id="feedSection">
+                <h3>Feed Allocation</h3>
+                <div class="dynamic-items" id="feedItems">
                 </div>
+                <button type="button" class="add-item" onclick="addFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
 
                 <!-- Scheduled Items Section -->
                 <div class="dynamic-section" id="scheduledItemsSection">
@@ -303,39 +295,6 @@
         </div>
     </form>
     {% endif %}
-</div>
-
-<!-- Past Update Modal -->
-<div id="pastUpdateModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Add Past Feed Allocation</h2>
-            <span class="close" onclick="closePastUpdateModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="date-selector-section">
-                <h3>Select Date</h3>
-                <p>Choose a date from the past 5 days to add feed allocation:</p>
-                <div class="date-grid" id="dateGrid">
-                    <!-- Dates will be populated by JavaScript -->
-                </div>
-            </div>
-            
-            <div class="feed-allocation-section" id="feedAllocationSection" style="display: none;">
-                <h3>Feed Allocation for <span id="selectedDateDisplay"></span></h3>
-                <div class="feed-items-container" id="pastFeedItems">
-                    <!-- Feed items will be added here -->
-                </div>
-                <button type="button" class="add-feed-btn" onclick="addPastFeedItem()">
-                    <i class="fas fa-plus"></i> Add Feed
-                </button>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="cancel-btn" onclick="closePastUpdateModal()">Cancel</button>
-            <button type="button" class="submit-btn" onclick="savePastFeedAllocation()">Save Feed Allocation</button>
-        </div>
-    </div>
 </div>
 
 <!-- Past Update Modal -->
@@ -999,8 +958,6 @@ textarea:focus {
     }
 }
 
-.advanced-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; background: #f8f9fa; margin-bottom: 1em; }
-
 /* Modal Styles */
 .modal {
     display: none;
@@ -1649,12 +1606,6 @@ window.onclick = function(event) {
         closePastUpdateModal();
     }
 }
-
-// Initialize feed used calculation on page load
-document.addEventListener('DOMContentLoaded', function() {
-    updateFeedUsed();
-    updateMortality();
-});
 
 // Form validation
 document.querySelector('.update-form').addEventListener('submit', function(e) {
