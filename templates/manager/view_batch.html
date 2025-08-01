@@ -53,17 +53,22 @@
                 <div class="info-item">
                     <i class="fas fa-utensils"></i>
                     <label>Feed Usage</label>
-                    <span>{{ "%.2f"|format(batch.feed_usage) }} kg</span>
+                    <span>{{ "%.2f"|format(batch.feed_usage) }} Packets</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-box"></i>
                     <label>Feed Stock</label>
-                    <span>{{ "%.2f"|format(batch.feed_stock) }} kg</span>
+                    <span>{{ "%.2f"|format(batch.feed_stock) }} Packets</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-skull"></i>
                     <label>Total Mortality</label>
                     <span>{{ batch.total_mortality }}</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-cut"></i>
+                    <label>Total Harvested</label>
+                    <span>{{ batch.get_total_harvested_birds() }}</span>
                 </div>
             </div>
         </div>
@@ -71,10 +76,13 @@
 
     <!-- Farm Details Card -->
     <div class="detail-card farm-card">
-        <div class="card-header">
+        <div class="card-header expandable-header" onclick="toggleFarmCard()">
             <h2>Farm Information</h2>
+            <div class="expand-icon">
+                <i class="fas fa-chevron-down" id="farmExpandIcon"></i>
+            </div>
         </div>
-        <div class="card-content">
+        <div class="card-content farm-content" id="farmContent">
             <div class="info-list">
                 <div class="info-item">
                     <i class="fas fa-warehouse"></i>
@@ -144,7 +152,7 @@
                         <div class="category-section">
                             <div class="category-header">
                                 <i class="fas fa-wheat"></i>
-                                <h4>Feeds Used</h4>
+                                <h4>Feeds Allocations</h4>
                             </div>
                             <div class="items-grid">
                                 {% for feed in update.feeds %}
@@ -381,6 +389,34 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    .expandable-header {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .expandable-header:hover {
+        background: #f1f5f9;
+    }
+
+    .expand-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .expand-icon.expanded {
+        transform: rotate(180deg);
+    }
+
+    .farm-content {
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+        overflow: hidden;
+    }
+
+    .farm-content.collapsed {
+        max-height: 0;
+        opacity: 0;
+        padding: 0;
     }
 
     .card-header h2 {
@@ -836,6 +872,19 @@
             min-width: 100%;
         }
 
+        /* Mobile: Farm card collapsed by default */
+        .farm-content {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+        }
+
+        .farm-content.mobile-expanded {
+            max-height: 200px;
+            opacity: 1;
+            padding: 24px;
+        }
+
         .update-controls {
             width: 100%;
             margin-top: 10px;
@@ -934,6 +983,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Initialize farm card state based on screen size
+    initializeFarmCard();
+});
+
+function toggleFarmCard() {
+    const farmContent = document.getElementById('farmContent');
+    const expandIcon = document.getElementById('farmExpandIcon');
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile behavior
+        farmContent.classList.toggle('mobile-expanded');
+        expandIcon.classList.toggle('expanded');
+    } else {
+        // Desktop behavior
+        farmContent.classList.toggle('collapsed');
+        expandIcon.classList.toggle('expanded');
+    }
+}
+
+function initializeFarmCard() {
+    const farmContent = document.getElementById('farmContent');
+    const expandIcon = document.getElementById('farmExpandIcon');
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: start collapsed
+        farmContent.classList.remove('mobile-expanded');
+        expandIcon.classList.remove('expanded');
+    } else {
+        // Desktop: start expanded
+        farmContent.classList.remove('collapsed');
+        expandIcon.classList.remove('expanded');
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    initializeFarmCard();
 });
 </script>
 {% endblock %}

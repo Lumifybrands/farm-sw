@@ -43,9 +43,9 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_type' not in session or session['user_type'] != 'admin':
-            flash('Access denied. Administrators only.', 'error')
-            if session.get('user_type') == 'manager':
+        if 'user_type' not in session or session['user_type'] not in ['admin', 'manager']:
+            flash('Access denied. Administrators and Managers only.', 'error')
+            if session.get('user_type') in ['assistant_supervisor', 'senior_supervisor']:
                 return redirect(url_for('manager_dashboard'))
             return redirect(url_for('index'))
         return f(*args, **kwargs)
@@ -56,7 +56,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    user_type = db.Column(db.String(20), nullable=False, default='assistant_supervisor')  # 'admin', 'senior_supervisor', or 'assistant_supervisor'
+    user_type = db.Column(db.String(20), nullable=False, default='assistant_supervisor')  # 'admin', 'manager', 'senior_supervisor', or 'assistant_supervisor'
     employee = db.relationship('Employee', backref='user', uselist=False)
 
     def set_password(self, password):
@@ -196,6 +196,13 @@ class Batch(db.Model):
         total = 0
         for harvest in self.harvests:
             total += harvest.total_value
+        return total
+
+    def get_total_harvested_birds(self):
+        """Calculate total birds harvested from all harvests"""
+        total = 0
+        for harvest in self.harvests:
+            total += harvest.quantity
         return total
 
     def get_feed_cost(self):
@@ -653,7 +660,7 @@ class FinancialSummary(db.Model):
             self.fcr_value = total_feed_used / total_weight_sold
         else:
             self.fcr_value = 0.0
-        self.fcr_value = round(self.fcr_value, 2)
+        self.fcr_value = round(self.fcr_value, 3)
         print("fcr value",self.fcr_value)
 
         # Determine FCR rate based on the calculated FCR value
@@ -1064,10 +1071,12 @@ def dashboard():
         avg_fcr_this_month = 0
         total_profit_this_month = 0
     
-    # Get batches with high or medium risk remarks
+    # Get batches with high or medium risk remarks (excluding closed batches)
     risk_updates = (
         BatchUpdate.query
+        .join(Batch, BatchUpdate.batch_id == Batch.id)
         .filter(BatchUpdate.remarks_priority.in_(['high', 'medium']))
+        .filter(Batch.status != 'closed')
         .options(joinedload(BatchUpdate.batch))
         .order_by(
             BatchUpdate.remarks_priority.desc(),  # 'high' > 'medium'
@@ -1389,7 +1398,7 @@ def delete_farm(farm_id):
 def batches():
     batches = Batch.query.all()
     farms = Farm.query.all()
-    managers = User.query.filter(User.user_type.in_(['assistant_supervisor', 'senior_supervisor'])).all()
+    managers = User.query.filter(User.user_type.in_(['manager', 'assistant_supervisor', 'senior_supervisor'])).all()
     return render_template('batches.html', 
                          batches=batches,
                          farms=farms,
@@ -1558,6 +1567,7 @@ def edit_batch(batch_id):
             extra_chicks = int(request.form.get('extra_chicks', 0))
             new_created_at = datetime.strptime(request.form.get('created_at'), '%Y-%m-%dT%H:%M')
             cost_per_chicken = float(request.form.get('cost_per_chicken'))
+            farm_batch_number = int(request.form.get('farm_batch_number', 0))
 
             # Get shed distribution
             shed_birds = []
@@ -1595,6 +1605,7 @@ def edit_batch(batch_id):
             batch.brand = brand
             batch.total_birds = total_birds
             batch.extra_chicks = extra_chicks
+            batch.farm_batch_number = farm_batch_number
             # Calculate total harvested birds
             total_harvested = sum(harvest.quantity for harvest in batch.harvests)
             batch.available_birds = total_birds - batch.total_mortality - total_harvested
@@ -3379,7 +3390,7 @@ def internal_server_error(e):
 @login_required
 @admin_required
 def farm_manager():
-    users = User.query.filter(User.user_type.in_(['assistant_supervisor', 'senior_supervisor'])).all()
+    users = User.query.filter(User.user_type.in_(['manager', 'assistant_supervisor', 'senior_supervisor'])).all()
     # Get all batches and farms
     batches = Batch.query.all()
     farms = Farm.query.all()
@@ -3404,7 +3415,7 @@ def add_manager():
         alternate_phone_number = request.form.get('alternate_phone_number')
         
         # Validate user type
-        if user_type not in ['assistant_supervisor', 'senior_supervisor']:
+        if user_type not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
             flash('Invalid user type', 'error')
             return redirect(url_for('farm_manager'))
         
@@ -3450,7 +3461,7 @@ def edit_manager(user_id):
     alternate_phone_number = request.form.get('alternate_phone_number')
     
     # Validate user type
-    if user_type not in ['assistant_supervisor', 'senior_supervisor']:
+    if user_type not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Invalid user type', 'error')
         return redirect(url_for('farm_manager'))
     
@@ -3530,7 +3541,7 @@ def delete_manager(user_id):
 @app.route('/manager/dashboard')
 @login_required
 def manager_dashboard():
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Managers only.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -3538,8 +3549,8 @@ def manager_dashboard():
     now = datetime.now()
     
     # Get batches based on user type
-    if session.get('user_type') == 'senior_supervisor':
-        # Senior Supervisors can see all batches
+    if session.get('user_type') in ['senior_supervisor', 'manager']:
+        # Senior Supervisors and Managers can see all batches
         batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     else:
         # Assistant Supervisors can only see their assigned batches
@@ -3704,13 +3715,13 @@ def manager_add_batch():
 @app.route('/manager/batches')
 @login_required
 def manager_batches():
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Supervisors only.', 'error')
         return redirect(url_for('dashboard'))
     
     # Get batches based on user type
-    if session.get('user_type') == 'senior_supervisor':
-        # Senior Supervisors can see all batches
+    if session.get('user_type') in ['senior_supervisor', 'manager']:
+        # Senior Supervisors and Managers can see all batches
         batches = Batch.query.filter(Batch.status.in_(['ongoing', 'closing'])).all()
     else:
         # Assistant Supervisors can only see their assigned batches
@@ -3727,7 +3738,7 @@ def manager_batches():
 @app.route('/manager/medicines')
 @login_required
 def manager_medicines():
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Supervisors only.', 'error')
         return redirect(url_for('dashboard'))
     medicines = Medicine.query.all()
@@ -3736,7 +3747,7 @@ def manager_medicines():
 @app.route('/manager/vaccines')
 @login_required
 def manager_vaccines():
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Supervisors only.', 'error')
         return redirect(url_for('dashboard'))
     vaccines = Vaccine.query.all()
@@ -3745,7 +3756,7 @@ def manager_vaccines():
 @app.route('/manager/reports')
 @login_required
 def manager_reports():
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Supervisors only.', 'error')
         return redirect(url_for('dashboard'))
     return render_template('manager/reports.html')
@@ -3753,7 +3764,7 @@ def manager_reports():
 @app.route('/manager/batches/<int:batch_id>/view')
 @login_required
 def manager_view_batch(batch_id):
-    if session.get('user_type') not in ['assistant_supervisor', 'senior_supervisor']:
+    if session.get('user_type') not in ['manager', 'assistant_supervisor', 'senior_supervisor']:
         flash('Access denied. Supervisors only.', 'error')
         return redirect(url_for('dashboard'))
     
@@ -4315,6 +4326,7 @@ def pending_schedules():
                     'type': 'health-material',
                     'name': schedule.health_material.name,
                     'batch_number': batch.batch_number,
+                    'farm_batch_number': batch.farm_batch_number,
                     'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.scheduled_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-spray-can'
@@ -4334,6 +4346,7 @@ def pending_schedules():
                     'type': 'medicine',
                     'name': schedule.medicine.name,
                     'batch_number': batch.batch_number,
+                    'farm_batch_number': batch.farm_batch_number,
                     'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.schedule_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-pills'
@@ -4353,6 +4366,7 @@ def pending_schedules():
                     'type': 'vaccine',
                     'name': schedule.vaccine.name,
                     'batch_number': batch.batch_number,
+                    'farm_batch_number': batch.farm_batch_number,
                     'farm_name': batch.farm.name if batch.farm else '',
                     'scheduled_date': schedule.scheduled_date.strftime('%d-%m-%Y'),
                     'icon': 'fa-syringe'

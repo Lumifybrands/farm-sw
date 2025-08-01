@@ -50,9 +50,18 @@
             <input type="text" id="batch_number" name="batch_number" value="{{ batch.batch_number }}" readonly disabled>
         </div>
 
-        <div class="form-group">
-            <label for="brand">Brand</label>
-            <input type="text" id="brand" name="brand" value="{{ batch.brand or '' }}" placeholder="Enter brand name">
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group">
+                <label for="farm_batch_number">Farm Batch Number</label>
+                <input type="number" class="form-control" id="farm_batch_number" name="farm_batch_number" 
+                       value="{{ batch.farm_batch_number }}" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="brand">Brand</label>
+                <input type="text" class="form-control" id="brand" name="brand" 
+                       value="{{ batch.brand or '' }}" placeholder="Enter brand name">
+            </div>
         </div>
 
         <div class="form-group">

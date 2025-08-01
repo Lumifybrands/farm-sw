@@ -39,8 +39,8 @@
                 {% for user in users %}
                 <tr>
                     <td>{{ user.employee.name if user.employee else 'N/A' }}<br>
-                        <span class="badge {% if user.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
-                            {{ 'Senior Supervisor' if user.user_type == 'senior_supervisor' else 'Assistant Supervisor' }}
+                        <span class="badge {% if user.user_type == 'manager' %}badge-success{% elif user.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
+                            {% if user.user_type == 'manager' %}Manager{% elif user.user_type == 'senior_supervisor' %}Senior Supervisor{% else %}Assistant Supervisor{% endif %}
                         </span>
                     </td>
                     <td>{{ user.username }}</td>
@@ -85,8 +85,8 @@
         <div class="manager-card">
             <div class="manager-card-header">
                 <h3>{{ user.employee.name if user.employee else 'N/A' }}</h3>
-                <span class="badge {% if user.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
-                    {{ 'Senior Supervisor' if user.user_type == 'senior_supervisor' else 'Assistant Supervisor' }}
+                <span class="badge {% if user.user_type == 'manager' %}badge-success{% elif user.user_type == 'senior_supervisor' %}badge-primary{% else %}badge-secondary{% endif %}">
+                    {% if user.user_type == 'manager' %}Manager{% elif user.user_type == 'senior_supervisor' %}Senior Supervisor{% else %}Assistant Supervisor{% endif %}
                 </span>
             </div>
             <div class="manager-card-body">
@@ -151,8 +151,9 @@
                     <div class="form-group">
                         <label for="user_type">Manager Type</label>
                         <select id="user_type" name="user_type" required>
-                            <option value="assistant_supervisor">Assistant Supervisor</option>
+                            <option value="manager">Manager</option>
                             <option value="senior_supervisor">Senior Supervisor</option>
+                            <option value="assistant_supervisor">Assistant Supervisor</option>
                         </select>
                     </div>
                 </form>
@@ -198,8 +199,9 @@
                     <div class="form-group">
                         <label for="edit_user_type">Manager Type</label>
                         <select id="edit_user_type" name="user_type" required>
-                            <option value="assistant_supervisor">Assistant Supervisor</option>
+                            <option value="manager">Manager</option>
                             <option value="senior_supervisor">Senior Supervisor</option>
+                            <option value="assistant_supervisor">Assistant Supervisor</option>
                         </select>
                     </div>
                 </form>
@@ -326,6 +328,11 @@
 .badge-secondary {
     background-color: #f1f3f4;
     color: #5f6368;
+}
+
+.badge-success {
+    background-color: #d4edda;
+    color: #155724;
 }
 
 .manager-card-body {
@@ -492,6 +499,11 @@
 .manager-table .badge-secondary {
     background-color: #f1f3f4;
     color: #5f6368;
+}
+
+.manager-table .badge-success {
+    background-color: #d4edda;
+    color: #155724;
 }
 
 .manager-table .action-buttons {

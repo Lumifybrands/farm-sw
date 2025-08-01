@@ -379,12 +379,14 @@
                                 Dashboard
                             </a>
                         </li>
+                        {% if session.get('user_type') in ['admin'] %}
                         <li {% if request.endpoint == 'schedules' %}class="active"{% endif %}>
                             <a href="{{ url_for('schedules') }}">
                                 <i class="fas fa-calendar-alt"></i>
                                 Schedules
                             </a>
                         </li>
+                        {% endif %}
                         <li {% if request.endpoint and request.endpoint.startswith('batch') and request.endpoint != 'batch_report' %}class="active"{% endif %}>
                             <a href="{{ url_for('batches') }}">
                                 <i class="fas fa-layer-group"></i>
@@ -430,15 +432,17 @@
                                 </li>
                             </ul>
                         </li>
+                        {% if session.get('user_type') in ['admin'] %}
                         <li {% if request.endpoint and request.endpoint.startswith('farm_manager') %}class="active"{% endif %}>
                             <a href="{{ url_for('farm_manager') }}">
                                 <i class="fas fa-user-tie"></i>
                                 <span>Farm Manager</span>
                             </a>
                         </li>
+                        {% endif %}
                     </ul>
                 </div>
-
+                {% if session.get('user_type') in ['admin'] %}
                 <div class="sidebar-section">
                     <h3>Reports</h3>
                     <ul class="sidebar-menu">
@@ -456,7 +460,7 @@
                         </li>
                     </ul>
                 </div>
-
+                {% endif %}
                 <div class="sidebar-section">
                     <h3>Settings</h3>
                     <ul class="sidebar-menu">
