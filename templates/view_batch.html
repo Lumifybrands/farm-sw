@@ -146,6 +146,13 @@
     font-weight: 500;
 }
 
+.mortality-rate {
+    color: #e53e3e;
+    font-size: 14px;
+    font-weight: 400;
+    margin-left: 8px;
+}
+
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -2114,7 +2121,10 @@
         </div>
         <div class="info-box">
             <div class="info-label">Mortality</div>
-            <div class="info-value">{{ batch.total_mortality }}</div>
+            <div class="info-value">
+                {{ batch.total_mortality }} 
+                <span class="mortality-rate">({{ "%.2f"|format((batch.total_mortality / batch.total_birds * 100) if batch.total_birds > 0 else 0) }}%)</span>
+            </div>
         </div>
         <div class="info-box">
             <div class="info-label">Feed Used</div>
