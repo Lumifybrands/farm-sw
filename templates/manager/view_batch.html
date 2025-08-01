@@ -112,41 +112,244 @@
     <div class="detail-card updates-card">
         <div class="card-header">
             <h2>Updates History</h2>
-            <div class="update-controls">
-                <select id="updateDateSelect" class="date-select">
-                    <option value="">All Updates</option>
-                    {% for update in batch.updates|sort(attribute='date', reverse=true) %}
-                    <option value="{{ update.date.strftime('%Y-%m-%d') }}" {% if loop.first %}selected{% endif %}>{{ update.date.strftime('%d %b %Y') }}</option>
-                    {% endfor %}
-                </select>
-            </div>
         </div>
         <div class="card-content">
             {% if batch.updates %}
-            <div class="updates-timeline" id="updatesTimeline">
+            <div class="updates-list">
                 {% for update in batch.updates|sort(attribute='date', reverse=true) %}
-                <div class="timeline-item" data-date="{{ update.date.strftime('%Y-%m-%d') }}" {% if not loop.first %}style="display: none;"{% endif %}>
-                    <div class="timeline-date">
-                        <span class="date"><strong>{{ update.date.strftime('%d %b %Y') }}</strong></span>
-                        {% if update.date == now.date() %}
-                        <span class="badge today-badge">Today</span>
-                        {% endif %}
-                    </div>
-                    <div class="timeline-content">
+                <div class="update-row" onclick="toggleUpdateDetails(this, '{{ update.date.strftime('%Y-%m-%d') }}')">
+                    <div class="update-summary">
+                        <div class="update-header-info">
+                            <div class="update-date">
+                                <i class="fas fa-calendar"></i>
+                                <span>{{ update.date.strftime('%d-%m-%Y') }}</span>
+                            </div>
+                            {% if update.past_feed_allocations %}
+                            <div class="past-allocation-date">
+                                (Past: {{ update.past_feed_allocations[0].allocation_date.strftime('%d-%m-%Y') }})
+                            </div>
+                            {% endif %}
+                        </div>
                         <div class="update-stats">
-                            <div class="stat-item">
-                                <label>Mortality</label>
-                                <span>{{ update.mortality_count }} birds</span>
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <i class="fas fa-skull"></i>
+                                    <span class="stat-label">Mortality:</span>
+                                    <span class="stat-value">{{ update.mortality_count }}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-seedling"></i>
+                                    <span class="stat-label">Feed Used:</span>
+                                    <span class="stat-value">{{ "%.2f"|format(update.feed_used) }} packets</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-weight-hanging"></i>
+                                    <span class="stat-label">Avg Weight:</span>
+                                    <span class="stat-value">{{ "%.2f"|format(update.avg_weight) }} kg</span>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <label>Average Weight</label>
-                                <span>{{ "%.2f"|format(update.avg_weight) }} packets</span>
-                            </div>
-                            <div class="stat-item">
-                                <label>Feed Used</label>
-                                <span>{{ "%.2f"|format(update.feed_used) }} packets</span>
+                            <div class="stats-row">
+                                {% if update.feeds %}
+                                <div class="stat-item">
+                                    <i class="fas fa-box"></i>
+                                    <span class="stat-label">Feed Allocated:</span>
+                                    <span class="stat-value">{{ "%.2f"|format(update.get_total_feed_packets()) }} packets</span>
+                                </div>
+                                {% endif %}
+                                {% if update.items %}
+                                <div class="stat-item">
+                                    <i class="fas fa-pills"></i>
+                                    <span class="stat-label">Items Used:</span>
+                                    <span class="stat-value">{{ update.items|length }} items</span>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
+                        <div class="update-actions">
+                            <i class="fas fa-chevron-down expand-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="update-details" style="display: none;">
+                        <div class="details-content">
+                            <div class="basic-info">
+                                <h4>Basic Information</h4>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Mortality Count</label>
+                                        <span>{{ update.mortality_count }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Feed Used</label>
+                                        <span>{{ "%.2f"|format(update.feed_used) }} packets</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Average Weight</label>
+                                        <span>{{ "%.2f"|format(update.avg_weight) }} kg</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Male Weight</label>
+                                        <span>{{ "%.2f"|format(update.male_weight) }} kg</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Female Weight</label>
+                                        <span>{{ "%.2f"|format(update.female_weight) }} kg</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if update.remarks %}
+                            <div class="remarks-section">
+                                <h4>Remarks</h4>
+                                {% if update.remarks_priority %}
+                                <span class="priority-badge priority-{{ update.remarks_priority }}">
+                                    {{ update.remarks_priority|title }}
+                                </span>
+                                {% endif %}
+                                <p>{{ update.remarks }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if update.feeds %}
+                            <div class="feeds-section">
+                                <h4>Feed Allocations</h4>
+                                <div class="feeds-grid">
+                                    {% for feed in update.feeds %}
+                                    <div class="feed-item">
+                                        <div class="feed-header">
+                                            <span class="feed-name">{{ feed.brand }} - {{ feed.category }}</span>
+                                        </div>
+                                        <div class="feed-details">
+                                            <div class="detail-row">
+                                                <label>Units Used</label>
+                                                <span>{{ "%.2f"|format(update.get_feed_quantity(feed.id)) }} packets</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if update.items %}
+                            {% set medicine_items = update.items | selectattr('item_type', 'equalto', 'medicine') | list %}
+                            {% if medicine_items %}
+                            <div class="items-section">
+                                <h4>Medicines</h4>
+                                <div class="items-grid">
+                                    {% for item in medicine_items %}
+                                    {% set medicine = item.get_item() %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ medicine.name }}</span>
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">Scheduled</span>
+                                            {% else %}
+                                            <span class="extra-badge">Extra</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Used</label>
+                                                <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% set health_items = update.items | selectattr('item_type', 'equalto', 'health_material') | list %}
+                            {% if health_items %}
+                            <div class="items-section">
+                                <h4>Health Materials</h4>
+                                <div class="items-grid">
+                                    {% for item in health_items %}
+                                    {% set material = item.get_item() %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ material.name }}</span>
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">Scheduled</span>
+                                            {% else %}
+                                            <span class="extra-badge">Extra</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Used</label>
+                                                <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% set vaccine_items = update.items | selectattr('item_type', 'equalto', 'vaccine') | list %}
+                            {% if vaccine_items %}
+                            <div class="items-section">
+                                <h4>Vaccines</h4>
+                                <div class="items-grid">
+                                    {% for item in vaccine_items %}
+                                    {% set vaccine = item.get_item() %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ vaccine.name }}</span>
+                                            {% if item.schedule_id %}
+                                            <span class="scheduled-badge">Scheduled</span>
+                                            {% else %}
+                                            <span class="extra-badge">Extra</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Used</label>
+                                                <span>{{ "%.2f"|format(item.quantity) }} units</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+
+                            {% if update.miscellaneous_items %}
+                            <div class="items-section">
+                                <h4>Miscellaneous Items</h4>
+                                <div class="items-grid">
+                                    {% for item in update.miscellaneous_items %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ item.name }}</span>
+                                            <span class="extra-badge">Extra</span>
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Used</label>
+                                                <span>{{ "%.2f"|format(item.units_used) }} units</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-updates">
+                <i class="fas fa-info-circle"></i>
+                <p>No updates available for this batch yet.</p>
+            </div>
+            {% endif %}
+        </div>
 
                         {% if update.feeds %}
                         <div class="category-section">
@@ -538,12 +741,271 @@
         box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
     }
 
-    .updates-timeline {
+    .updates-list {
         max-height: 800px;
         overflow-y: auto;
         padding: 24px;
         scrollbar-width: thin;
         scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+
+    .update-row {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .update-row:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .update-summary {
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .update-header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .update-date {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .update-date i {
+        color: #1a73e8;
+    }
+
+    .past-allocation-date {
+        font-size: 0.9rem;
+        color: #64748b;
+        font-style: italic;
+    }
+
+    .update-stats {
+        flex: 1;
+        margin: 0 20px;
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 8px;
+    }
+
+    .stats-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    .stat-item i {
+        color: #1a73e8;
+        width: 16px;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .stat-value {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .update-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .expand-icon {
+        color: #64748b;
+        transition: transform 0.3s ease;
+    }
+
+    .expand-icon.expanded {
+        transform: rotate(180deg);
+    }
+
+    .update-details {
+        background: white;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .details-content {
+        padding: 24px;
+    }
+
+    .basic-info h4,
+    .remarks-section h4,
+    .feeds-section h4,
+    .items-section h4 {
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .info-grid .info-item {
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .info-grid .info-item label {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .info-grid .info-item span {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .remarks-section {
+        margin-bottom: 24px;
+    }
+
+    .priority-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-left: 12px;
+    }
+
+    .priority-badge.priority-low {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+    .priority-badge.priority-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .priority-badge.priority-high {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .remarks-section p {
+        color: #1e293b;
+        line-height: 1.6;
+        margin-top: 12px;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .feeds-grid,
+    .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .feed-item,
+    .item-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .feed-header,
+    .item-header {
+        background: white;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .feed-name,
+    .item-name {
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .scheduled-badge,
+    .extra-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .scheduled-badge {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .extra-badge {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .feed-details,
+    .item-details {
+        padding: 12px 16px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+    }
+
+    .detail-row label {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .detail-row span {
+        color: #1e293b;
+        font-weight: 600;
     }
 
     .timeline-item {
@@ -1016,6 +1478,19 @@ function initializeFarmCard() {
     } else {
         // Desktop: start expanded
         farmContent.classList.remove('collapsed');
+        expandIcon.classList.remove('expanded');
+    }
+}
+
+function toggleUpdateDetails(element, date) {
+    const details = element.querySelector('.update-details');
+    const expandIcon = element.querySelector('.expand-icon');
+    
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        expandIcon.classList.add('expanded');
+    } else {
+        details.style.display = 'none';
         expandIcon.classList.remove('expanded');
     }
 }
