@@ -56,17 +56,9 @@
                     <span>{{ "%.2f"|format(batch.feed_stock) }} Packets</span>
                 </div>
                 <div class="info-item">
-                    <i class="fas fa-truck"></i>
-                    <label>Feed Delivered</label>
-                    <span>{{ "%.2f"|format(batch.get_total_feed_delivered()) }} Packets</span>
-                </div>
-                <div class="info-item">
                     <i class="fas fa-skull"></i>
                     <label>Total Mortality</label>
-                    <span>
-                        {{ batch.total_mortality }}
-                        <span class="mortality-rate">({{ "%.2f"|format((batch.total_mortality / batch.total_birds * 100) if batch.total_birds > 0 else 0) }}%)</span>
-                    </span>
+                    <span>{{ batch.total_mortality }}</span>
                 </div>
                 <div class="info-item">
                     <i class="fas fa-cut"></i>
@@ -201,15 +193,11 @@
                                 </div>
                             </div>
 
-                            {% if update.remarks %}
-                            <div class="remarks-section">
-                                <h4>Remarks</h4>
-                                {% if update.remarks_priority %}
-                                <span class="priority-badge priority-{{ update.remarks_priority }}">
-                                    {{ update.remarks_priority|title }}
-                                </span>
-                                {% endif %}
-                                <p>{{ update.remarks }}</p>
+                        {% if update.feeds %}
+                        <div class="category-section">
+                            <div class="category-header">
+                                <i class="fas fa-wheat"></i>
+                                <h4>Feeds Allocations</h4>
                             </div>
                             {% endif %}
 
@@ -869,10 +857,18 @@
         }
 
         .farm-content.mobile-expanded {
-            max-height: 400px;
+            max-height: 200px;
             opacity: 1;
             padding: 24px;
-            overflow-y: auto;
+        }
+
+        .update-controls {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .date-select {
+            width: 100%;
         }
 
         .card-header {
@@ -938,6 +934,33 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const dateSelect = document.getElementById('updateDateSelect');
+    const timelineItems = document.querySelectorAll('.timeline-item');
+
+    // Show the latest update initially
+    const latestUpdate = timelineItems[0];
+    if (latestUpdate) {
+        latestUpdate.style.display = 'block';
+    }
+
+    dateSelect.addEventListener('change', function() {
+        const selectedDate = this.value;
+        
+        timelineItems.forEach(item => {
+            if (!selectedDate || item.dataset.date === selectedDate) {
+                item.style.display = 'block';
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                }, 50);
+            } else {
+                item.style.opacity = '0';
+                setTimeout(() => {
+                    item.style.display = 'none';
+                }, 300);
+            }
+        });
+    });
+
     // Initialize farm card state based on screen size
     initializeFarmCard();
 });
@@ -970,19 +993,6 @@ function initializeFarmCard() {
     } else {
         // Desktop: start expanded
         farmContent.classList.remove('collapsed');
-        expandIcon.classList.remove('expanded');
-    }
-}
-
-function toggleUpdateDetails(element, date) {
-    const details = element.querySelector('.update-details');
-    const expandIcon = element.querySelector('.expand-icon');
-    
-    if (details.style.display === 'none') {
-        details.style.display = 'block';
-        expandIcon.classList.add('expanded');
-    } else {
-        details.style.display = 'none';
         expandIcon.classList.remove('expanded');
     }
 }
