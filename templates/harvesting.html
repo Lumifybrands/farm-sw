@@ -10,8 +10,39 @@
     </div>
 </div>
 
+<div class="batch-info">
+    <div class="info-card">
+        <div class="info-item">
+            <label>Farm Name:</label>
+            <span>{{ batch.farm.name }}</span>
+        </div>
+        <div class="info-item">
+            <label>Batch ID:</label>
+            <span>{{ batch.batch_number }}</span>
+        </div>
+        <div class="info-item">
+            <label>Farm Batch Number:</label>
+            <span>{{ batch.farm_batch_number }}</span>
+        </div>
+        <div class="info-item">
+            <label>Total Birds:</label>
+            <span>{{ batch.total_birds }}</span>
+        </div>
+        <div class="info-item">
+            <label>Available Birds:</label>
+            <span>{{ batch.available_birds }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="harvesting-container">
     <div class="harvesting-header">
+    <div class="header-left">
+        <button class="back-btn" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
+            <i class="fas fa-arrow-left"></i> Back to Batch Details
+        </button>
+    </div>
+    <div class="header-right">
         <div class="search-bar">
             <input type="text" id="harvestSearch" placeholder="Search harvesting records...">
             <i class="fas fa-search"></i>
@@ -22,6 +53,7 @@
             <i class="fas fa-plus"></i> Add Harvest Update
         </button>
     </div>
+</div>
 
     <div class="harvesting-table-container">
         <!-- Desktop Table View -->
@@ -123,12 +155,75 @@
         color: #1a73e8;
     }
     
+    .batch-info {
+        margin: 20px 0;
+        padding: 0 20px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .info-item label {
+        font-weight: 500;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .info-item span {
+        color: #1a73e8;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
     .harvesting-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
         gap: 20px;
+    }
+    
+    .header-left {
+        display: flex;
+        align-items: center;
+    }
+    
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .back-btn {
+        background-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        white-space: nowrap;
+        transition: background-color 0.3s;
+    }
+    
+    .back-btn:hover {
+        background-color: #5a6268;
     }
     
     .search-bar {
@@ -255,6 +350,30 @@
 
     /* Mobile Optimizations */
     @media (max-width: 768px) {
+        .batch-info {
+            padding: 0 10px;
+        }
+        
+        .info-card {
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        .info-item {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .info-item label {
+            font-size: 0.9rem;
+        }
+        
+        .info-item span {
+            font-size: 1rem;
+        }
+        
         .harvesting-table {
             display: none;
         }
@@ -397,6 +516,16 @@
             flex-direction: column;
             gap: 10px;
             padding: 10px;
+        }
+        
+        .header-left, .header-right {
+            width: 100%;
+        }
+        
+        .back-btn {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 10px;
         }
 
         .search-bar {
