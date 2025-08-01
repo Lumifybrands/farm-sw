@@ -583,7 +583,7 @@ class BatchUpdateItem(db.Model):
 class Harvest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     batch_id = db.Column(db.Integer, db.ForeignKey('batch.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.now().date)
+    date = db.Column(db.Date, nullable=False, default=lambda: datetime.now().date())
     quantity = db.Column(db.Integer, nullable=False)
     weight = db.Column(db.Float, nullable=False)  # Weight in kg
     selling_price = db.Column(db.Float, nullable=False)  # Price per kg
@@ -625,33 +625,7 @@ class MiscellaneousItem(db.Model):
 class PastFeedAllocation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     batch_update_id = db.Column(db.Integer, db.ForeignKey('batch_update.id'), nullable=False)
-    allocation_date = db.Column(db.Date, nullable=False, default=datetime.now().date)  # Date when allocation was added
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    
-    # Relationship
-    batch_update = db.relationship('BatchUpdate', backref=db.backref('past_feed_allocations', lazy=True, cascade='all, delete-orphan'))
-    
-    def __repr__(self):
-        return f'<PastFeedAllocation {self.batch_update_id} - {self.allocation_date}>'
-
-class PastFeedAllocation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    batch_update_id = db.Column(db.Integer, db.ForeignKey('batch_update.id'), nullable=False)
-    allocation_date = db.Column(db.Date, nullable=False, default=datetime.now().date)  # Date when allocation was added
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    
-    # Relationship
-    batch_update = db.relationship('BatchUpdate', backref=db.backref('past_feed_allocations', lazy=True, cascade='all, delete-orphan'))
-    
-    def __repr__(self):
-        return f'<PastFeedAllocation {self.batch_update_id} - {self.allocation_date}>'
-
-class PastFeedAllocation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    batch_update_id = db.Column(db.Integer, db.ForeignKey('batch_update.id'), nullable=False)
-    allocation_date = db.Column(db.Date, nullable=False, default=datetime.now().date)  # Date when allocation was added
+    allocation_date = db.Column(db.Date, nullable=False, default=lambda: datetime.now().date())  # Date when allocation was added
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
@@ -1316,8 +1290,6 @@ def farms():
             'completely_available_sheds': completely_available_sheds
         }
     
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
     managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
     return render_template('farms.html', farms=farms, farm_stats=farm_stats, managers=managers)
 
@@ -3201,8 +3173,6 @@ def manager_schedules():
         
         # Get schedules based on user type
         if session.get('user_type') == 'assistant_supervisor':
-        if session.get('user_type') == 'assistant_supervisor':
-        if session.get('user_type') == 'assistant_supervisor':
             # Get batches assigned to this manager
             manager_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
             batch_ids = [batch.id for batch in manager_batches]
@@ -3264,8 +3234,6 @@ def manager_schedules():
             ).all()
             scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
             
-        elif session.get('user_type') == 'senior_supervisor':
-        elif session.get('user_type') == 'senior_supervisor':
         elif session.get('user_type') == 'senior_supervisor':
             # Health Material Schedules
             health_material_schedules = HealthMaterialSchedule.query.join(
@@ -3396,8 +3364,6 @@ def complete_schedule(schedule_id):
         
         # Check if assistant manager has access to this schedule
         if session.get('user_type') == 'assistant_supervisor' and schedule.batch.manager_id != session.get('user_id'):
-        if session.get('user_type') == 'assistant_supervisor' and schedule.batch.manager_id != session.get('user_id'):
-        if session.get('user_type') == 'assistant_supervisor' and schedule.batch.manager_id != session.get('user_id'):
             return jsonify({'success': False, 'message': 'Access denied'}), 403
         
         schedule.status = 'completed'
@@ -3418,8 +3384,6 @@ def complete_health_material_schedule_manager(schedule_id):
         
         # Check if assistant manager has access to this schedule
         if session.get('user_type') == 'assistant_supervisor':
-        if session.get('user_type') == 'assistant_supervisor':
-        if session.get('user_type') == 'assistant_supervisor':
             # Check if any of the batches are assigned to this manager
             has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
             if not has_access:
@@ -3435,17 +3399,13 @@ def complete_health_material_schedule_manager(schedule_id):
 @app.route('/manager/schedule/vaccine/<int:schedule_id>/complete', methods=['POST'])
 @login_required
 def complete_vaccine_schedule_manager(schedule_id):
-    if session.get('user_type') not in ['admin', 'senior_supervisor', 'assistant_supervisor']:
-    if session.get('user_type') not in ['admin', 'senior_supervisor', 'assistant_supervisor']:
-    if session.get('user_type') not in ['admin', 'senior_supervisor', 'assistant_supervisor']:
+    if session.get('user_type') not in ['admin', 'manager', 'senior_supervisor', 'assistant_supervisor']:
         return jsonify({'success': False, 'message': 'Access denied. Only administrators and managers can complete schedules.'}), 403
     
     try:
         schedule = VaccineSchedule.query.get_or_404(schedule_id)
         
         # Check if assistant manager has access to any of the batches
-        if session.get('user_type') == 'assistant_supervisor':
-        if session.get('user_type') == 'assistant_supervisor':
         if session.get('user_type') == 'assistant_supervisor':
             has_access = any(batch.manager_id == session.get('user_id') for batch in schedule.batches)
             if not has_access:
@@ -3496,8 +3456,6 @@ def add_manager():
         username = request.form.get('username')
         password = request.form.get('password')
         name = request.form.get('name')
-        user_type = request.form.get('user_type', 'assistant_supervisor')
-        user_type = request.form.get('user_type', 'assistant_supervisor')
         user_type = request.form.get('user_type', 'assistant_supervisor')
         phone_number = request.form.get('phone_number')
         alternate_phone_number = request.form.get('alternate_phone_number')
@@ -3716,8 +3674,8 @@ def manager_dashboard():
 @app.route('/manager/batches/add', methods=['GET', 'POST'])
 @login_required
 def manager_add_batch():
-    if session.get('user_type') != 'senior_manager':
-        flash('Access denied. Only senior managers can add batches.', 'error')
+    if session.get('user_type') != 'senior_supervisor':
+        flash('Access denied. Only senior supervisors can add batches.', 'error')
         return redirect(url_for('manager_dashboard'))
 
     if request.method == 'POST':
@@ -3772,7 +3730,7 @@ def manager_add_batch():
     
     # GET request - show form
     farms = Farm.query.all()
-    managers = User.query.filter(User.user_type.in_(['senior_manager', 'assistant_manager'])).all()
+    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
     
     # Create farm_sheds dictionary with proper JSON serializable values
     farm_sheds = {}
@@ -3871,8 +3829,6 @@ def manager_update_batch(batch_id):
     batch = Batch.query.get_or_404(batch_id)
     
     # Check if user has permission to update this batch
-    if session.get('user_type') == 'assistant_supervisor' and batch.manager_id != session.get('user_id'):
-    if session.get('user_type') == 'assistant_supervisor' and batch.manager_id != session.get('user_id'):
     if session.get('user_type') == 'assistant_supervisor' and batch.manager_id != session.get('user_id'):
         flash('You do not have permission to update this batch.', 'error')
         return redirect(url_for('manager_batches'))
@@ -4442,8 +4398,6 @@ def manager_update_batch(batch_id):
                          health_material_schedules=health_material_schedules,
                          vaccine_schedules=vaccine_schedules,
                          batch_updates_data=batch_updates_data,
-                         batch_updates_data=batch_updates_data,
-                         batch_updates_data=batch_updates_data,
                          today=today)
 
 @app.route('/batches/<int:batch_id>/harvest')
@@ -4729,10 +4683,6 @@ def complete_vaccine_schedule(id):
         
         # Check if assistant supervisor has access to any of the batches
         if session.get('user_type') == 'assistant_supervisor':
-        # Check if assistant supervisor has access to any of the batches
-        if session.get('user_type') == 'assistant_supervisor':
-        # Check if assistant supervisor has access to any of the batches
-        if session.get('user_type') == 'assistant_supervisor':
             has_access = any(batch in schedule.batches for batch in schedule.batches)
             if not has_access:
                 return jsonify({'success': False, 'message': 'Access denied. You can only complete schedules for your assigned batches.'}), 403
@@ -4940,14 +4890,6 @@ def get_scheduled_dates():
             # Get batches assigned to this supervisor
             supervisor_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
             batch_ids = [batch.id for batch in supervisor_batches]
-        if session.get('user_type') == 'assistant_supervisor':
-            # Get batches assigned to this supervisor
-            supervisor_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
-            batch_ids = [batch.id for batch in supervisor_batches]
-        if session.get('user_type') == 'assistant_supervisor':
-            # Get batches assigned to this supervisor
-            supervisor_batches = Batch.query.filter_by(manager_id=session.get('user_id')).all()
-            batch_ids = [batch.id for batch in supervisor_batches]
             
             # Get health material schedule dates
             health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
@@ -4972,10 +4914,6 @@ def get_scheduled_dates():
                 vaccine_schedule_batches.c.batch_id.in_(batch_ids)
             ).all()
             scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
-        elif session.get('user_type') == 'senior_supervisor':
-            # Senior Supervisors see all dates
-        elif session.get('user_type') == 'senior_supervisor':
-            # Senior Supervisors see all dates
         elif session.get('user_type') == 'senior_supervisor':
             # Senior Supervisors see all dates
             # Get health material schedule dates
@@ -5008,8 +4946,6 @@ def get_scheduled_dates():
             ).all()
             scheduled_dates.update(date[0].strftime('%Y-%m-%d') for date in vaccine_dates)
         else:
-            # Senior Supervisors see all dates
-            # Senior Supervisors see all dates
             # Senior Supervisors see all dates
             # Get health material schedule dates
             health_dates = db.session.query(HealthMaterialSchedule.scheduled_date).join(
