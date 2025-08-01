@@ -49,24 +49,24 @@
                     <div class="batch-details">
                         <div class="detail-item">
                             <i class="fas fa-kiwi-bird"></i>
-                            <span>Total Birds: {{ batch.total_birds }}</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Available: {{ batch.available_birds }}</span>
+                            <span>Available/Total Birds: <b>{{ batch.available_birds }}/{{ batch.total_birds }}</b></span>
                         </div>
                         <div class="detail-item">
                             <i class="fas fa-calendar-alt"></i>
-                            <span>Age: {{ batch.get_age_days() }} days</span>
+                            <span>Age: <b>{{ batch.get_age_days() }}</b> days</span>
                         </div>
                         <div class="detail-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>{{ batch.farm.name }}</span>
+                            <i class="fas fa-box"></i>
+                            <span>Feed Stock: <b>{{ "%.2f"|format(batch.feed_stock) }}</b> packets</span>
                         </div>
-                        {% if session.get('user_type') == 'senior_manager' and batch.manager %}
+                        <div class="detail-item">
+                            <i class="fas fa-truck"></i>
+                            <span>Feed Delivered: <b>{{ "%.2f"|format(batch.get_total_feed_delivered()) }}</b> packets</span>
+                        </div>
+                        {% if session.get('user_type') == 'senior_supervisor' and batch.manager %}
                         <div class="detail-item">
                             <i class="fas fa-user"></i>
-                            <span>Manager: {{ batch.manager.employee.name }}</span>
+                            <span>Manager: <b>{{ batch.manager.employee.name }}</b></span>
                         </div>
                         {% endif %}
                         <div class="detail-item">
@@ -83,7 +83,7 @@
                                     <span class="text-warning">Updated Yesterday</span>
                                 {% else %}
                                     <i class="fas fa-clock text-muted"></i>
-                                    <span class="text-muted">Last Update: {{ last_update.date.strftime('%d-%m-%Y') }}</span>
+                                    <span class="text-muted">Last Update: <b>{{ last_update.date.strftime('%d-%m-%Y') }}</b></span>
                                 {% endif %}
                             {% else %}
                                 <i class="fas fa-exclamation-circle text-danger"></i>
