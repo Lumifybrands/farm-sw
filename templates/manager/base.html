@@ -422,12 +422,12 @@
                                 <span>Batches</span>
                             </a>
                         </li>
-                        <li {% if request.endpoint == 'manager_harvest' %}class="active"{% endif %}>
+                        <!-- <li {% if request.endpoint == 'manager_harvest' %}class="active"{% endif %}>
                             <a href="{{ url_for('manager_harvest') }}">
                                 <i class="fas fa-hand-holding"></i>
                                 <span>Harvest</span>
                             </a>
-                        </li>
+                        </li> -->
                         <li {% if request.endpoint == 'manager_schedules' %}class="active"{% endif %}>
                             <a href="{{ url_for('manager_schedules') }}">
                                 <i class="fas fa-calendar-check"></i>
@@ -437,18 +437,18 @@
                     </ul>
                 </div>
 
-                <div class="sidebar-section">
+                <!-- <div class="sidebar-section">
                     <h3>Settings</h3>
                     <ul class="sidebar-menu">
                         <li {% if request.endpoint == 'settings' %}class="active"{% endif %}>
-                            <!-- <a href="{{ url_for('settings') }}"> -->
+                            <a href="{{ url_for('settings') }}">
                             <a href="#">
                                 <i class="fas fa-cog"></i>
                                 <span>Settings</span>
                             </a>
                         </li>
                     </ul>
-                </div>
+                </div> -->
             </aside>
 
             <!-- Main Content -->

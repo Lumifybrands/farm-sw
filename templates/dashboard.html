@@ -89,7 +89,7 @@
                 </div>
             </div>
         </div>
-
+        {% if session.get('user_type') in ['admin'] %}
         <!-- Profit by Month Graph and Stats Row (Custom Flex) -->
         <div class="dashboard-flex-row">
             <!-- Graph -->
@@ -146,7 +146,7 @@
                 </div>
             </div>
         </div>
-        
+        {% endif %}
         <div class="dashboard-bottom-row">
             <!-- Risk Batches Box -->
             <div class="risk-batches-box modern-risk-batches">

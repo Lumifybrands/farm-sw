@@ -51,11 +51,11 @@
                 <div class="schedule-item {% if schedule.scheduled_date == selected_date %}urgent{% elif schedule.scheduled_date < selected_date %}overdue{% elif (schedule.scheduled_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.health_material.name }}</h4>
-                        <p>Batches: 
-                            {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        </p>
+                        {% for batch in schedule.batches %}
+                        <p>Farm: {{ batch.farm.name }} | (Farm #{{ batch.farm_batch_number }})</p>
+                        <p>ID :  {{ batch.batch_number }} </p>
+                        {% endfor %}
+                        <hr>
                         <p>Date: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}</p>
                     </div>
                     <div class="schedule-status">
@@ -90,11 +90,11 @@
                 <div class="schedule-item {% if schedule.schedule_date == selected_date %}urgent{% elif schedule.schedule_date < selected_date %}overdue{% elif (schedule.schedule_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.medicine.name }}</h4>
-                        <p>Batches: 
-                            {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        </p>
+                        {% for batch in schedule.batches %}
+                        <p>Farm: {{ batch.farm.name }} | (Farm #{{ batch.farm_batch_number }})</p>
+                        <p>ID :  {{ batch.batch_number }} </p>
+                        {% endfor %}
+                        <hr>
                         <p>Date: {{ schedule.schedule_date.strftime('%d-%m-%Y') }}</p>
                     </div>
                     <div class="schedule-status">
@@ -129,11 +129,11 @@
                 <div class="schedule-item {% if schedule.scheduled_date == selected_date %}urgent{% elif schedule.scheduled_date < selected_date %}overdue{% elif (schedule.scheduled_date - selected_date).days <= 3 %}upcoming{% endif %}">
                     <div class="schedule-info">
                         <h4>{{ schedule.vaccine.name }}</h4>
-                        <p>Batches: 
-                            {% for batch in schedule.batches %}
-                                #{{ batch.batch_number }}{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        </p>
+                        {% for batch in schedule.batches %}
+                        <p>Farm: {{ batch.farm.name }} | (Farm #{{ batch.farm_batch_number }})</p>
+                        <p>ID :  {{ batch.batch_number }} </p>
+                        {% endfor %}
+                        <hr>
                         <p>Dose: {{ schedule.dose_number }}</p>
                         <p>Date: {{ schedule.scheduled_date.strftime('%d-%m-%Y') }}</p>
                     </div>
