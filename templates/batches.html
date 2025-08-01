@@ -31,8 +31,7 @@
                 <tr>
                     <th>Batch No.</th>
                     <th>Farm Name</th>
-                    <th>Total Birds</th>
-                    <th>Available Birds</th>
+                    <th>Available/Total Birds</th>
                     <th>Total Mortality</th>
                     <th>Age</th>
                     <th>Last Update</th>
@@ -45,9 +44,11 @@
                 <tr data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
                     <td>{{ batch.batch_number }}</td>
                     <td>{{ batch.farm.name }}{% if batch.farm_batch_number != 0 %} - {{ batch.farm_batch_number }}{% endif %}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
-                    <td>{{ batch.total_birds }}</td>
-                    <td>{{ batch.available_birds }}</td>
-                    <td>{{ batch.total_mortality }}</td>
+                    <td>{{ batch.available_birds }}/{{ batch.total_birds }}</td>
+                    <td>
+                        {{ batch.total_mortality }} 
+                        <span class="mortality-rate">({{ "%.2f"|format((batch.total_mortality / batch.total_birds * 100) if batch.total_birds > 0 else 0) }}%)</span>
+                    </td>
                     <td>{{ batch.get_age_days() }}</td>
                     <td>
                         {% if batch.updates %}
@@ -141,7 +142,10 @@
                         <div class="stat-item">
                             <i class="fas fa-skull"></i>
                             <span class="stat-label">Mortality</span>
-                            <span class="stat-value">{{ batch.total_mortality }}</span>
+                            <span class="stat-value">
+                                {{ batch.total_mortality }}
+                                <span class="mortality-rate">({{ "%.2f"|format((batch.total_mortality / batch.total_birds * 100) if batch.total_birds > 0 else 0) }}%)</span>
+                            </span>
                         </div>
                     </div>
 
@@ -846,6 +850,13 @@
 
     .remarks-badge.no-remarks:hover {
         background-color: #eeeeee;
+    }
+
+    .mortality-rate {
+        color: #e53e3e;
+        font-size: 14px;
+        font-weight: 400;
+        margin-left: 8px;
     }
 
     /* Mobile Card View - Hidden by default */
