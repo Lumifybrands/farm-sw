@@ -2450,7 +2450,7 @@
                 </select>
             </div>
             {% endif %}
-            <a href="/batches/{{ batch.id }}/update" class="add-update-btn">
+            <a href="{{ url_for('update_batch', batch_id=batch.id) }}" class="add-update-btn">
                 <i class="fas fa-plus"></i> Add Update
             </a>
         </div>

@@ -62,6 +62,17 @@
 
         <div class="update-section">
             <h2>Today's Update</h2>
+
+            <!-- Feed Section -->
+            <div class="dynamic-section" id="feedSection">
+                <h3>Feed Allocation</h3>
+                <div class="dynamic-items" id="feedItems">
+                </div>
+                <button type="button" class="add-item" onclick="addFeedItem()">
+                    <i class="fas fa-plus"></i> Add Feed
+                </button>
+            </div>
+            
             <div class="form-grid">
                 <div class="form-group">
                     <label for="mortality_count">Mortality Count (CM : {{ batch.total_mortality }})</label>
@@ -69,7 +80,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="feed_used">Feed Used (CS : {{ batch.feed_stock }} packets)</label>
+                    <label for="feed_used">Feed Used (CS : <span id="current_feed_stock">{{ batch.feed_stock }}</span> packets)</label>
                     <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
                 </div>
 
@@ -1285,18 +1296,19 @@ function validateScheduleQuantity(input, scheduleId, type) {
 
 function removeItem(button) {
     button.closest('.dynamic-item').remove();
+    updateFeedUsed();
 }
 
 function addFeedItem() {
     const template = `
         <div class="dynamic-item">
-            <select name="feed_id[]">
+            <select name="feed_id[]" onchange="updateFeedUsed()">
                 <option value="">Select Feed</option>
                 {% for feed in feeds %}
                 <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
                 {% endfor %}
             </select>
-            <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0">
+            <input type="number" name="feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="0" onchange="updateFeedUsed()" oninput="updateFeedUsed()">
             <span class="unit-type">units</span>
             <button type="button" class="remove-item" onclick="removeItem(this)">
                 <i class="fas fa-times"></i>
@@ -1304,6 +1316,21 @@ function addFeedItem() {
         </div>
     `;
     document.getElementById('feedItems').insertAdjacentHTML('beforeend', template);
+}
+
+function updateFeedUsed() {
+    const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
+    let totalAllocation = 0;
+    
+    feedQuantities.forEach(input => {
+        const quantity = parseFloat(input.value) || 0;
+        totalAllocation += quantity;
+    });
+    
+    // Update the current feed stock display in the label
+    const originalStock = {{ batch.feed_stock }};
+    const currentStock = originalStock + totalAllocation;
+    document.getElementById('current_feed_stock').textContent = currentStock.toFixed(2);
 }
 
 function addMiscellaneousItem() {
@@ -1608,6 +1635,11 @@ window.onclick = function(event) {
         closePastUpdateModal();
     }
 }
+
+// Initialize feed used calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateFeedUsed();
+});
 
 // Form validation
 document.querySelector('.update-form').addEventListener('submit', function(e) {
