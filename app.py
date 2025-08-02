@@ -1999,7 +1999,7 @@ def update_batch(batch_id):
         return redirect(url_for('view_batch', batch_id=batch.id))
     
     # GET request - show form
-    existing_update = BatchUpdate.query.filter_by(batch_id=batch.id, date=selected_date).first()
+    existing_update = None
     managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
     medicines = Medicine.query.all()
     medicines_dict = [{
