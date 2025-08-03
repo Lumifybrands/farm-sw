@@ -84,7 +84,7 @@
 
                 <div class="form-group">
                     <label for="feed_used">Feed Used (CS : <span id="current_feed_stock">{{ batch.feed_stock }}</span> Packets)</label>
-                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required>
+                    <input type="number" id="feed_used" name="feed_used" min="0" step="0.01" value="0" required onchange="updateFeedUsed()" oninput="updateFeedUsed()">
                 </div>
 
                 <div class="form-group">
@@ -1163,6 +1163,20 @@ function updateFeedUsed() {
     const originalStock = {{ batch.feed_stock }};
     const currentStock = originalStock + totalAllocation;
     document.getElementById('current_feed_stock').textContent = currentStock.toFixed(2);
+    
+    // Update feed used input to show the reduction from current stock
+    const feedUsedInput = document.getElementById('feed_used');
+    const feedUsedValue = parseFloat(feedUsedInput.value) || 0;
+    const remainingStock = currentStock - feedUsedValue;
+    document.getElementById('current_feed_stock').textContent = remainingStock.toFixed(2);
+}
+
+function updateMortality() {
+    const mortalityInput = document.getElementById('mortality_count');
+    const newMortality = parseFloat(mortalityInput.value) || 0;
+    const originalMortality = {{ batch.total_mortality }};
+    const currentMortality = originalMortality + newMortality;
+    document.getElementById('current_mortality').textContent = currentMortality;
 }
 
 function addMiscellaneousItem() {
@@ -1279,6 +1293,7 @@ let missingUpdateDates = new Set();
 // Initialize feed used calculation on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateFeedUsed();
+    updateMortality();
 });
 
 // Initialize Flatpickr
