@@ -78,14 +78,14 @@
             
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="mortality_count">Mortality Count</label>
+                    <label for="mortality_count">Mortality Count (CM : <span id="current_mortality">{{ batch.total_mortality }}</span>)</label>
                     <input type="number" id="mortality_count" name="mortality_count" 
-                           value="{{ update.mortality_count }}" min="0" required>
+                           value="{{ update.mortality_count }}" min="0" required onchange="updateMortality()" oninput="updateMortality()">
                 </div>
                 <div class="form-group">
                     <label for="feed_used">Feed Used (CS : <span id="current_feed_stock">{{ batch.feed_stock }}</span> Packets)</label>
                     <input type="number" id="feed_used" name="feed_used" 
-                           value="{{ update.feed_used }}" step="0.01" min="0" required>
+                           value="{{ update.feed_used }}" step="0.01" min="0" required onchange="updateFeedUsed()" oninput="updateFeedUsed()">
                 </div>
                 <div class="form-group">
                     <label for="male_weight">Male Weight (kg)</label>
@@ -978,6 +978,8 @@ function addFeedItem() {
 
 // Store initial feed allocation quantities when page loads
 let initialFeedAllocation = 0;
+let initialMortality = 0;
+let initialFeedUsed = 0;
 
 function updateFeedUsed() {
     const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
@@ -988,11 +990,24 @@ function updateFeedUsed() {
         currentTotalAllocation += quantity;
     });
     
+    // Get current feed used value
+    const feedUsedInput = document.getElementById('feed_used');
+    const currentFeedUsed = parseFloat(feedUsedInput.value) || 0;
+    
     // Update the current feed stock display in the label
     const originalStock = {{ batch.feed_stock }};
-    // Subtract initial allocation and add current allocation
-    const currentStock = originalStock - initialFeedAllocation + currentTotalAllocation;
+    // Subtract initial allocation and add current allocation, then subtract feed used
+    const currentStock = originalStock - initialFeedAllocation + currentTotalAllocation + initialFeedUsed - currentFeedUsed;
     document.getElementById('current_feed_stock').textContent = currentStock.toFixed(2);
+}
+
+function updateMortality() {
+    const mortalityInput = document.getElementById('mortality_count');
+    const currentMortality = parseFloat(mortalityInput.value) || 0;
+    const originalMortality = {{ batch.total_mortality }};
+    // Calculate current total mortality: original + current input - initial input
+    const totalMortality = originalMortality + currentMortality - initialMortality;
+    document.getElementById('current_mortality').textContent = totalMortality;
 }
 
 function calculateInitialFeedAllocation() {
@@ -1005,6 +1020,23 @@ function calculateInitialFeedAllocation() {
     });
     
     initialFeedAllocation = total;
+}
+
+function calculateInitialValues() {
+    // Calculate initial feed allocation
+    const feedQuantities = document.querySelectorAll('input[name="feed_quantity[]"]');
+    let total = 0;
+    
+    feedQuantities.forEach(input => {
+        const quantity = parseFloat(input.value) || 0;
+        total += quantity;
+    });
+    
+    initialFeedAllocation = total;
+    
+    // Get initial mortality and feed used values
+    initialMortality = parseFloat(document.getElementById('mortality_count').value) || 0;
+    initialFeedUsed = parseFloat(document.getElementById('feed_used').value) || 0;
 }
 
 function addMedicineItem() {
@@ -1137,8 +1169,9 @@ function validateScheduleQuantity(input, scheduleId, type) {
 
 // Initialize feed used calculation on page load
 document.addEventListener('DOMContentLoaded', function() {
-    calculateInitialFeedAllocation();
+    calculateInitialValues();
     updateFeedUsed();
+    updateMortality();
 });
 
 // Form validation
