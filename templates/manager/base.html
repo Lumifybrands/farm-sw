@@ -9,45 +9,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Global Loading System Styles -->
+    <!-- Simple Loading System Styles -->
     <style>
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            backdrop-filter: blur(2px);
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1a73e8;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
+        /* Loading Spinner Animation */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* Button Loading States */
-        .btn-loading {
+        /* Button Loading State */
+        .btn-with-loading {
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .btn-with-loading.loading {
             pointer-events: none;
             opacity: 0.7;
         }
 
-        .btn-loading::after {
+        .btn-with-loading.loading::after {
             content: '';
             position: absolute;
             top: 50%;
@@ -61,17 +42,21 @@
             animation: spin 1s linear infinite;
         }
 
-        .btn-loading .btn-text {
+        .btn-with-loading.loading .btn-text {
             opacity: 0;
         }
 
-        /* Link Loading States */
-        .link-loading {
+        /* Link Loading State */
+        .link-with-loading {
+            transition: all 0.3s ease;
+        }
+
+        .link-with-loading.loading {
             pointer-events: none;
             opacity: 0.7;
         }
 
-        .link-loading::after {
+        .link-with-loading.loading::after {
             content: '';
             display: inline-block;
             width: 12px;
@@ -83,28 +68,18 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Form Loading States */
-        .form-loading {
+        /* Form Loading State */
+        .form-with-loading {
+            transition: all 0.3s ease;
+        }
+
+        .form-with-loading.loading {
             pointer-events: none;
             opacity: 0.7;
         }
 
-        .form-loading .submit-btn {
+        .form-with-loading.loading .submit-btn {
             pointer-events: none;
-        }
-
-        /* Disable scrolling when loading */
-        body.loading {
-            overflow: hidden;
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 768px) {
-            .loading-spinner {
-                width: 40px;
-                height: 40px;
-                border-width: 3px;
-            }
         }
     </style>
     <style>
@@ -556,10 +531,7 @@
             </main>
             </div>
 
-    <!-- Global Loading Overlay -->
-    <div class="loading-overlay" id="globalLoadingOverlay">
-        <div class="loading-spinner"></div>
-    </div>
+
 
     <!-- Flash Messages -->
         <div class="flash-messages">
@@ -663,231 +635,200 @@
     <!-- Additional page-specific scripts can be added here -->
     {% endblock %}
 
-    <!-- Global Loading System JavaScript -->
+    <!-- Simple Loading System JavaScript -->
     <script>
-        // Global Loading System
-        class LoadingManager {
+        // Simple Loading System
+        class SimpleLoadingManager {
             constructor() {
-                this.isLoading = false;
-                this.loadingOverlay = document.getElementById('globalLoadingOverlay');
-                this.loadingTimeout = null;
                 this.init();
             }
 
             init() {
-                // Intercept all form submissions
-                this.interceptForms();
+                // Handle buttons with loading
+                this.handleButtons();
                 
-                // Intercept all button clicks
-                this.interceptButtons();
+                // Handle links with loading
+                this.handleLinks();
                 
-                // Intercept all link clicks
-                this.interceptLinks();
+                // Handle forms with loading
+                this.handleForms();
                 
-                // Handle page unload
-                this.handlePageUnload();
+                // Handle error scenarios
+                this.handleErrors();
             }
 
-            showLoading(element = null, type = 'overlay') {
-                if (this.isLoading) return;
-                
-                this.isLoading = true;
-                
-                if (type === 'overlay') {
-                    this.loadingOverlay.style.display = 'flex';
-                    document.body.classList.add('loading');
-                } else if (type === 'button' && element) {
-                    this.showButtonLoading(element);
-                } else if (type === 'link' && element) {
-                    this.showLinkLoading(element);
-                } else if (type === 'form' && element) {
-                    this.showFormLoading(element);
-                }
-                
-                // Set a timeout to prevent infinite loading
-                this.loadingTimeout = setTimeout(() => {
-                    this.hideLoading();
-                    console.warn('Loading timeout reached');
-                }, 30000); // 30 seconds timeout
-            }
-
-            hideLoading() {
-                this.isLoading = false;
-                this.loadingOverlay.style.display = 'none';
-                document.body.classList.remove('loading');
-                
-                if (this.loadingTimeout) {
-                    clearTimeout(this.loadingTimeout);
-                    this.loadingTimeout = null;
-                }
-                
-                // Remove all loading states
-                document.querySelectorAll('.btn-loading, .link-loading, .form-loading').forEach(el => {
-                    el.classList.remove('btn-loading', 'link-loading', 'form-loading');
-                });
-            }
-
-            showButtonLoading(button) {
-                // Store original content
-                if (!button.dataset.originalContent) {
-                    button.dataset.originalContent = button.innerHTML;
-                }
-                
-                // Add loading class
-                button.classList.add('btn-loading');
-                
-                // Wrap text content in span for opacity control
-                const textElements = button.querySelectorAll('*:not(i)');
-                textElements.forEach(el => {
-                    if (el.textContent.trim()) {
-                        el.classList.add('btn-text');
+            handleButtons() {
+                document.addEventListener('click', (e) => {
+                    const button = e.target.closest('.btn-with-loading');
+                    if (button && !button.classList.contains('loading')) {
+                        button.classList.add('loading');
+                        
+                        // Store original content if not already stored
+                        if (!button.dataset.originalContent) {
+                            button.dataset.originalContent = button.innerHTML;
+                        }
+                        
+                        // Wrap text content in span for opacity control
+                        const textElements = button.querySelectorAll('*:not(i)');
+                        textElements.forEach(el => {
+                            if (el.textContent.trim() && !el.classList.contains('btn-text')) {
+                                el.classList.add('btn-text');
+                            }
+                        });
                     }
                 });
             }
 
-            showLinkLoading(link) {
-                link.classList.add('link-loading');
+            handleLinks() {
+                document.addEventListener('click', (e) => {
+                    const link = e.target.closest('.link-with-loading');
+                    if (link && !link.classList.contains('loading')) {
+                        link.classList.add('loading');
+                    }
+                });
             }
 
-            showFormLoading(form) {
-                form.classList.add('form-loading');
-            }
-
-            interceptForms() {
+            handleForms() {
                 document.addEventListener('submit', (e) => {
-                    const form = e.target;
-                    
-                    // Skip if form is already loading
-                    if (form.classList.contains('form-loading')) {
-                        e.preventDefault();
-                        return;
-                    }
-                    
-                    // Skip certain forms (like search forms)
-                    if (form.classList.contains('no-loading')) {
-                        return;
-                    }
-                    
-                    this.showLoading(form, 'form');
-                });
-            }
-
-            interceptButtons() {
-                document.addEventListener('click', (e) => {
-                    const button = e.target.closest('button, input[type="submit"], input[type="button"]');
-                    
-                    if (!button) return;
-                    
-                    // Skip if button is already loading
-                    if (button.classList.contains('btn-loading')) {
-                        e.preventDefault();
-                        return;
-                    }
-                    
-                    // Skip certain buttons
-                    if (button.classList.contains('no-loading') || 
-                        button.classList.contains('close-modal') ||
-                        button.classList.contains('mobile-nav-toggle')) {
-                        return;
-                    }
-                    
-                    // Handle different button types
-                    if (button.type === 'submit' || button.classList.contains('submit-btn')) {
-                        // Form submission - handled by form intercept
-                        return;
-                    } else if (button.onclick || button.getAttribute('onclick')) {
-                        // Button with onclick handler
-                        this.showLoading(button, 'button');
-                    } else if (button.href || button.getAttribute('href')) {
-                        // Button that acts as a link
-                        this.showLoading(button, 'button');
+                    const form = e.target.closest('.form-with-loading');
+                    if (form && !form.classList.contains('loading')) {
+                        form.classList.add('loading');
                     }
                 });
             }
 
-            interceptLinks() {
-                document.addEventListener('click', (e) => {
-                    const link = e.target.closest('a');
-                    
-                    if (!link) return;
-                    
-                    // Skip if link is already loading
-                    if (link.classList.contains('link-loading')) {
-                        e.preventDefault();
-                        return;
-                    }
-                    
-                    // Skip certain links
-                    if (link.classList.contains('no-loading') || 
-                        link.target === '_blank' ||
-                        link.href.startsWith('mailto:') ||
-                        link.href.startsWith('tel:') ||
-                        link.href.startsWith('#')) {
-                        return;
-                    }
-                    
-                    // Show loading for navigation links
-                    this.showLoading(link, 'link');
+            handleErrors() {
+                // Listen for fetch errors
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    return originalFetch.apply(this, args)
+                        .catch(error => {
+                            // Remove loading from all elements on error
+                            SimpleLoadingManager.removeAllLoading();
+                            throw error; // Re-throw the error
+                        });
+                };
+
+                // Listen for unhandled promise rejections
+                window.addEventListener('unhandledrejection', (event) => {
+                    SimpleLoadingManager.removeAllLoading();
+                });
+
+                // Listen for JavaScript errors
+                window.addEventListener('error', (event) => {
+                    SimpleLoadingManager.removeAllLoading();
                 });
             }
 
-            handlePageUnload() {
-                window.addEventListener('beforeunload', () => {
-                    if (this.isLoading) {
-                        this.hideLoading();
+            // Public methods for manual control
+            static showButtonLoading(button) {
+                if (button && !button.classList.contains('loading')) {
+                    button.classList.add('loading');
+                    
+                    if (!button.dataset.originalContent) {
+                        button.dataset.originalContent = button.innerHTML;
                     }
+                    
+                    const textElements = button.querySelectorAll('*:not(i)');
+                    textElements.forEach(el => {
+                        if (el.textContent.trim() && !el.classList.contains('btn-text')) {
+                            el.classList.add('btn-text');
+                        }
+                    });
+                }
+            }
+
+            static hideButtonLoading(button) {
+                if (button) {
+                    button.classList.remove('loading');
+                }
+            }
+
+            static showLinkLoading(link) {
+                if (link && !link.classList.contains('loading')) {
+                    link.classList.add('loading');
+                }
+            }
+
+            static hideLinkLoading(link) {
+                if (link) {
+                    link.classList.remove('loading');
+                }
+            }
+
+            static showFormLoading(form) {
+                if (form && !form.classList.contains('loading')) {
+                    form.classList.add('loading');
+                }
+            }
+
+            static hideFormLoading(form) {
+                if (form) {
+                    form.classList.remove('loading');
+                }
+            }
+
+            // Remove loading from all elements (for error handling)
+            static removeAllLoading() {
+                document.querySelectorAll('.btn-with-loading.loading, .link-with-loading.loading, .form-with-loading.loading').forEach(el => {
+                    el.classList.remove('loading');
                 });
             }
 
-            // Public method to manually show loading
-            showGlobalLoading() {
-                this.showLoading(null, 'overlay');
+            // Reset loading state for a specific element
+            static resetElement(element) {
+                if (element) {
+                    element.classList.remove('loading');
+                }
             }
 
-            // Public method to manually hide loading
-            hideGlobalLoading() {
-                this.hideLoading();
+            // Reset loading state for all elements
+            static resetAll() {
+                this.removeAllLoading();
             }
         }
 
-        // Initialize loading manager when DOM is ready
+        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            window.loadingManager = new LoadingManager();
-            
-            // Handle navigation events
-            window.addEventListener('popstate', () => {
-                if (window.loadingManager.isLoading) {
-                    window.loadingManager.hideLoading();
-                }
-            });
-            
-            // Handle fetch requests
-            const originalFetch = window.fetch;
-            window.fetch = function(...args) {
-                if (!window.loadingManager.isLoading) {
-                    window.loadingManager.showGlobalLoading();
-                }
-                
-                return originalFetch.apply(this, args)
-                    .finally(() => {
-                        setTimeout(() => {
-                            window.loadingManager.hideGlobalLoading();
-                        }, 500); // Small delay to prevent flickering
-                    });
-            };
+            window.simpleLoadingManager = new SimpleLoadingManager();
         });
 
-        // Utility functions for manual control
-        window.showLoading = (element, type = 'overlay') => {
-            if (window.loadingManager) {
-                window.loadingManager.showLoading(element, type);
-            }
+        // Global utility functions
+        window.showButtonLoading = (button) => {
+            SimpleLoadingManager.showButtonLoading(button);
         };
 
-        window.hideLoading = () => {
-            if (window.loadingManager) {
-                window.loadingManager.hideGlobalLoading();
-            }
+        window.hideButtonLoading = (button) => {
+            SimpleLoadingManager.hideButtonLoading(button);
+        };
+
+        window.showLinkLoading = (link) => {
+            SimpleLoadingManager.showLinkLoading(link);
+        };
+
+        window.hideLinkLoading = (link) => {
+            SimpleLoadingManager.hideLinkLoading(link);
+        };
+
+        window.showFormLoading = (form) => {
+            SimpleLoadingManager.showFormLoading(form);
+        };
+
+        window.hideFormLoading = (form) => {
+            SimpleLoadingManager.hideFormLoading(form);
+        };
+
+        // Error handling utility functions
+        window.resetLoading = (element) => {
+            SimpleLoadingManager.resetElement(element);
+        };
+
+        window.resetAllLoading = () => {
+            SimpleLoadingManager.resetAll();
+        };
+
+        window.removeAllLoading = () => {
+            SimpleLoadingManager.removeAllLoading();
         };
     </script>
 </body>

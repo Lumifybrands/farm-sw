@@ -17,13 +17,13 @@
             <i class="fas fa-search"></i>
         </div>
         <div class="action-buttons-container">
-            <button class="filter-sort-btn" onclick="openFarmFilterModal()">
+            <button class="filter-sort-btn btn-with-loading" onclick="openFarmFilterModal()">
                 <i class="fas fa-filter"></i> Filter and Sort
             </button>
-            <button class="add-farm-btn" onclick="openFCRModal()">
+            <button class="add-farm-btn btn-with-loading" onclick="openFCRModal()">
                 <i class="fas fa-chart-line"></i> FCR Rates
             </button>
-            <button class="add-farm-btn" onclick="location.href='{{ url_for('add_farm') }}'">
+            <button class="add-farm-btn btn-with-loading" onclick="location.href='{{ url_for('add_farm') }}'">
                 <i class="fas fa-plus"></i> Add Farm
             </button>
         </div>
@@ -65,13 +65,13 @@
                     <td><span class="condition-badge condition-{{ farm.farm_condition }}">{{ farm.farm_condition|title }}</span></td>
                     <td>{{ farm.owner_name }}</td>
                     <td class="action-buttons">
-                        <button class="action-btn view" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
+                        <button class="action-btn view btn-with-loading" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
                             <i class="fas fa-eye"></i> View Details
                         </button>
-                        <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
+                        <button class="action-btn edit btn-with-loading" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
                             <i class="fas fa-edit"></i> Edit Details
                         </button>
-                        <button class="action-btn delete" onclick="deleteFarm('{{ farm.id }}')">
+                        <button class="action-btn delete btn-with-loading" onclick="deleteFarm('{{ farm.id }}')">
                             <i class="fas fa-trash"></i> Delete Farm
                         </button>
                     </td>
@@ -113,13 +113,13 @@
                     </div>
                 </div>
                 <div class="farm-actions">
-                    <button class="action-btn view" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
+                    <button class="action-btn view btn-with-loading" onclick="location.href='{{ url_for('view_farm', farm_id=farm.id) }}'">
                         <i class="fas fa-eye"></i> View
                     </button>
-                    <button class="action-btn edit" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
+                    <button class="action-btn edit btn-with-loading" onclick="location.href='{{ url_for('edit_farm', farm_id=farm.id) }}'">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="action-btn delete" onclick="deleteFarm('{{ farm.id }}')">
+                    <button class="action-btn delete btn-with-loading" onclick="deleteFarm('{{ farm.id }}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -166,7 +166,7 @@
     <div class="filter-modal-content">
         <div class="filter-modal-header">
             <h2>Filter and Sort</h2>
-            <button class="close-modal" onclick="closeFarmFilterModal()">
+            <button class="close-modal btn-with-loading" onclick="closeFarmFilterModal()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -251,8 +251,8 @@
             </div>
         </div>
         <div class="filter-modal-footer">
-            <button class="btn-secondary" onclick="closeFarmFilterModal()">Cancel</button>
-            <button class="btn-primary" onclick="applyFarmFilters()">Confirm</button>
+            <button class="btn-secondary btn-with-loading" onclick="closeFarmFilterModal()">Cancel</button>
+            <button class="btn-primary btn-with-loading" onclick="applyFarmFilters()">Confirm</button>
         </div>
     </div>
 </div>
@@ -963,6 +963,12 @@ function openFCRModal() {
 
 function closeFCRModal() {
     document.getElementById('fcrModal').style.display = 'none';
+    
+    // Reset loading state of the FCR button
+    const fcrButton = document.querySelector('.add-farm-btn[onclick="openFCRModal()"]');
+    if (fcrButton) {
+        resetLoading(fcrButton);
+    }
 }
 
 function addFCRRow() {
@@ -1068,10 +1074,46 @@ let currentFarmFilters = {
 function openFarmFilterModal() {
     document.getElementById('farmFilterModal').style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#farmFilterModal .btn-secondary');
+    const confirmButton = document.querySelector('#farmFilterModal .btn-primary');
+    const closeButton = document.querySelector('#farmFilterModal .close-modal');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (confirmButton) {
+        resetLoading(confirmButton);
+    }
+    if (closeButton) {
+        resetLoading(closeButton);
+    }
 }
 function closeFarmFilterModal() {
     document.getElementById('farmFilterModal').style.display = 'none';
     document.body.style.overflow = 'auto';
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
+    
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#farmFilterModal .btn-secondary');
+    const confirmButton = document.querySelector('#farmFilterModal .btn-primary');
+    const closeButton = document.querySelector('#farmFilterModal .close-modal');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (confirmButton) {
+        resetLoading(confirmButton);
+    }
+    if (closeButton) {
+        resetLoading(closeButton);
+    }
 }
 function clearAllFarmFilters() {
     document.querySelectorAll('#farmFilterModal .filter-checkbox input[type="checkbox"]').forEach(checkbox => {
@@ -1087,6 +1129,13 @@ function clearAllFarmFilters() {
     };
     const searchText = document.getElementById('farmSearch').value;
     filterFarms(searchText, currentFarmFilters);
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
+    
     closeFarmFilterModal();
 }
 function applyFarmFilters() {
@@ -1109,6 +1158,13 @@ function applyFarmFilters() {
     };
     const searchText = document.getElementById('farmSearch').value;
     filterFarms(searchText, currentFarmFilters);
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
+    
     closeFarmFilterModal();
 }
 function filterFarms(searchText, filters) {

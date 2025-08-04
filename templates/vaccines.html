@@ -785,6 +785,17 @@ function openAutoScheduleModal(itemType, itemId, callback) {
     document.getElementById('autoScheduleItemType').value = itemType;
     document.getElementById('autoScheduleItemId').value = itemId;
     
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#autoScheduleModal .cancel-btn');
+    const submitButton = document.querySelector('#autoScheduleModal .submit-btn');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (submitButton) {
+        resetLoading(submitButton);
+    }
+    
     // Reset form and handlers
     const form = document.getElementById('autoScheduleForm');
     form.reset();
@@ -886,6 +897,17 @@ function closeAutoScheduleModal() {
     // Get the current item type and ID
     const itemType = document.getElementById('autoScheduleItemType').value;
     const itemId = document.getElementById('autoScheduleItemId').value;
+
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#autoScheduleModal .cancel-btn');
+    const submitButton = document.querySelector('#autoScheduleModal .submit-btn');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (submitButton) {
+        resetLoading(submitButton);
+    }
 
     // Check if there's an existing schedule
     fetch(`/get_auto_schedule/${itemType}/${itemId}`)

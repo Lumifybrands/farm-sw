@@ -16,10 +16,10 @@
             <input type="text" id="batchSearch" placeholder="Search batches...">
             <i class="fas fa-search"></i>
         </div>
-        <button class="filter-sort-btn" onclick="openFilterModal()">
+        <button class="filter-sort-btn btn-with-loading" onclick="openFilterModal()">
             <i class="fas fa-filter"></i> Filter and Sort
         </button>
-        <button class="add-batch-btn" onclick="location.href='{{ url_for('add_batch') }}'">
+        <button class="add-batch-btn btn-with-loading" onclick="location.href='{{ url_for('add_batch') }}'">
             <i class="fas fa-plus"></i> Add Batch
         </button>
     </div>
@@ -82,29 +82,29 @@
                         {% endif %}
                     </td>
                     <td class="action-buttons">
-                        <button class="action-btn view" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
+                        <button class="action-btn view btn-with-loading" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-eye"></i> View Details
                         </button>
                         {% if batch.status != 'closed' %}
-                        <button class="action-btn edit" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
+                        <button class="action-btn edit btn-with-loading" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-edit"></i> Edit Details
                         </button>
                         {% if batch.updates and batch.updates|sort(attribute='date', reverse=true)|first|attr('date') == now.date() %}
-                        <button class="action-btn update disabled" title="Update already submitted for today">
+                        <button class="action-btn update disabled btn-with-loading" title="Update already submitted for today">
                             <i class="fas fa-calendar-plus"></i> Update Batch
                         </button>
                         {% else %}
-                        <button class="action-btn update" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
+                        <button class="action-btn update btn-with-loading" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-calendar-plus"></i> Update Batch
                         </button>
                         {% endif %}
                         {% endif %}
                         {% if batch.status == 'closing' or batch.status == 'closed' %}
-                        <button class="action-btn harvest" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
+                        <button class="action-btn harvest btn-with-loading" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
                             <i class="fas fa-hand-holding"></i> Harvest
                         </button>
                         {% endif %}
-                        <button class="action-btn delete" onclick="deleteBatch({{ batch.id }})">
+                        <button class="action-btn delete btn-with-loading" onclick="deleteBatch({{ batch.id }})">
                             <i class="fas fa-trash"></i> Delete Batch
                         </button>
                     </td>
@@ -186,29 +186,29 @@
                 </div>
 
                 <div class="card-actions">
-                    <button class="action-btn view" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
+                    <button class="action-btn view btn-with-loading" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">
                         <i class="fas fa-eye"></i> View
                     </button>
                     {% if batch.status != 'closed' %}
-                    <button class="action-btn edit" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
+                    <button class="action-btn edit btn-with-loading" onclick="location.href='{{ url_for('edit_batch', batch_id=batch.id) }}'">
                         <i class="fas fa-edit"></i> Edit
                     </button>
                     {% if batch.updates and batch.updates|sort(attribute='date', reverse=true)|first|attr('date') == now.date() %}
-                    <button class="action-btn update disabled" title="Update already submitted for today">
+                    <button class="action-btn update disabled btn-with-loading" title="Update already submitted for today">
                         <i class="fas fa-calendar-plus"></i> Update
                     </button>
                     {% else %}
-                    <button class="action-btn update" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
+                    <button class="action-btn update btn-with-loading" onclick="location.href='{{ url_for('update_batch', batch_id=batch.id) }}'">
                         <i class="fas fa-calendar-plus"></i> Update
                     </button>
                     {% endif %}
                     {% endif %}
                     {% if batch.status == 'closing' or batch.status == 'closed' %}
-                    <button class="action-btn harvest" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
+                    <button class="action-btn harvest btn-with-loading" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
                         <i class="fas fa-hand-holding"></i> Harvest
                     </button>
                     {% endif %}
-                    <button class="action-btn delete" onclick="deleteBatch({{ batch.id }})">
+                    <button class="action-btn delete btn-with-loading" onclick="deleteBatch({{ batch.id }})">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -359,8 +359,8 @@
         </div>
         
         <div class="filter-modal-footer">
-            <button class="btn-secondary" onclick="closeFilterModal()">Cancel</button>
-            <button class="btn-primary" onclick="applyFilters()">Confirm</button>
+            <button class="btn-secondary btn-with-loading" onclick="closeFilterModal()">Cancel</button>
+            <button class="btn-primary btn-with-loading" onclick="applyFilters()">Confirm</button>
         </div>
     </div>
 </div>
@@ -1412,11 +1412,39 @@ function filterBatches(searchText, filters) {
 function openFilterModal() {
     document.getElementById('filterModal').style.display = 'block';
     document.body.style.overflow = 'hidden';
+    
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('.filter-modal-footer .btn-secondary');
+    const confirmButton = document.querySelector('.filter-modal-footer .btn-primary');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (confirmButton) {
+        resetLoading(confirmButton);
+    }
 }
 
 function closeFilterModal() {
     document.getElementById('filterModal').style.display = 'none';
     document.body.style.overflow = 'auto';
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
+    
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('.filter-modal-footer .btn-secondary');
+    const confirmButton = document.querySelector('.filter-modal-footer .btn-primary');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (confirmButton) {
+        resetLoading(confirmButton);
+    }
 }
 
 function clearAllFilters() {
@@ -1446,6 +1474,12 @@ function clearAllFilters() {
     // Apply default filter
     const searchText = document.getElementById('batchSearch').value;
     filterBatches(searchText, currentFilters);
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
     
     closeFilterModal();
 }
@@ -1484,6 +1518,12 @@ function applyFilters() {
     // Apply filters
     const searchText = document.getElementById('batchSearch').value;
     filterBatches(searchText, currentFilters);
+    
+    // Reset loading state of the filter button
+    const filterButton = document.querySelector('.filter-sort-btn');
+    if (filterButton) {
+        resetLoading(filterButton);
+    }
     
     closeFilterModal();
 }

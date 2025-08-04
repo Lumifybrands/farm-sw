@@ -11,7 +11,7 @@
 </div>
 
 <div class="form-container">
-    <form action="{{ url_for('edit_batch', batch_id=batch.id) }}" method="POST" class="batch-form">
+    <form action="{{ url_for('edit_batch', batch_id=batch.id) }}" method="POST" class="batch-form form-with-loading">
         <div class="form-group">
             <label for="farm_id">Farm</label>
             <input type="text" value="{{ batch.farm.name }}" readonly disabled>
@@ -119,8 +119,8 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
-            <button type="submit" class="submit-btn">Save Changes</button>
+            <button type="button" class="cancel-btn btn-with-loading" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">Cancel</button>
+            <button type="submit" class="submit-btn btn-with-loading">Save Changes</button>
         </div>
     </form>
 </div>

@@ -1521,7 +1521,7 @@ def edit_batch(batch_id):
 
             db.session.commit()
             flash('Batch updated successfully', 'success')
-            return redirect(url_for('batches'))
+            return redirect(url_for('view_batch', batch_id=batch_id))
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating batch: {str(e)}', 'error')

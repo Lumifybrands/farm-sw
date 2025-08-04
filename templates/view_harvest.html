@@ -47,10 +47,10 @@
         </div>
 
         <div class="detail-actions">
-            <a href="{{ url_for('edit_harvest', harvest_id=harvest.id) }}" class="btn-primary">
+            <a href="{{ url_for('edit_harvest', harvest_id=harvest.id) }}" class="btn-primary btn-with-loading">
                 <i class="fas fa-edit"></i> Edit Harvest
             </a>
-            <a href="{{ url_for('harvest_batch', batch_id=harvest.batch.id) }}" class="btn-secondary">
+            <a href="{{ url_for('harvest_batch', batch_id=harvest.batch.id) }}" class="btn-secondary btn-with-loading">
                 <i class="fas fa-arrow-left"></i> Back to Harvesting
             </a>
         </div>

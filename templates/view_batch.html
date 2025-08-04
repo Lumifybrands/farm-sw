@@ -651,7 +651,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
+    width: 70px;
     height: 32px;
     transition: all 0.2s ease;
     font-size: 0.8rem;
@@ -2075,7 +2075,7 @@
     </div>
     {% if batch.status in ['closing', 'closed'] %}
     <div class="header-actions">
-        <button class="harvest-btn" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
+        <button class="harvest-btn btn-with-loading" onclick="location.href='{{ url_for('harvest_batch', batch_id=batch.id) }}'">
             <i class="fas fa-cut"></i> Harvest
         </button>
     </div>
@@ -2450,7 +2450,7 @@
                 </select>
             </div>
             {% endif %}
-            <a href="{{ url_for('update_batch', batch_id=batch.id) }}" class="add-update-btn">
+            <a href="{{ url_for('update_batch', batch_id=batch.id) }}" class="add-update-btn link-with-loading">
                 <i class="fas fa-plus"></i> Add Update
             </a>
         </div>
@@ -2508,11 +2508,11 @@
                         </div>
                     </div>
                     <div class="update-actions">
-                        <a href="/batches/{{ batch.id }}/update/{{ update.date.strftime('%Y-%m-%d') }}/edit" class="edit-btn" onclick="event.stopPropagation()">
-                            <i class="fas fa-edit"></i>
+                        <a href="/batches/{{ batch.id }}/update/{{ update.date.strftime('%Y-%m-%d') }}/edit" class="edit-btn link-with-loading" onclick="event.stopPropagation()">
+                            <i class="fas fa-edit"></i> Edit
                         </a>
-                        <button onclick="deleteBatchUpdate('{{ update.date.strftime('%Y-%m-%d') }}')" class="delete-btn" onclick="event.stopPropagation()">
-                            <i class="fas fa-trash"></i>
+                        <button onclick="deleteBatchUpdate('{{ update.date.strftime('%Y-%m-%d') }}')" class="delete-btn btn-with-loading" onclick="event.stopPropagation()">
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                         <i class="fas fa-chevron-down expand-icon"></i>
                     </div>
@@ -2886,10 +2886,10 @@ function fetchBatchUpdate(date) {
                             <span>${date}</span>
                         </div>
                         <div class="update-actions">
-                            <a href="/batches/{{ batch.id }}/update/${date}/edit" class="edit-update-btn">
+                            <a href="/batches/{{ batch.id }}/update/${date}/edit" class="edit-update-btn link-with-loading">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
-                            <button onclick="deleteBatchUpdate('${date}')" class="delete-update-btn">
+                            <button onclick="deleteBatchUpdate('${date}')" class="delete-update-btn btn-with-loading">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
@@ -3199,16 +3199,40 @@ function changeBatchStatus() {
     const modal = document.getElementById('statusModal');
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Reset loading state of all status option buttons
+    const statusButtons = document.querySelectorAll('.status-option.btn-with-loading');
+    statusButtons.forEach(button => {
+        resetLoading(button);
+    });
 }
 
 function closeStatusModal() {
     const modal = document.getElementById('statusModal');
     modal.style.display = 'none';
     document.body.style.overflow = ''; // Restore scrolling
+    
+    // Reset loading state of the Change Status button
+    const changeStatusButton = document.querySelector('.btn-primary.btn-with-loading');
+    if (changeStatusButton) {
+        resetLoading(changeStatusButton);
+    }
+    
+    // Reset loading state of all status option buttons
+    const statusButtons = document.querySelectorAll('.status-option.btn-with-loading');
+    statusButtons.forEach(button => {
+        resetLoading(button);
+    });
 }
 
 function updateStatus(newStatus) {
     if (confirm(`Are you sure you want to change the batch status to ${newStatus}?`)) {
+        // Show loading on the clicked status button
+        const clickedButton = event.target.closest('.status-option');
+        if (clickedButton) {
+            showButtonLoading(clickedButton);
+        }
+        
         fetch(`/batches/{{ batch.id }}/update-status`, {
             method: 'POST',
             headers: {
@@ -3222,18 +3246,34 @@ function updateStatus(newStatus) {
             if (data.success) {
                 window.location.reload();
             } else {
+                // Reset loading state on error
+                if (clickedButton) {
+                    resetLoading(clickedButton);
+                }
                 alert('Error changing status: ' + (data.error || 'Unknown error'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            // Reset loading state on error
+            if (clickedButton) {
+                resetLoading(clickedButton);
+            }
             alert('Error changing status');
         });
     }
 }
 
 function deleteBatch() {
+    // Get the delete button
+    const deleteButton = event.target.closest('.btn-danger');
+    
     if (confirm('Are you sure you want to delete this batch? This action cannot be undone.')) {
+        // Show loading on the delete button only after confirmation
+        if (deleteButton) {
+            showButtonLoading(deleteButton);
+        }
+        
         fetch(`/batches/{{ batch.id }}/delete`, {
             method: 'POST',
             headers: {
@@ -3246,14 +3286,23 @@ function deleteBatch() {
             if (data.success) {
                 window.location.href = '/batches';
             } else {
+                // Reset loading state on error
+                if (deleteButton) {
+                    resetLoading(deleteButton);
+                }
                 alert('Error deleting batch: ' + (data.error || 'Unknown error'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            // Reset loading state on error
+            if (deleteButton) {
+                resetLoading(deleteButton);
+            }
             alert('Error deleting batch');
         });
     }
+    // If user cancels, no loading state is shown, so no need to reset
 }
 
 // Close modal when clicking outside
@@ -3266,18 +3315,18 @@ window.onclick = function(event) {
 
 // Update the fixed footer buttons
 document.querySelector('.fixed-footer').innerHTML = `
-    <a href="/batches" class="btn btn-secondary">
+    <a href="/batches" class="btn btn-secondary link-with-loading">
         <i class="fas fa-arrow-left"></i> Back
     </a>
     
-    <button onclick="changeBatchStatus()" class="btn btn-primary">
+    <button onclick="changeBatchStatus()" class="btn btn-primary btn-with-loading">
         <i class="fas fa-exchange-alt"></i> Change Status
     </button>
     
-    <a href="/batches/edit/{{ batch.id }}" class="btn btn-info">
+    <a href="/batches/edit/{{ batch.id }}" class="btn btn-info link-with-loading">
         <i class="fas fa-edit"></i> Edit
     </a>
-    <button onclick="deleteBatch()" class="btn btn-danger">
+    <button onclick="deleteBatch()" class="btn btn-danger btn-with-loading">
         <i class="fas fa-trash"></i> Delete
     </button>
 `;
@@ -3731,18 +3780,18 @@ function showBatchUpdate(update) {
 
 <!-- Add this at the end of the content, before the closing body tag -->
 <div class="fixed-footer">
-    <a href="/batches" class="btn btn-secondary">
+    <a href="/batches" class="btn btn-secondary link-with-loading">
         <i class="fas fa-arrow-left"></i> Back
     </a>
     
-    <button onclick="changeBatchStatus()" class="btn btn-primary">
+    <button onclick="changeBatchStatus()" class="btn btn-primary btn-with-loading">
         <i class="fas fa-exchange-alt"></i> Change Status
     </button>
     
-    <a href="/batches/edit/{{ batch.id }}" class="btn btn-info">
+    <a href="/batches/edit/{{ batch.id }}" class="btn btn-info link-with-loading">
         <i class="fas fa-edit"></i> Edit
     </a>
-    <button onclick="deleteBatch()" class="btn btn-danger">
+    <button onclick="deleteBatch()" class="btn btn-danger btn-with-loading">
         <i class="fas fa-trash"></i> Delete
     </button>
 </div>
@@ -3759,15 +3808,15 @@ function showBatchUpdate(update) {
         </div>
         <div class="modal-body">
             <div class="status-options">
-                <button onclick="updateStatus('ongoing')" class="status-option {% if batch.status == 'ongoing' %}active{% endif %}">
+                <button onclick="updateStatus('ongoing')" class="status-option {% if batch.status == 'ongoing' %}active{% endif %} btn-with-loading">
                     <i class="fas fa-clock"></i>
                     <span>Ongoing</span>
                 </button>
-                <button onclick="updateStatus('closing')" class="status-option {% if batch.status == 'closing' %}active{% endif %}">
+                <button onclick="updateStatus('closing')" class="status-option {% if batch.status == 'closing' %}active{% endif %} btn-with-loading">
                     <i class="fas fa-hourglass-half"></i>
                     <span>Closing</span>
                 </button>
-                <button onclick="updateStatus('closed')" class="status-option {% if batch.status == 'closed' %}active{% endif %}">
+                <button onclick="updateStatus('closed')" class="status-option {% if batch.status == 'closed' %}active{% endif %} btn-with-loading">
                     <i class="fas fa-check-circle"></i>
                     <span>Closed</span>
                 </button>

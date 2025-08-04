@@ -100,13 +100,13 @@
     </div>
 
     <div class="action-buttons view-details-actions">
-        <a href="{{ url_for('edit_health_material', id=health_material.id) }}" class="edit-btn">
+        <a href="{{ url_for('edit_health_material', id=health_material.id) }}" class="edit-btn btn-with-loading">
             <i class="fas fa-edit"></i> Edit Health Material
         </a>
-        <button class="schedule-btn" onclick="openScheduleModal()">
+        <button class="schedule-btn btn-with-loading" onclick="openScheduleModal()">
             <i class="fas fa-calendar-plus"></i> Schedule Usage
         </button>
-        <a href="{{ url_for('health_materials') }}" class="back-btn">
+        <a href="{{ url_for('health_materials') }}" class="back-btn btn-with-loading">
             <i class="fas fa-arrow-left"></i> Back to Health Materials
         </a>
     </div>
@@ -141,8 +141,8 @@
                 <textarea name="notes" rows="3"></textarea>
             </div>
             <div class="form-actions">
-                <button type="button" class="cancel-btn" onclick="closeScheduleModal()">Cancel</button>
-                <button type="submit" class="submit-btn">Schedule</button>
+                <button type="button" class="cancel-btn btn-with-loading" onclick="closeScheduleModal()">Cancel</button>
+                <button type="submit" class="submit-btn btn-with-loading">Schedule</button>
             </div>
         </form>
     </div>

@@ -21,7 +21,7 @@
         </a>
     </div>
     {% else %}
-    <form action="{{ url_for('update_batch', batch_id=batch.id) }}" method="POST" class="update-form">
+    <form action="{{ url_for('update_batch', batch_id=batch.id) }}" method="POST" class="update-form form-with-loading">
         <div class="batch-info">
             <h2>Batch Information</h2>
             <div class="info-grid">
@@ -281,8 +281,8 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" class="cancel-btn" onclick="location.href='{{ url_for('batches') }}'">Cancel</button>
-            <button type="submit" class="submit-btn">Save Update</button>
+            <button type="button" class="cancel-btn btn-with-loading" onclick="location.href='{{ url_for('view_batch', batch_id=batch.id) }}'">Cancel</button>
+            <button type="submit" class="submit-btn btn-with-loading">Save Update</button>
         </div>
     </form>
     {% endif %}
