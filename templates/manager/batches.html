@@ -15,7 +15,6 @@
     <div class="batches-header">
         <div class="search-bar">
             <input type="text" id="batchSearch" placeholder="Search batches...">
-            <i class="fas fa-search"></i>
         </div>
     </div>
 
@@ -128,6 +127,8 @@
         margin-bottom: 20px;
         flex-wrap: wrap;
         gap: 15px;
+        position: relative;
+        z-index: 5;
     }
 
     .user-type-message {
@@ -169,23 +170,24 @@
         position: relative;
         flex: 1;
         min-width: 250px;
+        z-index: 10;
     }
 
     .search-bar input {
         width: 100%;
-        padding: 10px 15px 10px 35px;
+        padding: 10px 15px;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         font-size: 0.95rem;
+        position: relative;
+        z-index: 2;
+        background: white;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
     }
 
-    .search-bar i {
-        position: absolute;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #64748b;
-    }
+
 
     .batches-grid {
         display: grid;
@@ -305,9 +307,11 @@
             align-items: stretch;
         }
 
-        .search-bar {
-            width: 100%;
-        }
+            .search-bar {
+        width: 100%;
+        position: relative;
+        z-index: 20;
+    }
 
         .batch-card {
             margin: 10px 0;
@@ -344,6 +348,15 @@
     @media (max-width: 480px) {
         .batches-container {
             padding: 10px;
+        }
+        
+        .search-bar {
+            z-index: 30;
+        }
+        
+        .search-bar input {
+            min-height: 44px;
+            padding: 12px 15px;
         }
 
         .batch-card {
@@ -403,6 +416,17 @@
         .search-bar input {
             height: 44px;
             font-size: 16px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .search-bar {
+            z-index: 20;
+        }
+        
+        .search-bar .search-icon {
+            width: 18px;
+            height: 18px;
         }
     }
 </style>
@@ -440,6 +464,33 @@ document.getElementById('batchSearch').addEventListener('input', function(e) {
     
     // Re-sort visible cards
     sortBatches();
+});
+
+// Ensure search bar is properly touchable on mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('batchSearch');
+    const searchIcon = document.querySelector('.search-bar .search-icon');
+    
+    // Ensure search icon is visible
+    if (searchIcon) {
+        searchIcon.style.display = 'block';
+        searchIcon.style.visibility = 'visible';
+        searchIcon.style.opacity = '1';
+    }
+    
+    // Prevent any interference with touch events
+    searchInput.addEventListener('touchstart', function(e) {
+        e.stopPropagation();
+    }, { passive: true });
+    
+    // Ensure proper focus on mobile
+    searchInput.addEventListener('focus', function(e) {
+        this.style.zIndex = '100';
+    });
+    
+    searchInput.addEventListener('blur', function(e) {
+        this.style.zIndex = '2';
+    });
 });
 </script>
 {% endblock %}
