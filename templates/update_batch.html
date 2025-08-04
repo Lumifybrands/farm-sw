@@ -60,6 +60,29 @@
         <div class="update-section">
             <h2>Today's Update</h2>
 
+            <!-- Feed Calculation Section -->
+            <div class="feed-calculation-section" style="width: 100%; margin: 1em 0 1.5em 0; padding: 0.7em 1em 0.7em 1em; border: 1px solid #e0e0e0; border-radius: 7px; background: #f7fafc; box-shadow: 0 1px 4px rgba(0,0,0,0.03); font-size: 1em; display: flex; align-items: center; gap: 0.7em;">
+                <label for="feed_days" style="font-weight: 500; color: #1976d2; margin-right: 0.5em;">Feed calculation for</label>
+                <input type="number" id="feed_days" name="feed_days" min="1" max="{{ 42 - batch.get_age_days() }}" value="1" style="width: 48px; padding: 0.2em 0.4em; border: 1px solid #bdbdbd; border-radius: 5px; font-size: 1em; text-align: center; margin-right: 0.5em;">
+                <span style="color: #333;">days is</span>
+                <span id="feed_calculation_result" style="font-weight: 600; color: #1976d2; margin-left: 0.5em;">
+                    {{ ('%.2f' % (calculate_projected_feed_consumption(batch, 1) / 50)) }} packets
+                </span>
+            </div>
+            <script>
+                function updateFeedCalculationBackend() {
+                    const days = parseInt(document.getElementById('feed_days').value) || 1;
+                    fetch(`/api/batch/{{ batch.id }}/projected-feed?days=${days}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            var feedPackets = data.feed_kg / 50;
+                            document.getElementById('feed_calculation_result').textContent = feedPackets.toFixed(2) + ' packets';
+                        });
+                }
+                document.getElementById('feed_days').addEventListener('input', updateFeedCalculationBackend);
+            </script>
+            <!-- End Feed Calculation Section -->
+
             <!-- Feed Section -->
             <div class="dynamic-section" id="feedSection">
                 <h3>Feed Allocation</h3>
@@ -99,39 +122,6 @@
                     <label for="avg_weight">Average Weight of Birds (kg)</label>
                     <input type="number" id="avg_weight" name="avg_weight" min="0" step="0.01" value="0" required>
                 </div>
-            </div>
-
-            <!-- Feed Calculation Section -->
-            <div class="feed-calculation-section" style="width: 100%; margin: 1em 0 1.5em 0; padding: 0.7em 1em 0.7em 1em; border: 1px solid #e0e0e0; border-radius: 7px; background: #f7fafc; box-shadow: 0 1px 4px rgba(0,0,0,0.03); font-size: 1em; display: flex; align-items: center; gap: 0.7em;">
-                <label for="feed_days" style="font-weight: 500; color: #1976d2; margin-right: 0.5em;">Feed calculation for</label>
-                <input type="number" id="feed_days" name="feed_days" min="1" max="{{ 42 - batch.get_age_days() }}" value="1" style="width: 48px; padding: 0.2em 0.4em; border: 1px solid #bdbdbd; border-radius: 5px; font-size: 1em; text-align: center; margin-right: 0.5em;">
-                <span style="color: #333;">days is</span>
-                <span id="feed_calculation_result" style="font-weight: 600; color: #1976d2; margin-left: 0.5em;">
-                    {{ ('%.2f' % (calculate_projected_feed_consumption(batch, 1) / 50)) }} packets
-                </span>
-            </div>
-            <script>
-                function updateFeedCalculationBackend() {
-                    const days = parseInt(document.getElementById('feed_days').value) || 1;
-                    fetch(`/api/batch/{{ batch.id }}/projected-feed?days=${days}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            var feedPackets = data.feed_kg / 50;
-                            document.getElementById('feed_calculation_result').textContent = feedPackets.toFixed(2) + ' packets';
-                        });
-                }
-                document.getElementById('feed_days').addEventListener('input', updateFeedCalculationBackend);
-            </script>
-            <!-- End Feed Calculation Section -->
-
-            <!-- Feed Section -->
-            <div class="dynamic-section" id="feedSection">
-                <h3>Feed Allocation</h3>
-                <div class="dynamic-items" id="feedItems">
-                </div>
-                <button type="button" class="add-item" onclick="addFeedItem()">
-                    <i class="fas fa-plus"></i> Add Feed
-                </button>
             </div>
 
             <!-- Scheduled Items Section -->
