@@ -988,7 +988,6 @@ def login():
             
             # Redirect based on user type
             if user.user_type in ['assistant_supervisor', 'senior_supervisor']:
-            if user.user_type in ['assistant_supervisor', 'senior_supervisor']:
                 return redirect(url_for('manager_dashboard'))
             else:
                 return redirect(url_for('dashboard'))
