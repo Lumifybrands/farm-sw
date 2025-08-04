@@ -48,13 +48,13 @@
     </div>
 
     <div class="action-buttons view-details-actions">
-        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="edit-btn">
+        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="edit-btn btn-with-loading">
             <i class="fas fa-edit"></i> Edit Feed
         </a>
-        <button onclick="deleteFeed({{ feed.id }})" class="delete-btn">
+        <button onclick="deleteFeed({{ feed.id }})" class="delete-btn btn-with-loading">
             <i class="fas fa-trash"></i> Delete Feed
         </button>
-        <a href="{{ url_for('feeds') }}" class="back-btn">
+        <a href="{{ url_for('feeds') }}" class="back-btn btn-with-loading">
             <i class="fas fa-arrow-left"></i> Back to Feeds
         </a>
     </div>

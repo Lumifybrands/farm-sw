@@ -83,10 +83,10 @@
                         </div>
                     </div>
                     <div class="batch-actions">
-                        <a href="{{ url_for('manager_view_batch', batch_id=batch.id) }}" class="btn btn-primary">
+                        <a href="{{ url_for('manager_view_batch', batch_id=batch.id) }}" class="btn btn-primary btn-with-loading">
                             <i class="fas fa-eye"></i> View Details
                         </a>
-                        <a href="{{ url_for('manager_harvest_batch', batch_id=batch.id) }}" class="btn btn-success">
+                        <a href="{{ url_for('manager_harvest_batch', batch_id=batch.id) }}" class="btn btn-success btn-with-loading">
                             <i class="fas fa-hand-holding"></i> Harvest
                         </a>
                     </div>

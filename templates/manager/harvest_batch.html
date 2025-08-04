@@ -11,7 +11,7 @@
 </div>
 
 <div class="header-actions">
-    <button class="back-btn" onclick="location.href='{{ url_for('manager_view_batch', batch_id=batch.id) }}'">
+    <button class="back-btn btn-with-loading" onclick="location.href='{{ url_for('manager_view_batch', batch_id=batch.id) }}'">
         <i class="fas fa-arrow-left"></i> Back to Batch Details
     </button>
 </div>
@@ -82,10 +82,10 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success btn-with-loading">
                     <i class="fas fa-save"></i> Save Harvest Record
                 </button>
-                <a href="{{ url_for('manager_harvest') }}" class="btn btn-secondary">
+                <a href="{{ url_for('manager_harvest') }}" class="btn btn-secondary btn-with-loading">
                     <i class="fas fa-times"></i> Cancel
                 </a>
             </div>

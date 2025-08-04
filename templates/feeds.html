@@ -16,7 +16,7 @@
             <input type="text" id="feedSearch" placeholder="Search feeds..." onkeyup="searchFeeds()">
             <i class="fas fa-search"></i>
         </div>
-        <a href="{{ url_for('add_feed') }}" class="add-feed-btn">
+        <a href="{{ url_for('add_feed') }}" class="add-feed-btn btn-with-loading">
             <i class="fas fa-plus"></i> Add Feed
         </a>
     </div>
@@ -41,13 +41,13 @@
                     <td>{{ "%.2f"|format(feed.weight) }}</td>
                     <td>₹{{ "%.2f"|format(feed.price) }}</td>
                     <td class="action-buttons">
-                        <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view" title="View">
+                        <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view btn-with-loading" title="View">
                             <i class="fas fa-eye"></i> View Details
                         </a>
-                        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit" title="Edit">
+                        <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit btn-with-loading" title="Edit">
                             <i class="fas fa-edit"></i> Edit Details
                         </a>
-                        <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete" title="Delete">
+                        <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete btn-with-loading" title="Delete">
                             <i class="fas fa-trash"></i> Delete Feed
                         </button>
                     </td>
@@ -77,13 +77,13 @@
                     </div>
                 </div>
                 <div class="feed-actions">
-                    <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view">
+                    <a href="{{ url_for('view_feed', feed_id=feed.id) }}" class="action-btn view btn-with-loading">
                         <i class="fas fa-eye"></i> View
                     </a>
-                    <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit">
+                    <a href="{{ url_for('edit_feed', feed_id=feed.id) }}" class="action-btn edit btn-with-loading">
                         <i class="fas fa-edit"></i> Edit
                     </a>
-                    <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete">
+                    <button onclick="deleteFeed({{ feed.id }})" class="action-btn delete btn-with-loading">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>

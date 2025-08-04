@@ -14,20 +14,76 @@
         
         <div class="login-box">
             <div class="login-box-header" onclick="toggleLoginForm()">
-                <button type="button" class="login-toggle-btn">Login</button>
+                <button type="button" class="login-toggle-btn btn-with-loading">Login</button>
             </div>
             <div class="login-box-content" id="loginBoxContent">
-                <form id="loginForm" action="{{ url_for('login') }}" method="POST">
+                <form id="loginForm" action="{{ url_for('login') }}" method="POST" class="form-with-loading">
                     <div class="form-group">
                         <input type="text" id="username" name="username" placeholder="Username" required>
                     </div>
                     <div class="form-group">
                         <input type="password" id="password" name="password" placeholder="Password" required>
                     </div>
-                    <button type="submit" class="login-submit-btn">Sign In</button>
+                    <button type="submit" class="login-submit-btn btn-with-loading">Sign In</button>
                 </form>
             </div>
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const submitButton = loginForm.querySelector('.btn-with-loading');
+    
+    // Handle form submission
+    loginForm.addEventListener('submit', function(e) {
+        // Check if form is valid before showing loading
+        if (!loginForm.checkValidity()) {
+            // If form is invalid, don't show loading
+            e.preventDefault();
+            return;
+        }
+        
+        // Form is valid, loading will be shown automatically
+    });
+    
+    // Handle form validation errors
+    loginForm.addEventListener('invalid', function(e) {
+        // Remove loading state when validation fails
+        resetLoading(submitButton);
+    });
+    
+    // Handle input changes to enable/disable button
+    const inputs = loginForm.querySelectorAll('input[required]');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Check if all required fields are filled
+            const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+            
+            if (allFilled) {
+                submitButton.disabled = false;
+            } else {
+                submitButton.disabled = true;
+            }
+        });
+        
+        // Also check on blur
+        input.addEventListener('blur', function() {
+            const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+            if (allFilled) {
+                submitButton.disabled = false;
+            } else {
+                submitButton.disabled = true;
+            }
+        });
+    });
+    
+    // Initial check
+    const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+    if (!allFilled) {
+        submitButton.disabled = true;
+    }
+});
+</script>
 {% endblock %} 

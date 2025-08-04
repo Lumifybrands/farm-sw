@@ -20,7 +20,7 @@
             <!-- <button class="add-btn" onclick="location.href='{{ url_for('vaccines') }}'">
                 <i class="fas fa-syringe"></i> Vaccines
             </button> -->
-            <button class="add-btn" onclick="location.href='{{ url_for('add_medicine') }}'">
+            <button class="add-btn btn-with-loading" onclick="location.href='{{ url_for('add_medicine') }}'">
                 <i class="fas fa-plus"></i> Add Medicine
             </button>
         </div>
@@ -58,13 +58,13 @@
                         </div>
                     </td>
                     <td class="action-buttons">
-                        <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view" title="View">
+                        <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view btn-with-loading" title="View">
                             <i class="fas fa-eye"></i> View Details
                         </a>
-                        <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit" title="Edit">
+                        <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit btn-with-loading" title="Edit">
                             <i class="fas fa-edit"></i> Edit Details
                         </a>
-                        <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete" title="Delete">
+                        <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete btn-with-loading" title="Delete">
                             <i class="fas fa-trash"></i> Delete Medicine
                         </button>
                     </td>
@@ -107,13 +107,13 @@
                     </div>
                 </div>
                 <div class="medicine-actions">
-                    <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view" title="View">
+                    <a href="{{ url_for('view_medicine', id=medicine.id) }}" class="action-btn view btn-with-loading" title="View">
                         <i class="fas fa-eye"></i> View Details
                     </a>
-                    <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit" title="Edit">
+                    <a href="{{ url_for('edit_medicine', id=medicine.id) }}" class="action-btn edit btn-with-loading" title="Edit">
                         <i class="fas fa-edit"></i> Edit Details
                     </a>
-                    <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete" title="Delete">
+                    <button onclick="deleteMedicine({{ medicine.id }})" class="action-btn delete btn-with-loading" title="Delete">
                         <i class="fas fa-trash"></i> Delete Medicine
                     </button>
                 </div>
@@ -151,8 +151,8 @@
                     <textarea name="notes" rows="3" placeholder="Add any specific instructions for this schedule"></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="cancel-btn" onclick="closeAutoScheduleModal()">Cancel</button>
-                    <button type="submit" class="submit-btn">Save Auto Schedule</button>
+                    <button type="button" class="cancel-btn btn-with-loading" onclick="closeAutoScheduleModal()">Cancel</button>
+                    <button type="submit" class="submit-btn btn-with-loading">Save Auto Schedule</button>
                 </div>
             </form>
         </div>
@@ -783,6 +783,17 @@ function openAutoScheduleModal(itemType, itemId, callback) {
     document.getElementById('autoScheduleItemType').value = itemType;
     document.getElementById('autoScheduleItemId').value = itemId;
     
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#autoScheduleModal .cancel-btn');
+    const submitButton = document.querySelector('#autoScheduleModal .submit-btn');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (submitButton) {
+        resetLoading(submitButton);
+    }
+    
     // Reset form and handlers
     const form = document.getElementById('autoScheduleForm');
     form.reset();
@@ -884,6 +895,17 @@ function closeAutoScheduleModal() {
     // Get the current item type and ID
     const itemType = document.getElementById('autoScheduleItemType').value;
     const itemId = document.getElementById('autoScheduleItemId').value;
+
+    // Reset loading state of modal buttons
+    const cancelButton = document.querySelector('#autoScheduleModal .cancel-btn');
+    const submitButton = document.querySelector('#autoScheduleModal .submit-btn');
+    
+    if (cancelButton) {
+        resetLoading(cancelButton);
+    }
+    if (submitButton) {
+        resetLoading(submitButton);
+    }
 
     // Check if there's an existing schedule
     fetch(`/get_auto_schedule/${itemType}/${itemId}`)

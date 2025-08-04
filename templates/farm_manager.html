@@ -16,7 +16,7 @@
             <input type="text" id="managerSearch" placeholder="Search managers...">
             <i class="fas fa-search"></i>
         </div>
-        <button class="add-manager-btn" onclick="openAddModal()">
+        <button class="add-manager-btn btn-with-loading" onclick="openAddModal()">
             <i class="fas fa-plus"></i> Add Manager
         </button>
     </div>
@@ -66,10 +66,10 @@
                     </td>
                     <td>{{ manager_chick_counts[user.id] }}</td>
                     <td class="action-buttons">
-                        <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
+                        <button class="action-btn edit btn-with-loading" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="action-btn delete" onclick="deleteManager('{{ user.id }}')">
+                        <button class="action-btn delete btn-with-loading" onclick="deleteManager('{{ user.id }}')">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
@@ -105,10 +105,10 @@
                     </div>
                 </div>
                 <div class="manager-actions">
-                    <button class="action-btn edit" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
+                    <button class="action-btn edit btn-with-loading" onclick="editManager('{{ user.id }}', '{{ user.username }}', '{{ user.employee.name if user.employee else '' }}', '{{ user.user_type }}', '{{ user.employee.phone_number if user.employee and user.employee.phone_number else '' }}', '{{ user.employee.alternate_phone_number if user.employee and user.employee.alternate_phone_number else '' }}')">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="action-btn delete" onclick="deleteManager('{{ user.id }}')">
+                    <button class="action-btn delete btn-with-loading" onclick="deleteManager('{{ user.id }}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
@@ -159,8 +159,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitAddForm()">Add Manager</button>
+                <button type="button" class="btn btn-secondary btn-with-loading" onclick="closeAddModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-with-loading" onclick="submitAddForm()">Add Manager</button>
             </div>
         </div>
     </div>
@@ -207,8 +207,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitEditForm()">Save Changes</button>
+                <button type="button" class="btn btn-secondary btn-with-loading" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-with-loading" onclick="submitEditForm()">Save Changes</button>
             </div>
         </div>
     </div>
