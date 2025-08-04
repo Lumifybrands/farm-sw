@@ -735,6 +735,16 @@
                             el.classList.add('btn-text');
                         }
                     });
+                    
+                    // Set timeout to automatically stop loading after 10 seconds
+                    console.log('Setting timeout for button:', button);
+                    setTimeout(() => {
+                        console.log('Timeout triggered for button:', button);
+                        if (button.classList.contains('loading')) {
+                            console.log('Removing loading from button:', button);
+                            SimpleLoadingManager.hideButtonLoading(button);
+                        }
+                    }, 10000);
                 }
             }
 
@@ -747,6 +757,16 @@
             static showLinkLoading(link) {
                 if (link && !link.classList.contains('loading')) {
                     link.classList.add('loading');
+                    
+                    // Set timeout to automatically stop loading after 10 seconds
+                    console.log('Setting timeout for link:', link);
+                    setTimeout(() => {
+                        console.log('Timeout triggered for link:', link);
+                        if (link.classList.contains('loading')) {
+                            console.log('Removing loading from link:', link);
+                            SimpleLoadingManager.hideLinkLoading(link);
+                        }
+                    }, 10000);
                 }
             }
 
@@ -759,6 +779,16 @@
             static showFormLoading(form) {
                 if (form && !form.classList.contains('loading')) {
                     form.classList.add('loading');
+                    
+                    // Set timeout to automatically stop loading after 10 seconds
+                    console.log('Setting timeout for form:', form);
+                    setTimeout(() => {
+                        console.log('Timeout triggered for form:', form);
+                        if (form.classList.contains('loading')) {
+                            console.log('Removing loading from form:', form);
+                            SimpleLoadingManager.hideFormLoading(form);
+                        }
+                    }, 10000);
                 }
             }
 
