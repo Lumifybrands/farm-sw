@@ -1231,8 +1231,15 @@ function filterBatches(searchText, filters) {
     // Apply sorting
     if (filters.ageSort) {
         sortedRows.sort((a, b) => {
-            const aAge = parseInt(a.querySelector('td:nth-child(6)').textContent);
-            const bAge = parseInt(b.querySelector('td:nth-child(6)').textContent);
+            const aAgeElement = a.querySelector('td:nth-child(5)');
+            const bAgeElement = b.querySelector('td:nth-child(5)');
+            
+            const aAge = aAgeElement ? parseInt(aAgeElement.textContent) || 0 : 0;
+            const bAge = bAgeElement ? parseInt(bAgeElement.textContent) || 0 : 0;
+            
+            // Debug logging
+            console.log(`Sorting ages: ${aAge} vs ${bAge}, order: ${filters.ageSort}`);
+            
             return filters.ageSort === 'low-to-high' ? aAge - bAge : bAge - aAge;
         });
     } else if (filters.riskSort) {
@@ -1332,9 +1339,12 @@ function filterBatches(searchText, filters) {
                     const label = item.querySelector('.stat-label');
                     if (label && label.textContent.trim().toLowerCase() === 'age') {
                         // The value may be like "12 days", so extract the number
-                        const valueText = item.querySelector('.stat-value').textContent.trim();
-                        const ageMatch = valueText.match(/\d+/);
-                        return ageMatch ? parseInt(ageMatch[0]) : 0;
+                        const valueElement = item.querySelector('.stat-value');
+                        if (valueElement) {
+                            const valueText = valueElement.textContent.trim();
+                            const ageMatch = valueText.match(/\d+/);
+                            return ageMatch ? parseInt(ageMatch[0]) : 0;
+                        }
                     }
                 }
                 return 0;
