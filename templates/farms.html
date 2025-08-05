@@ -251,8 +251,8 @@
             </div>
         </div>
         <div class="filter-modal-footer">
-            <button class="btn-secondary btn-with-loading" onclick="closeFarmFilterModal()">Cancel</button>
-            <button class="btn-primary btn-with-loading" onclick="applyFarmFilters()">Confirm</button>
+            <button type="button" class="btn-secondary" onclick="closeFarmFilterModal()">Cancel</button>
+            <button type="button" class="btn-primary" onclick="applyFarmFilters()">Confirm</button>
         </div>
     </div>
 </div>
@@ -917,6 +917,12 @@
 {% block scripts %}
 {{ super() }}
 <script>
+function resetLoading(element) {
+    if (element && element.classList) {
+        element.classList.remove('loading');
+    }
+}
+
 function deleteFarm(farmId) {
     if (confirm('Are you sure you want to delete this farm?')) {
         fetch(`/farms/${farmId}/delete`, {
@@ -1091,28 +1097,26 @@ function openFarmFilterModal() {
     }
 }
 function closeFarmFilterModal() {
-    document.getElementById('farmFilterModal').style.display = 'none';
+    console.log('Closing farm filter modal');
+    var modal = document.getElementById('farmFilterModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
     document.body.style.overflow = 'auto';
-    
     // Reset loading state of the filter button
     const filterButton = document.querySelector('.filter-sort-btn');
     if (filterButton) {
         resetLoading(filterButton);
     }
-    
     // Reset loading state of modal buttons
     const cancelButton = document.querySelector('#farmFilterModal .btn-secondary');
     const confirmButton = document.querySelector('#farmFilterModal .btn-primary');
-    const closeButton = document.querySelector('#farmFilterModal .close-modal');
-    
     if (cancelButton) {
         resetLoading(cancelButton);
     }
     if (confirmButton) {
         resetLoading(confirmButton);
-    }
-    if (closeButton) {
-        resetLoading(closeButton);
+        confirmButton.classList.remove('loading');
     }
 }
 function clearAllFarmFilters() {
@@ -1138,12 +1142,13 @@ function clearAllFarmFilters() {
     
     closeFarmFilterModal();
 }
-function applyFarmFilters() {
-    // Managers
-    const managerFilters = [];
-    document.querySelectorAll('#managers-section input[type="checkbox"]:checked').forEach(checkbox => {
-        managerFilters.push(checkbox.value);
-    });
+function applyFarmFilters(event) {
+    if (event) event.preventDefault(); // Prevent form submit if called as handler
+    var managerFilters = [];
+    var checkboxes = document.querySelectorAll('input[name="manager_filter[]"]:checked');
+    for (var i = 0; i < checkboxes.length; i++) {
+        managerFilters.push(checkboxes[i].value);
+    }
     // Shed Availability
     const shedFilters = [];
     document.querySelectorAll('#shed-availability-section input[type="checkbox"]:checked').forEach(checkbox => {
@@ -1166,6 +1171,10 @@ function applyFarmFilters() {
     }
     
     closeFarmFilterModal();
+    var confirmButton = document.querySelector('#farmFilterModal .btn-primary');
+    if (confirmButton) {
+        confirmButton.classList.remove('loading');
+    }
 }
 function filterFarms(searchText, filters) {
     // Table rows
