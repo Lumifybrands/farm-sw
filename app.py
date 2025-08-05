@@ -1325,7 +1325,7 @@ def add_farm():
         except Exception as e:
             flash('Error adding farm: ' + str(e), 'error')
             db.session.rollback()
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
+    managers = User.query.filter(User.user_type.in_(['manager', 'senior_supervisor', 'assistant_supervisor'])).all()
     return render_template('add_farm.html', managers=managers)
 
 @app.route('/farms/<int:farm_id>/edit', methods=['GET', 'POST'])
@@ -1358,7 +1358,7 @@ def edit_farm(farm_id):
         except Exception as e:
             flash('Error updating farm: ' + str(e), 'error')
             db.session.rollback()
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
+    managers = User.query.filter(User.user_type.in_(['manager', 'senior_supervisor', 'assistant_supervisor'])).all()
     return render_template('edit_farm.html', farm=farm, managers=managers)
 
 @app.route('/farms/<int:farm_id>/view')
@@ -1570,7 +1570,7 @@ def add_batch():
     
     # GET request - show form
     farms = Farm.query.all()
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
+    managers = User.query.filter(User.user_type.in_(['manager', 'senior_supervisor', 'assistant_supervisor'])).all()
     
     # Create farm_sheds dictionary with proper JSON serializable values
     farm_sheds = {}
@@ -1668,7 +1668,7 @@ def edit_batch(batch_id):
             return redirect(url_for('edit_batch', batch_id=batch_id))
 
     # GET request - show form
-    managers = User.query.filter(User.user_type.in_(['senior_supervisor', 'assistant_supervisor'])).all()
+    managers = User.query.filter(User.user_type.in_(['manager', 'senior_supervisor', 'assistant_supervisor'])).all()
     return render_template('edit_batch.html', batch=batch, managers=managers)
 
 @app.route('/batches/<int:batch_id>/view')

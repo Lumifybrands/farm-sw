@@ -25,7 +25,7 @@
                 {% for manager in managers %}
                 <option value="{{ manager.id }}" {% if batch.manager_id == manager.id %}selected{% endif %}>
                     {{ manager.employee.name if manager.employee else manager.username }} 
-                    ({{ 'Senior Supervisor' if manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }})
+                    ({{ 'manager' if manager.user_type == 'manager' else 'Senior Supervisor' if manager.user_type == 'senior_supervisor' else 'Assistant Supervisor' }})
                 </option>
                 {% endfor %}
             </select>
