@@ -11,7 +11,7 @@
 </div>
 
 <div class="form-container">
-    <form action="{{ url_for('add_feed') }}" method="POST" class="feed-form">
+    <form action="{{ url_for('add_feed') }}" method="POST" class="feed-form form-with-loading">
         <div class="form-group">
             <label for="brand">Brand Name</label>
             <input type="text" id="brand" name="brand" required>
