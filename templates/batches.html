@@ -359,8 +359,8 @@
         </div>
         
         <div class="filter-modal-footer">
-            <button class="btn-secondary btn-with-loading" onclick="closeFilterModal()">Cancel</button>
-            <button class="btn-primary btn-with-loading" onclick="applyFilters()">Confirm</button>
+            <button type="button" class="btn-secondary" onclick="closeFilterModal()">Cancel</button>
+            <button type="button" class="btn-primary" onclick="applyFilters()">Confirm</button>
         </div>
     </div>
 </div>
@@ -1139,6 +1139,12 @@
 </style>
 
 <script>
+function resetLoading(element) {
+    if (element && element.classList) {
+        element.classList.remove('loading');
+    }
+}
+
 function deleteBatch(batchId) {
     if (confirm('Are you sure you want to delete this batch? This action cannot be undone.')) {
         fetch(`/batches/${batchId}/delete`, {
@@ -1426,24 +1432,26 @@ function openFilterModal() {
 }
 
 function closeFilterModal() {
-    document.getElementById('filterModal').style.display = 'none';
+    console.log('Closing filter modal');
+    var modal = document.getElementById('filterModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
     document.body.style.overflow = 'auto';
-    
     // Reset loading state of the filter button
     const filterButton = document.querySelector('.filter-sort-btn');
     if (filterButton) {
         resetLoading(filterButton);
     }
-    
     // Reset loading state of modal buttons
     const cancelButton = document.querySelector('.filter-modal-footer .btn-secondary');
     const confirmButton = document.querySelector('.filter-modal-footer .btn-primary');
-    
     if (cancelButton) {
         resetLoading(cancelButton);
     }
     if (confirmButton) {
         resetLoading(confirmButton);
+        confirmButton.classList.remove('loading');
     }
 }
 
@@ -1484,29 +1492,22 @@ function clearAllFilters() {
     closeFilterModal();
 }
 
-function applyFilters() {
+function applyFilters(event) {
+    if (event) event.preventDefault(); // Prevent form submit if called as handler
     // Collect batch status filters
-    const batchStatusFilters = [];
-    document.querySelectorAll('#batch-status-section input[type="checkbox"]:checked').forEach(checkbox => {
-        batchStatusFilters.push(checkbox.value);
-    });
-    
-    // Collect age sort
-    const ageSort = document.querySelector('input[name="age-sort"]:checked')?.value || null;
-    
-    // Collect risk sort
-    const riskSort = document.querySelector('input[name="risk-sort"]:checked')?.value || null;
-    
-    // Collect update date sort
-    const updateDateSort = document.querySelector('input[name="update-date-sort"]:checked')?.value || null;
-    
-    // Collect manager filters
-    const managerFilters = [];
-    document.querySelectorAll('#managers-section input[type="checkbox"]:checked').forEach(checkbox => {
-        managerFilters.push(checkbox.value);
-    });
-    
-    // Update current filters
+    var batchStatusFilters = [];
+    var checkboxes = document.querySelectorAll('input[name="batch_status[]"]:checked');
+    for (var i = 0; i < checkboxes.length; i++) {
+        batchStatusFilters.push(checkboxes[i].value);
+    }
+    var ageSort = document.querySelector('input[name="age-sort"]:checked') ? document.querySelector('input[name="age-sort"]:checked').value : null;
+    var riskSort = document.querySelector('input[name="risk-sort"]:checked') ? document.querySelector('input[name="risk-sort"]:checked').value : null;
+    var updateDateSort = document.querySelector('input[name="update-date-sort"]:checked') ? document.querySelector('input[name="update-date-sort"]:checked').value : null;
+    var managerFilters = [];
+    var managerCheckboxes = document.querySelectorAll('#managers-section input[type="checkbox"]:checked');
+    for (var j = 0; j < managerCheckboxes.length; j++) {
+        managerFilters.push(managerCheckboxes[j].value);
+    }
     currentFilters = {
         batchStatus: batchStatusFilters.length > 0 ? batchStatusFilters : ['active'],
         ageSort: ageSort,
@@ -1514,18 +1515,17 @@ function applyFilters() {
         updateDateSort: updateDateSort,
         managers: managerFilters
     };
-    
-    // Apply filters
-    const searchText = document.getElementById('batchSearch').value;
+    var searchText = document.getElementById('batchSearch').value;
     filterBatches(searchText, currentFilters);
-    
-    // Reset loading state of the filter button
-    const filterButton = document.querySelector('.filter-sort-btn');
+    var filterButton = document.querySelector('.filter-sort-btn');
     if (filterButton) {
         resetLoading(filterButton);
     }
-    
     closeFilterModal();
+    var confirmButton = document.querySelector('.filter-modal-footer .btn-primary');
+    if (confirmButton) {
+        confirmButton.classList.remove('loading');
+    }
 }
 
 // Search functionality

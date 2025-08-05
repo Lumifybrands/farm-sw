@@ -3225,14 +3225,15 @@ function closeStatusModal() {
     });
 }
 
-function updateStatus(newStatus) {
+function updateStatus(event, newStatus) {
+    event.preventDefault();
+    const clickedButton = event.target.closest('.status-option');
+    if (!clickedButton) return;
+
     if (confirm(`Are you sure you want to change the batch status to ${newStatus}?`)) {
-        // Show loading on the clicked status button
-        const clickedButton = event.target.closest('.status-option');
-        if (clickedButton) {
-            showButtonLoading(clickedButton);
-        }
-        
+        // Show loading spinner
+        clickedButton.classList.add('loading');
+
         fetch(`/batches/{{ batch.id }}/update-status`, {
             method: 'POST',
             headers: {
@@ -3246,19 +3247,12 @@ function updateStatus(newStatus) {
             if (data.success) {
                 window.location.reload();
             } else {
-                // Reset loading state on error
-                if (clickedButton) {
-                    resetLoading(clickedButton);
-                }
-                alert('Error changing status: ' + (data.error || 'Unknown error'));
+                clickedButton.classList.remove('loading');
+                alert('Error changing status: ' + (data.message || 'Unknown error'));
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            // Reset loading state on error
-            if (clickedButton) {
-                resetLoading(clickedButton);
-            }
+            clickedButton.classList.remove('loading');
             alert('Error changing status');
         });
     }
@@ -3808,15 +3802,15 @@ function showBatchUpdate(update) {
         </div>
         <div class="modal-body">
             <div class="status-options">
-                <button onclick="updateStatus('ongoing')" class="status-option {% if batch.status == 'ongoing' %}active{% endif %} btn-with-loading">
+                <button type="button" class="status-option btn-with-loading" onclick="updateStatus(event, 'ongoing')">
                     <i class="fas fa-clock"></i>
                     <span>Ongoing</span>
                 </button>
-                <button onclick="updateStatus('closing')" class="status-option {% if batch.status == 'closing' %}active{% endif %} btn-with-loading">
+                <button type="button" class="status-option btn-with-loading" onclick="updateStatus(event, 'closing')">
                     <i class="fas fa-hourglass-half"></i>
                     <span>Closing</span>
                 </button>
-                <button onclick="updateStatus('closed')" class="status-option {% if batch.status == 'closed' %}active{% endif %} btn-with-loading">
+                <button type="button" class="status-option btn-with-loading" onclick="updateStatus(event, 'closed')">
                     <i class="fas fa-check-circle"></i>
                     <span>Closed</span>
                 </button>
