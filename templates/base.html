@@ -687,428 +687,72 @@
     </script>
     {% endblock %}
 
-    <!-- Simple Loading System JavaScript -->
     <script>
-        // Simple Loading System
-        class SimpleLoadingManager {
-            constructor() {
-                this.init();
-            }
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach submit handler to all forms with .form-with-loading
+    document.querySelectorAll('form.form-with-loading').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            // Remove previous error highlights
+            form.querySelectorAll('.error').forEach(function(el) {
+                el.classList.remove('error');
+            });
 
-            init() {
-                // Handle buttons with loading
-                this.handleButtons();
-                
-                // Handle links with loading
-                this.handleLinks();
-                
-                // Handle forms with loading
-                this.handleForms();
-                
-                // Handle error scenarios
-                this.handleErrors();
-            }
-
-            handleButtons() {
-                document.addEventListener('click', (e) => {
-                    const button = e.target.closest('.btn-with-loading');
-                    if (button && !button.classList.contains('loading')) {
-                        button.classList.add('loading');
-                        
-                        // Store original content if not already stored
-                        if (!button.dataset.originalContent) {
-                            button.dataset.originalContent = button.innerHTML;
-                        }
-                        
-                        // Wrap text content in span for opacity control
-                        const textElements = button.querySelectorAll('*:not(i)');
-                        textElements.forEach(el => {
-                            if (el.textContent.trim() && !el.classList.contains('btn-text')) {
-                                el.classList.add('btn-text');
-                            }
-                        });
-                    }
+            // HTML5 validation
+            if (!form.checkValidity()) {
+                // Highlight invalid fields
+                form.querySelectorAll(':invalid').forEach(function(field) {
+                    field.classList.add('error');
                 });
-            }
-
-            handleLinks() {
-                document.addEventListener('click', (e) => {
-                    const link = e.target.closest('.link-with-loading');
-                    if (link && !link.classList.contains('loading')) {
-                        link.classList.add('loading');
-                    }
+                // Remove loading if any
+                form.classList.remove('loading');
+                form.querySelectorAll('.btn-with-loading').forEach(function(btn) {
+                    btn.classList.remove('loading');
                 });
+                // Let browser show its validation messages
+                return;
             }
 
-            handleForms() {
-                document.addEventListener('submit', (e) => {
-                    const form = e.target.closest('.form-with-loading');
-                    if (form && !form.classList.contains('loading')) {
-                        // Check for validation errors before showing loading
-                        if (this.validateForm(form)) {
-                            form.classList.add('loading');
-                        } else {
-                            // Stop loading if validation fails
-                            e.preventDefault();
-                            return false;
-                        }
-                    }
-                });
-            }
-
-            validateForm(form) {
-                // Check for HTML5 validation
-                if (!form.checkValidity()) {
-                    form.reportValidity();
-                    return false;
-                }
-
-                // Check for custom validation
-                const requiredFields = form.querySelectorAll('[required]');
-                let isValid = true;
-
-                requiredFields.forEach(field => {
-                    if (!field.value.trim()) {
-                        field.classList.add('error');
-                        isValid = false;
-                    } else {
-                        field.classList.remove('error');
-                    }
-                });
-
-                // Check for custom validation attributes
-                const customValidationFields = form.querySelectorAll('[data-validation]');
-                customValidationFields.forEach(field => {
-                    const validationType = field.dataset.validation;
-                    if (!this.customValidation(field, validationType)) {
-                        field.classList.add('error');
-                        isValid = false;
-                    } else {
-                        field.classList.remove('error');
-                    }
-                });
-
-                return isValid;
-            }
-
-            customValidation(field, type) {
-                switch (type) {
-                    case 'email':
-                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value);
-                    case 'phone':
-                        return /^[0-9+\-\s()]+$/.test(field.value);
-                    case 'number':
-                        return !isNaN(field.value) && field.value !== '';
-                    default:
-                        return true;
-                }
-            }
-
-            handleErrors() {
-                // Listen for fetch errors
-                const originalFetch = window.fetch;
-                window.fetch = function(...args) {
-                    return originalFetch.apply(this, args)
-                        .catch(error => {
-                            // Remove loading from all elements on error
-                            SimpleLoadingManager.removeAllLoading();
-                            throw error; // Re-throw the error
-                        });
-                };
-
-                // Listen for unhandled promise rejections
-                window.addEventListener('unhandledrejection', (event) => {
-                    SimpleLoadingManager.removeAllLoading();
-                });
-
-                // Listen for JavaScript errors
-                window.addEventListener('error', (event) => {
-                    SimpleLoadingManager.removeAllLoading();
-                });
-
-                // Check for errors on page load
-                this.checkForErrors();
-            }
-
-            checkForErrors() {
-                // Check for flash error messages
-                const errorMessages = document.querySelectorAll('.flash-message.error, .alert-danger, .error-message');
-                if (errorMessages.length > 0) {
-                    SimpleLoadingManager.removeAllLoading();
-                }
-
-                // Check for form validation errors
-                const formErrors = document.querySelectorAll('.form-group .error, input.error, select.error, textarea.error');
-                if (formErrors.length > 0) {
-                    SimpleLoadingManager.removeAllLoading();
-                }
-
-                // Check for server-side validation errors
-                const serverErrors = document.querySelectorAll('[data-server-error]');
-                if (serverErrors.length > 0) {
-                    SimpleLoadingManager.removeAllLoading();
-                }
-
-                // Check for any error class elements
-                const anyErrors = document.querySelectorAll('.error, .danger, .alert-danger');
-                if (anyErrors.length > 0) {
-                    SimpleLoadingManager.removeAllLoading();
-                }
-            }
-
-            // Public methods for manual control
-            static showButtonLoading(button) {
-                if (button && !button.classList.contains('loading')) {
-                    button.classList.add('loading');
-                    
-                    if (!button.dataset.originalContent) {
-                        button.dataset.originalContent = button.innerHTML;
-                    }
-                    
-                    const textElements = button.querySelectorAll('*:not(i)');
-                    textElements.forEach(el => {
-                        if (el.textContent.trim() && !el.classList.contains('btn-text')) {
-                            el.classList.add('btn-text');
-                        }
-                    });
-                    
-                    // Set timeout to automatically stop loading after 10 seconds
-                    console.log('Setting timeout for button:', button);
-                    setTimeout(() => {
-                        console.log('Timeout triggered for button:', button);
-                        if (button.classList.contains('loading')) {
-                            console.log('Removing loading from button:', button);
-                            SimpleLoadingManager.hideButtonLoading(button);
-                        }
-                    }, 10000);
-                }
-            }
-
-            static hideButtonLoading(button) {
-                if (button) {
-                    button.classList.remove('loading');
-                }
-            }
-
-            static showLinkLoading(link) {
-                if (link && !link.classList.contains('loading')) {
-                    link.classList.add('loading');
-                    
-                    // Set timeout to automatically stop loading after 10 seconds
-                    console.log('Setting timeout for link:', link);
-                    setTimeout(() => {
-                        console.log('Timeout triggered for link:', link);
-                        if (link.classList.contains('loading')) {
-                            console.log('Removing loading from link:', link);
-                            SimpleLoadingManager.hideLinkLoading(link);
-                        }
-                    }, 10000);
-                }
-            }
-
-            static hideLinkLoading(link) {
-                if (link) {
-                    link.classList.remove('loading');
-                }
-            }
-
-            static showFormLoading(form) {
-                if (form && !form.classList.contains('loading')) {
-                    form.classList.add('loading');
-                    
-                    // Set timeout to automatically stop loading after 10 seconds
-                    console.log('Setting timeout for form:', form);
-                    setTimeout(() => {
-                        console.log('Timeout triggered for form:', form);
-                        if (form.classList.contains('loading')) {
-                            console.log('Removing loading from form:', form);
-                            SimpleLoadingManager.hideFormLoading(form);
-                        }
-                    }, 10000);
-                }
-            }
-
-            static hideFormLoading(form) {
-                if (form) {
-                    form.classList.remove('loading');
-                }
-            }
-
-            // Remove loading from all elements (for error handling)
-            static removeAllLoading() {
-                document.querySelectorAll('.btn-with-loading.loading, .link-with-loading.loading, .form-with-loading.loading').forEach(el => {
-                    el.classList.remove('loading');
-                });
-            }
-
-            // Reset loading state for a specific element
-            static resetElement(element) {
-                if (element) {
-                    element.classList.remove('loading');
-                }
-            }
-
-            // Reset loading state for all elements
-            static resetAll() {
-                this.removeAllLoading();
-            }
-        }
-
-        // Initialize when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            window.simpleLoadingManager = new SimpleLoadingManager();
-            
-            // Enhanced form validation and error handling
-            this.enhanceFormHandling();
+            // Show loading on form and submit button
+            form.classList.add('loading');
+            form.querySelectorAll('.btn-with-loading').forEach(function(btn) {
+                btn.classList.add('loading');
+            });
         });
+    });
 
-        enhanceFormHandling() {
-            // Add real-time validation
-            document.addEventListener('input', (e) => {
-                if (e.target.matches('input, select, textarea')) {
-                    this.validateField(e.target);
-                }
+    // Remove loading if there are any error messages on page load (server-side errors)
+    function removeLoadingIfError() {
+        var hasError = document.querySelector('.flash-message.error, .alert-danger, .error-message, .has-error, .error');
+        if (hasError) {
+            document.querySelectorAll('.form-with-loading').forEach(function(form) {
+                form.classList.remove('loading');
             });
-
-            // Add form submission enhancement
-            document.addEventListener('submit', (e) => {
-                const form = e.target;
-                if (form.classList.contains('form-with-loading')) {
-                    // Validate all fields before submission
-                    if (!this.validateForm(form)) {
-                        e.preventDefault();
-                        SimpleLoadingManager.removeAllLoading();
-                        return false;
-                    }
-                }
+            document.querySelectorAll('.btn-with-loading').forEach(function(btn) {
+                btn.classList.remove('loading');
             });
-
-            // Check for errors on page load
-            setTimeout(() => {
-                this.checkForErrors();
-            }, 100);
         }
+    }
+    removeLoadingIfError();
 
-        validateField(field) {
-            const formGroup = field.closest('.form-group');
-            if (!formGroup) return;
-
-            // Remove previous error states
-            field.classList.remove('error');
-            formGroup.classList.remove('has-error');
-
-            // Check if field is required and empty
-            if (field.hasAttribute('required') && !field.value.trim()) {
-                field.classList.add('error');
-                formGroup.classList.add('has-error');
-                return false;
-            }
-
-            // Check custom validation
-            if (field.hasAttribute('data-validation')) {
-                const validationType = field.dataset.validation;
-                if (!this.customValidation(field, validationType)) {
-                    field.classList.add('error');
-                    formGroup.classList.add('has-error');
-                    return false;
-                }
-            }
-
-            // Check pattern validation
-            if (field.hasAttribute('pattern')) {
-                const pattern = new RegExp(field.getAttribute('pattern'));
-                if (!pattern.test(field.value)) {
-                    field.classList.add('error');
-                    formGroup.classList.add('has-error');
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        // Global utility functions
-        window.showButtonLoading = (button) => {
-            SimpleLoadingManager.showButtonLoading(button);
-        };
-
-        window.hideButtonLoading = (button) => {
-            SimpleLoadingManager.hideButtonLoading(button);
-        };
-
-        window.showLinkLoading = (link) => {
-            SimpleLoadingManager.showLinkLoading(link);
-        };
-
-        window.hideLinkLoading = (link) => {
-            SimpleLoadingManager.hideLinkLoading(link);
-        };
-
-        window.showFormLoading = (form) => {
-            SimpleLoadingManager.showFormLoading(form);
-        };
-
-        window.hideFormLoading = (form) => {
-            SimpleLoadingManager.hideFormLoading(form);
-        };
-
-        // Error handling utility functions
-        window.resetLoading = (element) => {
-            SimpleLoadingManager.resetElement(element);
-        };
-
-        window.resetAllLoading = () => {
-            SimpleLoadingManager.resetAll();
-        };
-
-        window.removeAllLoading = () => {
-            SimpleLoadingManager.removeAllLoading();
-        };
-
-        // Enhanced form validation utilities
-        window.validateFormFields = (form) => {
-            const fields = form.querySelectorAll('input, select, textarea');
-            let isValid = true;
-
-            fields.forEach(field => {
-                if (!SimpleLoadingManager.validateField(field)) {
-                    isValid = false;
-                }
-            });
-
-            return isValid;
-        };
-
-        window.showFormErrors = (form, errors) => {
-            // Remove loading state
-            SimpleLoadingManager.removeAllLoading();
-            
-            // Clear previous errors
-            form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
-            form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
-            
-            // Show new errors
-            Object.keys(errors).forEach(fieldName => {
-                const field = form.querySelector(`[name="${fieldName}"]`);
-                if (field) {
-                    field.classList.add('error');
-                    const formGroup = field.closest('.form-group');
-                    if (formGroup) {
-                        formGroup.classList.add('has-error');
-                        
-                        // Add error message
-                        let errorMsg = formGroup.querySelector('.error-message');
-                        if (!errorMsg) {
-                            errorMsg = document.createElement('div');
-                            errorMsg.className = 'error-message';
-                            formGroup.appendChild(errorMsg);
-                        }
-                        errorMsg.textContent = errors[fieldName];
-                    }
-                }
-            });
-        };
-    </script>
+    // Also remove loading on AJAX/fetch errors or JS errors
+    window.addEventListener('error', function() {
+        document.querySelectorAll('.form-with-loading').forEach(function(form) {
+            form.classList.remove('loading');
+        });
+        document.querySelectorAll('.btn-with-loading').forEach(function(btn) {
+            btn.classList.remove('loading');
+        });
+    });
+    window.addEventListener('unhandledrejection', function() {
+        document.querySelectorAll('.form-with-loading').forEach(function(form) {
+            form.classList.remove('loading');
+        });
+        document.querySelectorAll('.btn-with-loading').forEach(function(btn) {
+            btn.classList.remove('loading');
+        });
+    });
+});
+</script>
 
     <!-- Service Worker Registration -->
     <script>
