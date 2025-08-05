@@ -36,7 +36,7 @@
                     <th>Age</th>
                     <th>Last Update</th>
                     <th>Actual/Standard Weight (gms)</th>
-                    <th>Actual/Standard Feed Cons (gms)</th>
+                    <th>Actual/Standard Feed Cons (Packets)</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -93,14 +93,14 @@
                         {% endif %}
                     </td>
                     <td>
-                        {# Actual/Standard Feed Cons (gms) #}
+                        {# Actual/Standard Feed Cons (Packets)#}
                         {% set age = batch.get_age_days() %}
                         {% set std_data = get_body_weight_and_feed_consumption(age) %}
                         {% if batch.updates %}
                             {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
-                            {{ (last_update.feed_used * batch.available_birds)|round(2) }} / {{ (std_data['feed_consumption'] * batch.available_birds)|round(2) }}
+                            {{ ((last_update.feed_used * batch.available_birds) / 50000)|round(2) }} / {{ ((std_data['feed_consumption'] * batch.available_birds) / 50000)|round(2) if std_data else '-' }}
                         {% else %}
-                            - / {{ (std_data['feed_consumption']  * batch.available_birds) if std_data else '-' }}
+                            - / {{ ((std_data['feed_consumption'] * batch.available_birds) / 50000)|round(2) if std_data else '-' }}
                         {% endif %}
                     </td>
                     <td class="action-buttons">
@@ -231,10 +231,10 @@
                         <div class="stat-item">
                             <span class="stat-label">Actual Feed Cons</span>
                             <span class="stat-value">
-                                {# Actual/Standard Feed Cons (gms) #}
+                                {# Actual/Standard Feed Cons (Packets) #}
                                 {% if batch.updates %}
                                     {% set last_update = batch.updates|sort(attribute='date', reverse=true)|first %}
-                                    {{ (last_update.feed_used * batch.available_birds)|round(2) }}
+                                    {{ ((last_update.feed_used * batch.available_birds) / 50000)|round(2) }} Packets
                                 {% else %}
                                     -
                                 {% endif %}
@@ -245,7 +245,7 @@
                             <span class="stat-value">
                                 {% set age = batch.get_age_days() %}
                                 {% set std_data = get_body_weight_and_feed_consumption(age) %}
-                                {{ (std_data['feed_consumption'] * batch.available_birds)|round(2) }}
+                                {{ ((std_data['feed_consumption'] * batch.available_birds) / 50000)|round(2) if std_data else '-' }} bags
                             </span>
                         </div>
                     </div>
