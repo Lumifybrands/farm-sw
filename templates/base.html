@@ -91,6 +91,33 @@
         .form-with-loading.loading .submit-btn {
             pointer-events: none;
         }
+
+        /* Error States */
+        .form-group .error,
+        input.error,
+        select.error,
+        textarea.error {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .form-group .error:focus,
+        input.error:focus,
+        select.error:focus,
+        textarea.error:focus {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .form-group.has-error label {
+            color: #dc3545;
+        }
     </style>
     <style>
 
@@ -717,9 +744,64 @@
                 document.addEventListener('submit', (e) => {
                     const form = e.target.closest('.form-with-loading');
                     if (form && !form.classList.contains('loading')) {
-                        form.classList.add('loading');
+                        // Check for validation errors before showing loading
+                        if (this.validateForm(form)) {
+                            form.classList.add('loading');
+                        } else {
+                            // Stop loading if validation fails
+                            e.preventDefault();
+                            return false;
+                        }
                     }
                 });
+            }
+
+            validateForm(form) {
+                // Check for HTML5 validation
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return false;
+                }
+
+                // Check for custom validation
+                const requiredFields = form.querySelectorAll('[required]');
+                let isValid = true;
+
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        field.classList.add('error');
+                        isValid = false;
+                    } else {
+                        field.classList.remove('error');
+                    }
+                });
+
+                // Check for custom validation attributes
+                const customValidationFields = form.querySelectorAll('[data-validation]');
+                customValidationFields.forEach(field => {
+                    const validationType = field.dataset.validation;
+                    if (!this.customValidation(field, validationType)) {
+                        field.classList.add('error');
+                        isValid = false;
+                    } else {
+                        field.classList.remove('error');
+                    }
+                });
+
+                return isValid;
+            }
+
+            customValidation(field, type) {
+                switch (type) {
+                    case 'email':
+                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value);
+                    case 'phone':
+                        return /^[0-9+\-\s()]+$/.test(field.value);
+                    case 'number':
+                        return !isNaN(field.value) && field.value !== '';
+                    default:
+                        return true;
+                }
             }
 
             handleErrors() {
@@ -743,6 +825,35 @@
                 window.addEventListener('error', (event) => {
                     SimpleLoadingManager.removeAllLoading();
                 });
+
+                // Check for errors on page load
+                this.checkForErrors();
+            }
+
+            checkForErrors() {
+                // Check for flash error messages
+                const errorMessages = document.querySelectorAll('.flash-message.error, .alert-danger, .error-message');
+                if (errorMessages.length > 0) {
+                    SimpleLoadingManager.removeAllLoading();
+                }
+
+                // Check for form validation errors
+                const formErrors = document.querySelectorAll('.form-group .error, input.error, select.error, textarea.error');
+                if (formErrors.length > 0) {
+                    SimpleLoadingManager.removeAllLoading();
+                }
+
+                // Check for server-side validation errors
+                const serverErrors = document.querySelectorAll('[data-server-error]');
+                if (serverErrors.length > 0) {
+                    SimpleLoadingManager.removeAllLoading();
+                }
+
+                // Check for any error class elements
+                const anyErrors = document.querySelectorAll('.error, .danger, .alert-danger');
+                if (anyErrors.length > 0) {
+                    SimpleLoadingManager.removeAllLoading();
+                }
             }
 
             // Public methods for manual control
@@ -846,7 +957,75 @@
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             window.simpleLoadingManager = new SimpleLoadingManager();
+            
+            // Enhanced form validation and error handling
+            this.enhanceFormHandling();
         });
+
+        enhanceFormHandling() {
+            // Add real-time validation
+            document.addEventListener('input', (e) => {
+                if (e.target.matches('input, select, textarea')) {
+                    this.validateField(e.target);
+                }
+            });
+
+            // Add form submission enhancement
+            document.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (form.classList.contains('form-with-loading')) {
+                    // Validate all fields before submission
+                    if (!this.validateForm(form)) {
+                        e.preventDefault();
+                        SimpleLoadingManager.removeAllLoading();
+                        return false;
+                    }
+                }
+            });
+
+            // Check for errors on page load
+            setTimeout(() => {
+                this.checkForErrors();
+            }, 100);
+        }
+
+        validateField(field) {
+            const formGroup = field.closest('.form-group');
+            if (!formGroup) return;
+
+            // Remove previous error states
+            field.classList.remove('error');
+            formGroup.classList.remove('has-error');
+
+            // Check if field is required and empty
+            if (field.hasAttribute('required') && !field.value.trim()) {
+                field.classList.add('error');
+                formGroup.classList.add('has-error');
+                return false;
+            }
+
+            // Check custom validation
+            if (field.hasAttribute('data-validation')) {
+                const validationType = field.dataset.validation;
+                if (!this.customValidation(field, validationType)) {
+                    field.classList.add('error');
+                    formGroup.classList.add('has-error');
+                    return false;
+                }
+            }
+
+            // Check pattern validation
+            if (field.hasAttribute('pattern')) {
+                const pattern = new RegExp(field.getAttribute('pattern'));
+                if (!pattern.test(field.value)) {
+                    field.classList.add('error');
+                    formGroup.classList.add('has-error');
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         // Global utility functions
         window.showButtonLoading = (button) => {
@@ -884,6 +1063,50 @@
 
         window.removeAllLoading = () => {
             SimpleLoadingManager.removeAllLoading();
+        };
+
+        // Enhanced form validation utilities
+        window.validateFormFields = (form) => {
+            const fields = form.querySelectorAll('input, select, textarea');
+            let isValid = true;
+
+            fields.forEach(field => {
+                if (!SimpleLoadingManager.validateField(field)) {
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        };
+
+        window.showFormErrors = (form, errors) => {
+            // Remove loading state
+            SimpleLoadingManager.removeAllLoading();
+            
+            // Clear previous errors
+            form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+            form.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+            
+            // Show new errors
+            Object.keys(errors).forEach(fieldName => {
+                const field = form.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.classList.add('error');
+                    const formGroup = field.closest('.form-group');
+                    if (formGroup) {
+                        formGroup.classList.add('has-error');
+                        
+                        // Add error message
+                        let errorMsg = formGroup.querySelector('.error-message');
+                        if (!errorMsg) {
+                            errorMsg = document.createElement('div');
+                            errorMsg.className = 'error-message';
+                            formGroup.appendChild(errorMsg);
+                        }
+                        errorMsg.textContent = errors[fieldName];
+                    }
+                }
+            });
         };
     </script>
 

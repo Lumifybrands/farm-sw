@@ -11,7 +11,7 @@
 </div>
 
 <div class="form-container">
-    <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form">
+    <form action="{{ url_for('add_batch') }}" method="POST" class="batch-form form-with-loading">
         <div class="form-group">
             <label for="farm_id">Select Farm</label>
             <select id="farm_id" name="farm_id" required class="form-control" style="width: 100%">

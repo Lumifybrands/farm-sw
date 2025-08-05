@@ -11,7 +11,7 @@
 </div>
 
 <div class="form-container">
-    <form action="{{ url_for('add_farm') }}" method="POST" class="farm-form">
+    <form action="{{ url_for('add_farm') }}" method="POST" class="farm-form form-with-loading">
         <div class="form-group">
             <label for="name">Farm Name</label>
             <input type="text" id="name" name="name" required>
@@ -89,10 +89,9 @@ function updateShedCapacityFields() {
     for (let i = 1; i <= numSheds; i++) {
         const formGroup = document.createElement('div');
         formGroup.className = 'form-group';
-        formGroup.innerHTML = `
-            <label for="shed_capacity_${i}">Shed ${i} Capacity</label>
-            <input type="number" id="shed_capacity_${i}" name="shed_capacity_${i}" min="0" required>
-        `;
+        formGroup.innerHTML = 
+            '<label for="shed_capacity_' + i + '">Shed ' + i + ' Capacity</label>' +
+            '<input type="number" id="shed_capacity_' + i + '" name="shed_capacity_' + i + '" min="0" required>';
         container.appendChild(formGroup);
     }
 }
