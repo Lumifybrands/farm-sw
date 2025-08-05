@@ -4779,5 +4779,40 @@ def farm_report():
         }
     return render_template('farmreport.html', farms=farms, selected_farm=selected_farm, report=report)
 
+@app.route('/update-remark-priority/<int:batch_id>', methods=['POST'])
+@login_required
+def update_remark_priority(batch_id):
+    """Change the priority of a batch update remark to 'low'"""
+    try:
+        # Find the latest batch update for this batch with high or medium priority
+        batch_update = (
+            BatchUpdate.query
+            .filter_by(batch_id=batch_id)
+            .filter(BatchUpdate.remarks_priority.in_(['high', 'medium']))
+            .order_by(BatchUpdate.created_at.desc())
+            .first()
+        )
+        
+        if batch_update:
+            batch_update.remarks_priority = 'low'
+            db.session.commit()
+            
+            # Log the activity
+            activity = Activity(
+                icon='fas fa-check-circle',
+                title='Remark Priority Updated',
+                description=f'Priority changed to low for batch {batch_update.batch.batch_number}'
+            )
+            db.session.add(activity)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'message': 'Priority updated successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'No high/medium priority remarks found for this batch'})
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error updating priority: {str(e)}'})
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
