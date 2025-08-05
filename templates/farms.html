@@ -196,7 +196,7 @@
                     <div class="filter-options">
                         {% for manager in managers %}
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="{{ manager.id }}" data-manager-id="{{ manager.id }}">
+                            <input type="checkbox" name="manager_filter[]" value="{{ manager.id }}" data-manager-id="{{ manager.id }}">
                             <span class="checkmark"></span>
                             <span class="option-text">
                                 {{ manager.employee.name if manager.employee else manager.username }}
@@ -211,12 +211,12 @@
                     <h3>Shed Availability</h3>
                     <div class="filter-options">
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="available">
+                            <input type="checkbox" name="shed_availability[]" value="available">
                             <span class="checkmark"></span>
                             <span class="option-text">Available Sheds</span>
                         </label>
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="full">
+                            <input type="checkbox" name="shed_availability[]" value="full">
                             <span class="checkmark"></span>
                             <span class="option-text">No Available Sheds</span>
                         </label>
@@ -1203,12 +1203,14 @@ function filterFarms(searchText, filters) {
     if (filters.sortBy) {
         sortedRows.sort((a, b) => {
             if (filters.sortBy === 'total-capacity-asc' || filters.sortBy === 'total-capacity-desc') {
-                const aVal = parseInt(a.children[1].textContent);
-                const bVal = parseInt(b.children[1].textContent);
+                // Total capacity is in the 2nd column (index 1)
+                const aVal = parseInt(a.children[1].textContent) || 0;
+                const bVal = parseInt(b.children[1].textContent) || 0;
                 return filters.sortBy === 'total-capacity-asc' ? aVal - bVal : bVal - aVal;
             } else if (filters.sortBy === 'active-batches-asc' || filters.sortBy === 'active-batches-desc') {
-                const aVal = parseInt(a.children[2].textContent);
-                const bVal = parseInt(b.children[2].textContent);
+                // Active batches is in the 3rd column (index 2)
+                const aVal = parseInt(a.children[2].textContent) || 0;
+                const bVal = parseInt(b.children[2].textContent) || 0;
                 return filters.sortBy === 'active-batches-asc' ? aVal - bVal : bVal - aVal;
             }
             return 0;
@@ -1246,12 +1248,18 @@ function filterFarms(searchText, filters) {
     if (filters.sortBy) {
         sortedCards.sort((a, b) => {
             if (filters.sortBy === 'total-capacity-asc' || filters.sortBy === 'total-capacity-desc') {
-                const aVal = parseInt(a.querySelector('.info-group span').textContent);
-                const bVal = parseInt(b.querySelector('.info-group span').textContent);
+                // Find the total capacity value in the card
+                const aCapacity = a.querySelector('.info-group:nth-child(1) span');
+                const bCapacity = b.querySelector('.info-group:nth-child(1) span');
+                const aVal = aCapacity ? parseInt(aCapacity.textContent) || 0 : 0;
+                const bVal = bCapacity ? parseInt(bCapacity.textContent) || 0 : 0;
                 return filters.sortBy === 'total-capacity-asc' ? aVal - bVal : bVal - aVal;
             } else if (filters.sortBy === 'active-batches-asc' || filters.sortBy === 'active-batches-desc') {
-                const aVal = parseInt(a.querySelector('.batch-count').textContent);
-                const bVal = parseInt(b.querySelector('.batch-count').textContent);
+                // Find the active batches value in the card
+                const aBatches = a.querySelector('.batch-count');
+                const bBatches = b.querySelector('.batch-count');
+                const aVal = aBatches ? parseInt(aBatches.textContent) || 0 : 0;
+                const bVal = bBatches ? parseInt(bBatches.textContent) || 0 : 0;
                 return filters.sortBy === 'active-batches-asc' ? aVal - bVal : bVal - aVal;
             }
             return 0;
