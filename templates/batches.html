@@ -262,27 +262,27 @@
                     <h3>Batch Status</h3>
                     <div class="filter-options">
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="active" checked>
+                            <input type="checkbox" name="batch_status[]" value="active" checked>
                             <span class="checkmark"></span>
                             <span class="option-text">Active</span>
                         </label>
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="ongoing">
+                            <input type="checkbox" name="batch_status[]" value="ongoing">
                             <span class="checkmark"></span>
                             <span class="option-text">Ongoing</span>
                         </label>
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="closing">
+                            <input type="checkbox" name="batch_status[]" value="closing">
                             <span class="checkmark"></span>
                             <span class="option-text">Closing</span>
                         </label>
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="closed">
+                            <input type="checkbox" name="batch_status[]" value="closed">
                             <span class="checkmark"></span>
                             <span class="option-text">Closed</span>
                         </label>
                         <label class="filter-checkbox">
-                            <input type="checkbox" value="all">
+                            <input type="checkbox" name="batch_status[]" value="all">
                             <span class="checkmark"></span>
                             <span class="option-text">All</span>
                         </label>
@@ -1225,10 +1225,9 @@ function filterBatches(searchText, filters) {
         // For manager filtering, check if the batch's manager ID matches any selected manager
         const batchManagerId = row.getAttribute('data-manager-id');
         const matchesManager = filters.managers.length === 0 || 
-            (batchManagerId && filters.managers.some(managerName => {
-                // Find the manager ID that corresponds to the selected manager name
-                const managerCheckbox = document.querySelector(`input[value="${managerName}"]`);
-                return managerCheckbox && managerCheckbox.getAttribute('data-manager-id') === batchManagerId;
+            (batchManagerId && filters.managers.some(managerId => {
+                // Direct ID comparison since filters.managers now contains manager IDs
+                return batchManagerId === managerId;
             }));
         
         row.style.display = matchesSearch && matchesStatus && matchesManager ? '' : 'none';
@@ -1240,8 +1239,15 @@ function filterBatches(searchText, filters) {
             const aAgeElement = a.querySelector('td:nth-child(5)');
             const bAgeElement = b.querySelector('td:nth-child(5)');
             
-            const aAge = aAgeElement ? parseInt(aAgeElement.textContent) || 0 : 0;
-            const bAge = bAgeElement ? parseInt(bAgeElement.textContent) || 0 : 0;
+            // Extract age number from text like "25" or "25 days"
+            const extractAge = (text) => {
+                if (!text) return 0;
+                const match = text.toString().match(/(\d+)/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            
+            const aAge = aAgeElement ? extractAge(aAgeElement.textContent) : 0;
+            const bAge = bAgeElement ? extractAge(bAgeElement.textContent) : 0;
             
             // Debug logging
             console.log(`Sorting ages: ${aAge} vs ${bAge}, order: ${filters.ageSort}`);
@@ -1327,10 +1333,9 @@ function filterBatches(searchText, filters) {
         }
         
         const matchesManager = filters.managers.length === 0 || 
-            (batchManagerId && filters.managers.some(managerName => {
-                // Find the manager ID that corresponds to the selected manager name
-                const managerCheckbox = document.querySelector(`input[value="${managerName}"]`);
-                return managerCheckbox && managerCheckbox.getAttribute('data-manager-id') === batchManagerId;
+            (batchManagerId && filters.managers.some(managerId => {
+                // Direct ID comparison since filters.managers now contains manager IDs
+                return batchManagerId === managerId;
             }));
         
         card.style.display = matchesSearch && matchesStatus && matchesManager ? '' : 'none';
@@ -1348,8 +1353,8 @@ function filterBatches(searchText, filters) {
                         const valueElement = item.querySelector('.stat-value');
                         if (valueElement) {
                             const valueText = valueElement.textContent.trim();
-                            const ageMatch = valueText.match(/\d+/);
-                            return ageMatch ? parseInt(ageMatch[0]) : 0;
+                            const ageMatch = valueText.match(/(\d+)/);
+                            return ageMatch ? parseInt(ageMatch[1]) : 0;
                         }
                     }
                 }
@@ -1468,7 +1473,7 @@ function clearAllFilters() {
     });
     
     // Set default active status
-    document.querySelector('input[value="active"]').checked = true;
+    document.querySelector('input[name="batch_status[]"][value="active"]').checked = true;
     
     // Reset current filters
     currentFilters = {
@@ -1506,7 +1511,11 @@ function applyFilters(event) {
     var managerFilters = [];
     var managerCheckboxes = document.querySelectorAll('#managers-section input[type="checkbox"]:checked');
     for (var j = 0; j < managerCheckboxes.length; j++) {
-        managerFilters.push(managerCheckboxes[j].value);
+        // Collect manager IDs instead of names
+        var managerId = managerCheckboxes[j].getAttribute('data-manager-id');
+        if (managerId) {
+            managerFilters.push(managerId);
+        }
     }
     currentFilters = {
         batchStatus: batchStatusFilters.length > 0 ? batchStatusFilters : ['active'],
