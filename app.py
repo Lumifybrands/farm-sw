@@ -443,6 +443,7 @@ class BatchUpdate(db.Model):
         cascade='all, delete-orphan'
     )
     feed_returns = db.relationship('BatchFeedReturn', backref='batch_update', lazy=True, cascade='all, delete-orphan')
+    feeder_returns = db.relationship('BatchFeederReturn', backref='batch_update', lazy=True, cascade='all, delete-orphan')
     miscellaneous_items = db.relationship('MiscellaneousItem', backref='batch_update', lazy=True, cascade='all, delete-orphan')
 
 
@@ -509,6 +510,15 @@ class BatchFeedReturn(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
 
     feed = db.relationship('Feed', backref='returns')
+
+class BatchFeederReturn(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    batch_update_id = db.Column(db.Integer, db.ForeignKey('batch_update.id'), nullable=False)
+    feed_id = db.Column(db.Integer, db.ForeignKey('feed.id'), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)  # Quantity returned from feeders
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+
+    feed = db.relationship('Feed', backref='feeder_returns')
 
 class BatchUpdateItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1740,7 +1750,26 @@ def update_batch(batch_id):
                     )
                     db.session.execute(update_feed)
 
-        # Process feed returns
+        # Process feeder returns (reduces feed used and adds to feed stock)
+        feeder_return_ids = request.form.getlist('feeder_return_id[]')
+        feeder_return_quantities = request.form.getlist('feeder_return_quantity[]')
+
+        total_feeder_returned_feed = 0
+        for i in range(len(feeder_return_ids)):
+            if feeder_return_ids[i] and feeder_return_quantities[i]:
+                feed_id = int(feeder_return_ids[i])
+                quantity = float(feeder_return_quantities[i])
+
+                if quantity > 0:
+                    feeder_return = BatchFeederReturn(
+                        batch_update=new_update,
+                        feed_id=feed_id,
+                        quantity=quantity
+                    )
+                    db.session.add(feeder_return)
+                    total_feeder_returned_feed += quantity
+        
+        # Process feed returns (reduces feed stock)
         feed_return_ids = request.form.getlist('feed_return_id[]')
         feed_return_quantities = request.form.getlist('feed_return_quantity[]')
 
@@ -1759,8 +1788,10 @@ def update_batch(batch_id):
                     db.session.add(feed_return)
                     total_returned_feed += quantity
         
-        # Adjust batch feed stock for returns
-        batch.feed_stock -= total_returned_feed
+        # Adjust batch feed stock: feeder returns add to stock, feed returns subtract from stock
+        batch.feed_stock += total_feeder_returned_feed - total_returned_feed
+        # Reduce feed used by feeder returns
+        batch.feed_usage -= total_feeder_returned_feed
 
         # Process scheduled items
         for key, value in request.form.items():
@@ -2140,6 +2171,36 @@ def edit_batch_update(batch_id, date):
                 batch.feed_usage = batch.feed_usage - old_feed_used + update.feed_used
                 batch.feed_stock = batch.feed_stock - (old_feed_allocation - new_feed_allocation) + (old_feed_used - update.feed_used)
 
+                feed_returned = BatchFeedReturn.query.filter_by(batch_update_id=update.id).all()
+                for return_item in feed_returned:
+                    batch.feed_stock += return_item.quantity
+
+                feeder_returned = BatchFeederReturn.query.filter_by(batch_update_id=update.id).all()
+                for return_item in feeder_returned:
+                    batch.feed_stock -= return_item.quantity
+                    batch.feed_usage += return_item.quantity
+
+                # --- FEEDER RETURNS ---
+                # Remove all previous feeder returns for this update
+                BatchFeederReturn.query.filter_by(batch_update_id=update.id).delete()
+                db.session.flush()
+                # Add new feeder returns
+                feeder_return_ids = request.form.getlist('feeder_return_id[]')
+                feeder_return_quantities = request.form.getlist('feeder_return_quantity[]')
+                total_feeder_returned_feed = 0
+                for i in range(len(feeder_return_ids)):
+                    if feeder_return_ids[i] and feeder_return_quantities[i]:
+                        feed_id = int(feeder_return_ids[i])
+                        quantity = float(feeder_return_quantities[i])
+                        if quantity > 0:
+                            feeder_return = BatchFeederReturn(
+                                batch_update_id=update.id,
+                                feed_id=feed_id,
+                                quantity=quantity
+                            )
+                            db.session.add(feeder_return)
+                            total_feeder_returned_feed += quantity
+                
                 # --- FEED RETURNS ---
                 # Remove all previous returns for this update
                 BatchFeedReturn.query.filter_by(batch_update_id=update.id).delete()
@@ -2160,7 +2221,11 @@ def edit_batch_update(batch_id, date):
                             )
                             db.session.add(feed_return)
                             total_returned_feed += quantity
-                batch.feed_stock -= total_returned_feed
+                
+                # Adjust batch feed stock: feeder returns add to stock, feed returns subtract from stock
+                batch.feed_stock += total_feeder_returned_feed - total_returned_feed
+                # Reduce feed used by feeder returns
+                batch.feed_usage -= total_feeder_returned_feed
 
                 # Reset only the schedules that were previously completed by this update
                 for item in update.items:
@@ -2429,6 +2494,15 @@ def delete_batch_update(batch_id, date):
         
         # Update batch feed stock
         batch.feed_stock = max(0, batch.feed_stock - total_feed_quantity + update.feed_used)
+
+        feed_returned = BatchFeedReturn.query.filter_by(batch_update_id=update.id).all()
+        for return_item in feed_returned:
+            batch.feed_stock += return_item.quantity
+
+        feeder_returned = BatchFeederReturn.query.filter_by(batch_update_id=update.id).all()
+        for return_item in feeder_returned:
+            batch.feed_stock -= return_item.quantity
+            batch.feed_usage += return_item.quantity
         
         # Delete the update
         db.session.delete(update)
@@ -3695,7 +3769,24 @@ def manager_update_batch(batch_id):
 
             batch.feed_stock = max(0, batch.feed_stock + total_quantity - feed_used)  # Ensure feed stock doesn't go negative
 
-            # Process feed returns
+            # Process feeder returns (reduces feed used and adds to feed stock)
+            feeder_return_ids = request.form.getlist('feeder_return_id[]')
+            feeder_return_quantities = request.form.getlist('feeder_return_quantity[]')
+            total_feeder_returned_feed = 0
+            for i in range(len(feeder_return_ids)):
+                if feeder_return_ids[i] and feeder_return_quantities[i]:
+                    feed_id = int(feeder_return_ids[i])
+                    quantity = float(feeder_return_quantities[i])
+                    if quantity > 0:
+                        feeder_return = BatchFeederReturn(
+                            batch_update_id=batch_update.id,
+                            feed_id=feed_id,
+                            quantity=quantity
+                        )
+                        db.session.add(feeder_return)
+                        total_feeder_returned_feed += quantity
+            
+            # Process feed returns (reduces feed stock)
             feed_return_ids = request.form.getlist('feed_return_id[]')
             feed_return_quantities = request.form.getlist('feed_return_quantity[]')
             total_returned_feed = 0
@@ -3711,7 +3802,11 @@ def manager_update_batch(batch_id):
                         )
                         db.session.add(feed_return)
                         total_returned_feed += quantity
-            batch.feed_stock -= total_returned_feed
+            
+            # Adjust batch feed stock: feeder returns add to stock, feed returns subtract from stock
+            batch.feed_stock += total_feeder_returned_feed - total_returned_feed
+            # Reduce feed used by feeder returns
+            batch.feed_usage -= total_feeder_returned_feed
 
             # Process miscellaneous items
             misc_names = request.form.getlist('misc_name[]')
@@ -3943,6 +4038,7 @@ def add_harvest(batch_id):
                     date = datetime.now().date()
             else:
                 date = datetime.now().date()
+            
             quantity = int(request.form.get('quantity', 0))
             weight = float(request.form.get('weight', 0))
             selling_price = float(request.form.get('selling_price', 0))
