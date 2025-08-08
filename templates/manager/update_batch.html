@@ -249,26 +249,37 @@
                         </div>
                     </div>
 
-                    <!-- Other Items Section -->
-                    <div class="dynamic-section" id="otherItemsSection">
-                        <h3>Other Items</h3>
-                        <div class="dynamic-items" id="otherItems"></div>
-                        <div class="item-type-selector">
-                            <button type="button" onclick="addMedicineItem()">Add Medicine</button>
-                            <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
-                            <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
-                            <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
-                        </div>
-                    </div>
+            <!-- Other Items Section -->
+            <div class="dynamic-section" id="otherItemsSection">
+                <h3>Other Items</h3>
+                <div class="dynamic-items" id="otherItems"></div>
+                <div class="item-type-selector">
+                    <button type="button" onclick="addMedicineItem()">Add Medicine</button>
+                    <button type="button" onclick="addHealthMaterialItem()">Add Health Material</button>
+                    <button type="button" onclick="addVaccineItem()">Add Vaccine</button>
+                    <button type="button" onclick="addMiscellaneousItem()">Add Miscellaneous</button>
+                </div>
+            </div>
 
-                    <!-- Feed Stock Return Section -->
-                    <div class="dynamic-section" id="feedStockReturnSection">
-                        <h3>Feed Stock Return</h3>
-                        <div class="dynamic-items" id="feedReturnItems"></div>
-                        <button type="button" class="add-item" onclick="addFeedReturnItem()">
-                            <i class="fas fa-plus"></i> Add Feed Return
-                        </button>
-                    </div>
+            <!-- Feeder Return Section -->
+            <div class="dynamic-section" id="feederReturnSection">
+                <h3>Feeder Return</h3>
+                <p class="section-description">Return unused feed from feeders to batch stock (reduces feed used and adds to feed stock)</p>
+                <div class="dynamic-items" id="feederReturnItems"></div>
+                <button type="button" class="add-item" onclick="addFeederReturnItem()">
+                    <i class="fas fa-plus"></i> Add Feeder Return
+                </button>
+            </div>
+
+            <!-- Feed Stock Return Section -->
+            <div class="dynamic-section" id="feedStockReturnSection">
+                <h3>Feed Stock Return</h3>
+                <p class="section-description">Return feed from batch stock to inventory (reduces feed stock)</p>
+                <div class="dynamic-items" id="feedReturnItems"></div>
+                <button type="button" class="add-item" onclick="addFeedReturnItem()">
+                    <i class="fas fa-plus"></i> Add Feed Return
+                </button>
+            </div>
 
                     <div class="form-group full-width">
                         <label for="remarks">Remarks</label>
@@ -580,6 +591,13 @@ h2 {
     color: #1a73e8;
     margin-bottom: 15px;
     font-size: 1.1rem;
+}
+
+.section-description {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    font-style: italic;
 }
 
 .dynamic-items {
@@ -1381,6 +1399,23 @@ function addVaccineItem() {
     vaccineIndex++;
 }
 
+function addFeederReturnItem() {
+    const template = `
+        <div class="dynamic-item">
+            <select name="feeder_return_id[]">
+                <option value="">Select Feed</option>
+                {% for feed in feeds %}
+                <option value="{{ feed.id }}">{{ feed.brand }} - {{ feed.category }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="feeder_return_quantity[]" placeholder="Quantity Returned from Feeders (Packets)" min="0" step="0.01" value="0">
+            <span class="unit-type">units</span>
+            <button type="button" class="remove-item" onclick="removeItem(this)"><i class="fas fa-times"></i></button>
+        </div>
+    `;
+    document.getElementById('feederReturnItems').insertAdjacentHTML('beforeend', template);
+}
+
 function addFeedReturnItem() {
     const template = `
         <div class="dynamic-item">
@@ -1499,8 +1534,10 @@ function selectPastDate(dateStr, formattedDate, existingUpdate) {
         existingUpdate.feed_allocations.forEach(allocation => {
             addPastFeedItem(allocation.feed_id, allocation.quantity);
         });
-    } else {
-        // Add one empty feed item
+    }
+    
+    // Always add at least one empty feed item for new entries
+    if (!existingUpdate || !existingUpdate.feed_allocations || existingUpdate.feed_allocations.length === 0) {
         addPastFeedItem();
     }
 }
@@ -1518,12 +1555,12 @@ function addPastFeedItem(feedId = '', quantity = '') {
     
     const template = `
         <div class="past-feed-item">
-            <select name="past_feed_id[]" ${feedId ? 'disabled' : ''}>
+            <select name="past_feed_id[]">
                 ${optionsHtml}
             </select>
-            <input type="number" name="past_feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="${quantity}" ${feedId ? 'disabled' : ''}>
+            <input type="number" name="past_feed_quantity[]" placeholder="Quantity (Packets)" min="0" step="0.01" value="${quantity}">
             <span class="unit-type">units</span>
-            <button type="button" class="remove-item" onclick="removePastFeedItem(this)" ${feedId ? 'style="display: none;"' : ''}>
+            <button type="button" class="remove-item" onclick="removePastFeedItem(this)">
                 <i class="fas fa-times"></i>
             </button>
         </div>

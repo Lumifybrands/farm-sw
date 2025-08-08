@@ -323,6 +323,44 @@
         gap: 12px;
     }
 
+    /* Usage Grid */
+    .usage-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Returns and Remarks Grid */
+    .returns-remarks-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .returns-card-content, .remarks-card-content {
+        max-height: 300px;
+    }
+
+    .return-type-title {
+        font-size: 0.85rem;
+    }
+
+    .return-item, .remark-item {
+        padding: 8px 0;
+    }
+
+    .return-date, .remark-date {
+        font-size: 0.75rem;
+        padding: 2px 4px;
+    }
+
+    .return-name, .remark-text {
+        font-size: 0.85rem;
+    }
+
+    .return-quantity {
+        font-size: 0.8rem;
+        padding: 2px 4px;
+    }
+
     .item-card {
         margin-bottom: 12px;
     }
@@ -1927,7 +1965,7 @@
 /* Usage Grid Styles */
     .usage-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 20px;
         margin-bottom: 32px;
     }
@@ -2019,6 +2057,209 @@
     white-space: nowrap;
 }
 
+/* Returns and Remarks Grid Styles */
+.returns-remarks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.returns-card, .remarks-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.returns-card:hover, .remarks-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.returns-card-header, .remarks-card-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.returns-card-header i, .remarks-card-header i {
+    font-size: 1.2rem;
+    color: #4b6cb7;
+}
+
+.returns-card-header span, .remarks-card-header span {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.returns-card-content, .remarks-card-content {
+    padding: 16px 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.return-type-section {
+    margin-bottom: 20px;
+}
+
+.return-type-section:last-child {
+    margin-bottom: 0;
+}
+
+.return-type-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.return-type-title i {
+    font-size: 0.8rem;
+}
+
+.return-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.return-item:last-child {
+    border-bottom: none;
+}
+
+.return-date {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    background: #f8fafc;
+    padding: 3px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.return-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.return-name {
+    color: #1e293b;
+    font-weight: 500;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+.return-quantity {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.text-success {
+    color: #059669;
+    background: #d1fae5;
+}
+
+.text-info {
+    color: #0891b2;
+    background: #cffafe;
+}
+
+.no-returns {
+    color: #6b7280;
+    font-style: italic;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+}
+
+.remark-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.remark-item:last-child {
+    border-bottom: none;
+}
+
+.remark-date {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    background: #f8fafc;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    width: fit-content;
+}
+
+.remark-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.remark-text {
+    color: #1e293b;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    width: fit-content;
+}
+
+.priority-high {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.priority-medium {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.priority-low {
+    background: #f0fdf4;
+    color: #059669;
+}
+
+.no-remarks {
+    color: #6b7280;
+    font-style: italic;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+}
+
 .no-usage {
     color: #94a3b8;
     font-style: italic;
@@ -2044,6 +2285,10 @@
     color: #e74c3c;
 }
 
+.miscellaneous-usage .usage-card-header i {
+    color: #6c757d;
+}
+
 .feed-usage .usage-quantity {
     background: #e8f5e9;
     color: #2e7d32;
@@ -2062,6 +2307,11 @@
 .vaccine-usage .usage-quantity {
     background: #ffebee;
     color: #c62828;
+}
+
+.miscellaneous-usage .usage-quantity {
+    background: #f8f9fa;
+    color: #495057;
 }
 
 </style>
@@ -2281,6 +2531,120 @@
                 {% else %}
                     <div class="no-usage">No vaccine usage recorded</div>
                 {% endfor %}
+            </div>
+        </div>
+
+        <!-- Miscellaneous Card -->
+        <div class="usage-card miscellaneous-usage">
+            <div class="usage-card-header">
+                <i class="fas fa-tools"></i>
+                <span>Miscellaneous Usage</span>
+            </div>
+            <div class="usage-card-content">
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% for item in update.miscellaneous_items %}
+                        <div class="usage-item">
+                            <div class="usage-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
+                            <div class="usage-details">
+                                <span class="usage-name">{{ item.name }}</span>
+                                <span class="usage-quantity">{{ "%.2f"|format(item.units_used) }} {{ item.unit_type }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-usage">No miscellaneous items recorded</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Returns Section -->
+    <h4 class="section-subtitle" style="margin-top: 30px; margin-bottom: 20px;">Feed Returns & Remarks</h4>
+    <div class="returns-remarks-grid">
+        <!-- Feed Returns Card -->
+        <div class="returns-card">
+            <div class="returns-card-header">
+                <i class="fas fa-undo-alt"></i>
+                <span>Feed Returns</span>
+            </div>
+            <div class="returns-card-content">
+                <!-- Feeder Returns -->
+                <div class="return-type-section">
+                    <h5 class="return-type-title">
+                        <i class="fas fa-arrow-down text-success"></i>
+                        Feeder Returns (Reduces Feed Used)
+                    </h5>
+                    {% set has_feeder_returns = false %}
+                    {% for update in batch.updates|sort(attribute='date') %}
+                        {% for feeder_return in update.feeder_returns %}
+                            {% set has_feeder_returns = true %}
+                            <div class="return-item feeder-return">
+                                <div class="return-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
+                                <div class="return-details">
+                                    <span class="return-name">{{ feeder_return.feed.brand }} {{ feeder_return.feed.category }}</span>
+                                    <span class="return-quantity text-success">-{{ "%.2f"|format(feeder_return.quantity) }} packets</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% if not has_feeder_returns %}
+                        <div class="no-returns">No feeder returns recorded</div>
+                    {% endif %}
+                </div>
+
+                <!-- Feed Stock Returns -->
+                <div class="return-type-section">
+                    <h5 class="return-type-title">
+                        <i class="fas fa-arrow-up text-info"></i>
+                        Feed Stock Returns (Adds to Stock)
+                    </h5>
+                    {% set has_feed_returns = false %}
+                    {% for update in batch.updates|sort(attribute='date') %}
+                        {% for feed_return in update.feed_returns %}
+                            {% set has_feed_returns = true %}
+                            <div class="return-item feed-return">
+                                <div class="return-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
+                                <div class="return-details">
+                                    <span class="return-name">{{ feed_return.feed.brand }} {{ feed_return.feed.category }}</span>
+                                    <span class="return-quantity text-info">+{{ "%.2f"|format(feed_return.quantity) }} packets</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% if not has_feed_returns %}
+                        <div class="no-returns">No feed stock returns recorded</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Remarks Card -->
+        <div class="remarks-card">
+            <div class="remarks-card-header">
+                <i class="fas fa-comment-alt"></i>
+                <span>Remarks</span>
+            </div>
+            <div class="remarks-card-content">
+                {% set has_remarks = false %}
+                {% for update in batch.updates|sort(attribute='date') %}
+                    {% if update.remarks %}
+                        {% set has_remarks = true %}
+                        <div class="remark-item">
+                            <div class="remark-date">{{ update.date.strftime('%Y-%m-%d') }}</div>
+                            <div class="remark-content">
+                                <div class="remark-text">{{ update.remarks }}</div>
+                                {% if update.remarks_priority %}
+                                    <span class="priority-badge priority-{{ update.remarks_priority }}">
+                                        {{ update.remarks_priority|title }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if not has_remarks %}
+                    <div class="no-remarks">No remarks recorded</div>
+                {% endif %}
             </div>
         </div>
     </div>
