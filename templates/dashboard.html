@@ -911,215 +911,8 @@
 }
 .batch-status-overview-box {
     margin: 0 auto 1.5rem auto;
-    max-width: fit-content;
-}
-.risk-card, .batch-status-card {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-@media (max-width: 1100px) {
-    .dashboard-bottom-row {
-        flex-direction: column;
-        gap: 1.5rem;
-        max-width: 700px;
-    }
-    .risk-batches-box, .batch-status-overview-box {
-        max-width: 100%;
-        min-width: 0;
-        min-height: unset;
-        height: auto;
-    }
-    .risk-card, .batch-status-card {
-        height: auto;
-    }
-}
-.risk-card {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 4px 24px rgba(231, 76, 60, 0.08);
-    border: 1.5px solid #f5eaea;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-.risk-card-header {
-    display: flex;
-    align-items: center;
-    background: linear-gradient(90deg, #fbeee6 0%, #f9e6e6 100%);
-    padding: 1.1rem 1.5rem;
-    border-bottom: 1px solid #f5eaea;
-}
-.risk-icon {
-    color: #e74c3c;
-    font-size: 1.5rem;
-    margin-right: 0.7rem;
-}
-.risk-card-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #c0392b;
-    letter-spacing: 0.5px;
-}
-.risk-card-body {
-    padding: 1.2rem 1.5rem 1.5rem 1.5rem;
-    background: #fff;
-}
-.risk-table-wrapper {
-    overflow-x: auto;
-}
-.risk-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.98rem;
-    background: #fff;
-}
-.risk-table th, .risk-table td {
-    padding: 0.7em 0.8em;
-    text-align: left;
-    border-bottom: 1px solid #f2dede;
-}
-.risk-table th {
-    background: #fbeee6;
-    color: #a94442;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.93rem;
-    letter-spacing: 0.5px;
-    border-top: none;
-}
-.risk-table tr:last-child td {
-    border-bottom: none;
-}
-.risk-badge {
-    font-size: 0.85rem;
-    padding: 0.4em 0.9em;
-    border-radius: 1em;
-    font-weight: 600;
-    text-transform: capitalize;
-    display: inline-block;
-}
-.risk-high {
-    background: #e74c3c;
-    color: #fff;
-}
-.risk-medium {
-    background: #f1c40f;
-    color: #222;
-}
-.risk-empty {
-    text-align: center;
-    color: #b2b2b2;
-    font-size: 1.05rem;
-    padding: 1.5rem 0 1rem 0;
-}
-.stat-card-custom {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(44, 62, 80, 0.07);
-    border: 1.5px solid #e8eaf6;
-    margin-bottom: 1.2rem;
-    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: box-shadow 0.2s, border 0.2s;
-}
-.stat-card-custom:hover {
-    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.13);
-    border-color: #c5cae9;
-}
-.stat-fcr {
-    background: linear-gradient(120deg, #e3fcec 0%, #f8fffa 100%);
-    border-left: 5px solid #28a745;
-}
-.stat-profit {
-    background: linear-gradient(120deg, #fffbe6 0%, #fffdf5 100%);
-    border-left: 5px solid #ffc107;
-}
-.stat-icon-custom {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    margin: 0 auto 0.7rem auto;
-    font-size: 1.7rem;
-    background: #f4f6fb;
-}
-.stat-fcr-icon {
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.25));
-    color: #28a745;
-}
-.stat-profit-icon {
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.25));
-    color: #ffc107;
-}
-.graph-card-custom {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 4px 24px rgba(75, 108, 183, 0.10);
-    border: 1.5px solid #e3e6f0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    /* margin-bottom: 1.5rem; */
-    height: 100%;
-    width: 100%;
-}
-.graph-card-header {
-    background: linear-gradient(90deg, #e9f0fb 0%, #f3f6fb 100%);
-    padding: 1.1rem 1.5rem 1rem 1.5rem;
-    border-bottom: 1px solid #e3e6f0;
-}
-.graph-card-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #4b6cb7;
-    letter-spacing: 0.5px;
-}
-.graph-card-body {
-    min-height: 260px;
-    height: 100%;
-    padding: 1.2rem 1.2rem 1.2rem 1.2rem;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-.graph-canvas-wrapper {
-    width: 100%;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    align-items: stretch;
-    justify-content: stretch;
-    padding: 0;
-    box-sizing: border-box;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-.graph-canvas-wrapper canvas {
-    min-width: 600px;
-    width: 100%;
-    height: 100% !important;
-    min-height: 0;
     max-width: 100%;
-    max-height: 100%;
-    display: block;
-}
-@media (max-width: 700px) {
-    .graph-canvas-wrapper canvas {
-        min-width: 600px;
-        width: 600px;
-    }
-}
-.batch-status-overview-box {
-    margin: 0 auto 1.5rem auto;
-    max-width: fit-content;
+    width: 100%;
 }
 .batch-status-card {
     background: #fff;
@@ -1153,19 +946,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: fit-content;
-    width: fit-content;
-    padding: 10px 20px;
     min-height: 250px;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
 }
 #batchStatusChart {
     display: block;
     margin: 0 auto;
     max-width: 350px;
-    max-height: 350px;
     width: 100% !important;
-    height: 100% !important;
+    height: 350px !important;
 }
 .batch-status-legend {
     display: flex;
