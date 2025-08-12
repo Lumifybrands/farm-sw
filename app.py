@@ -2039,6 +2039,34 @@ def get_batch_update(batch_id, date):
                 print(f"Error getting miscellaneous item data: {str(e)}")
                 continue
 
+        # Get feed returns
+        feed_returns = []
+        for ret in update.feed_returns:
+            try:
+                feed_returns.append({
+                    'id': ret.feed.id,
+                    'brand': ret.feed.brand,
+                    'category': ret.feed.category,
+                    'quantity': float(ret.quantity)
+                })
+            except Exception as e:
+                print(f"Error getting feed return data: {str(e)}")
+                continue
+
+        # Get feeder returns
+        feeder_returns = []
+        for ret in update.feeder_returns:
+            try:
+                feeder_returns.append({
+                    'id': ret.feed.id,
+                    'brand': ret.feed.brand,
+                    'category': ret.feed.category,
+                    'quantity': float(ret.quantity)
+                })
+            except Exception as e:
+                print(f"Error getting feeder return data: {str(e)}")
+                continue
+
         return jsonify({
             'success': True,
             'update': {
@@ -2046,11 +2074,15 @@ def get_batch_update(batch_id, date):
                 'mortality_count': update.mortality_count,
                 'feed_used': float(update.feed_used),
                 'avg_weight': float(update.avg_weight),
+                'male_weight': float(update.male_weight),
+                'female_weight': float(update.female_weight),
                 'remarks': update.remarks,
                 'remarks_priority': update.remarks_priority,
                 'feeds': feeds,
                 'items': items,
-                'miscellaneous_items': misc_items
+                'miscellaneous_items': misc_items,
+                'feed_returns': feed_returns,
+                'feeder_returns': feeder_returns
             }
         })
             

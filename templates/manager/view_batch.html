@@ -167,6 +167,22 @@
                                 </div>
                                 {% endif %}
                             </div>
+                            <div class="stats-row">
+                                {% if update.feed_returns %}
+                                <div class="stat-item">
+                                    <i class="fas fa-undo"></i>
+                                    <span class="stat-label">Feed Returns:</span>
+                                    <span class="stat-value">{{ update.feed_returns|length }} items</span>
+                                </div>
+                                {% endif %}
+                                {% if update.feeder_returns %}
+                                <div class="stat-item">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span class="stat-label">Feeder Returns:</span>
+                                    <span class="stat-value">{{ update.feeder_returns|length }} items</span>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="update-actions">
                             <i class="fas fa-chevron-down expand-icon"></i>
@@ -334,6 +350,48 @@
                                             <div class="detail-row">
                                                 <label>Quantity Used</label>
                                                 <span>{{ "%.2f"|format(item.units_used) }} units</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if update.feed_returns %}
+                            <div class="items-section">
+                                <h4>Feed Stock Returns</h4>
+                                <div class="items-grid">
+                                    {% for ret in update.feed_returns %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ ret.feed.brand }} - {{ ret.feed.category }}</span>
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Returned</label>
+                                                <span>{{ "%.2f"|format(ret.quantity) }} packets</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if update.feeder_returns %}
+                            <div class="items-section">
+                                <h4>Feeder Returns</h4>
+                                <div class="items-grid">
+                                    {% for ret in update.feeder_returns %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ ret.feed.brand }} - {{ ret.feed.category }}</span>
+                                        </div>
+                                        <div class="item-details">
+                                            <div class="detail-row">
+                                                <label>Quantity Returned</label>
+                                                <span>{{ "%.2f"|format(ret.quantity) }} packets</span>
                                             </div>
                                         </div>
                                     </div>
