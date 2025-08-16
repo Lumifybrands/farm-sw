@@ -42,7 +42,7 @@
             </thead>
             <tbody>
                 {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
-                <tr data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
+                <tr data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}" {% if batch.closed_at %}data-closed-at="{{ batch.closed_at.isoformat() }}"{% endif %}>
                     <td>{{ batch.batch_number }}</td>
                     <td>{{ batch.farm.name }}{% if batch.farm_batch_number != 0 %} - {{ batch.farm_batch_number }}{% endif %}<br><span class="status-badge status-{{ batch.status }}">{{ batch.status|title }}</span></td>
                     <td>{{ batch.available_birds }}/{{ batch.total_birds }}</td>
@@ -138,7 +138,7 @@
         <!-- Mobile Card View -->
         <div class="batches-cards">
             {% for batch in batches|sort(attribute='batch_number', reverse=true) %}
-            <div class="batch-card" data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}">
+            <div class="batch-card" data-status="{{ batch.status }}" data-batch-id="{{ batch.id }}" data-manager-id="{{ batch.manager_id or '' }}" {% if batch.closed_at %}data-closed-at="{{ batch.closed_at.isoformat() }}"{% endif %}>
                 <div class="card-header">
                     <div class="batch-title">
                         <h3>{{ batch.batch_number }}</h3>
@@ -1368,6 +1368,32 @@ function filterBatches(searchText, filters) {
             const bDate = getDate(b);
             return filters.updateDateSort === 'oldest-to-newest' ? aDate - bDate : bDate - aDate;
         });
+    } else if (filters.batchStatus.includes('closed') && filters.batchStatus.length === 1) {
+        // Special sorting for closed batches by closing date (most recent first)
+        sortedRows.sort((a, b) => {
+            const aBatchId = a.getAttribute('data-batch-id');
+            const bBatchId = b.getAttribute('data-batch-id');
+            
+            // Get closing dates from data attributes (we'll need to add these)
+            const aClosedAt = a.getAttribute('data-closed-at');
+            const bClosedAt = b.getAttribute('data-closed-at');
+            
+            if (!aClosedAt && !bClosedAt) {
+                // If no closing dates, fall back to batch number
+                const aBatchNumber = a.querySelector('td:first-child').textContent;
+                const bBatchNumber = b.querySelector('td:first-child').textContent;
+                return bBatchNumber.localeCompare(aBatchNumber);
+            }
+            
+            if (!aClosedAt) return 1; // Put batches without closing date at the end
+            if (!bClosedAt) return -1;
+            
+            const aDate = new Date(aClosedAt);
+            const bDate = new Date(bClosedAt);
+            
+            // Sort in descending order (most recent first)
+            return bDate - aDate;
+        });
     } else {
         // Default sort by batch number in descending order
         sortedRows.sort((a, b) => {
@@ -1475,6 +1501,28 @@ function filterBatches(searchText, filters) {
             const aDate = getDate(a);
             const bDate = getDate(b);
             return filters.updateDateSort === 'oldest-to-newest' ? aDate - bDate : bDate - aDate;
+        });
+    } else if (filters.batchStatus.includes('closed') && filters.batchStatus.length === 1) {
+        // Special sorting for closed batches by closing date (most recent first)
+        sortedCards.sort((a, b) => {
+            const aClosedAt = a.getAttribute('data-closed-at');
+            const bClosedAt = b.getAttribute('data-closed-at');
+            
+            if (!aClosedAt && !bClosedAt) {
+                // If no closing dates, fall back to batch number
+                const aBatchNumber = a.querySelector('.batch-title h3').textContent;
+                const bBatchNumber = b.querySelector('.batch-title h3').textContent;
+                return bBatchNumber.localeCompare(aBatchNumber);
+            }
+            
+            if (!aClosedAt) return 1; // Put batches without closing date at the end
+            if (!bClosedAt) return -1;
+            
+            const aDate = new Date(aClosedAt);
+            const bDate = new Date(bClosedAt);
+            
+            // Sort in descending order (most recent first)
+            return bDate - aDate;
         });
     } else {
         // Default sort by batch number in descending order
