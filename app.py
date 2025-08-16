@@ -284,6 +284,26 @@ class Batch(db.Model):
         
         return total
 
+    def get_total_feed_returns(self):
+        """Calculate total feed returns from all batch updates"""
+        total = 0
+        for update in self.updates:
+            # Query the batch_feed_return table to get return quantities for this update
+            return_quantities = db.session.query(BatchFeedReturn.quantity).filter(
+                BatchFeedReturn.batch_update_id == update.id
+            ).all()
+            
+            for quantity_row in return_quantities:
+                total += quantity_row[0]  # quantity_row is a tuple, get the first element
+        
+        return total
+
+    def get_actual_feed_delivered(self):
+        """Calculate actual feed delivered (delivered minus returns)"""
+        total_delivered = self.get_total_feed_delivered()
+        total_returns = self.get_total_feed_returns()
+        return total_delivered - total_returns
+
 class Feed(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     brand = db.Column(db.String(100), nullable=False)

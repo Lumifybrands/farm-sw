@@ -57,9 +57,23 @@
                 </div>
                 <div class="info-item">
                     <i class="fas fa-truck"></i>
-                    <label>Feed Delivered</label>
-                    <span>{{ "%.2f"|format(batch.get_total_feed_delivered()) }} Packets</span>
+                    <label>Total Feed Delivered</label>
+                    <span>{{ "%.2f"|format(batch.get_total_feed_delivered()) }} Packets</span><br>
+                    {% if batch.get_total_feed_returns() > 0 %}
+                        <span class="mortality-rate">Returned : {{ "%.2f"|format(batch.get_total_feed_returns()) }} packets</span><br>
+                        <span class="mortality-rate">(Actual delivered: {{ "%.2f"|format(batch.get_actual_feed_delivered()) }} packets)</span>
+                    {% endif %}
                 </div>
+                <!-- <div class="info-item">
+                    <i class="fas fa-undo"></i>
+                    <label>Feed Returns</label>
+                    <span>{{ "%.2f"|format(batch.get_total_feed_returns()) }} Packets</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-calculator"></i>
+                    <label>Actual Feed Delivered</label>
+                    <span>{{ "%.2f"|format(batch.get_actual_feed_delivered()) }} Packets</span>
+                </div> -->
                 <div class="info-item">
                     <i class="fas fa-skull"></i>
                     <label>Total Mortality</label>

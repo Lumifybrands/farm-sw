@@ -58,9 +58,17 @@
                             <i class="fas fa-box"></i>
                             <span>Feed Stock: <b>{{ "%.2f"|format(batch.feed_stock) }}</b> packets</span>
                         </div>
-                        <div class="detail-item">
+                        <!-- <div class="detail-item">
                             <i class="fas fa-truck"></i>
-                            <span>Feed Delivered: <b>{{ "%.2f"|format(batch.get_total_feed_delivered()) }}</b> packets</span>
+                            <span>Total Feed Delivered: <b>{{ "%.2f"|format(batch.get_total_feed_delivered()) }}</b> packets</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-undo"></i>
+                            <span>Feed Returns: <b>{{ "%.2f"|format(batch.get_total_feed_returns()) }}</b> packets</span>
+                        </div> -->
+                        <div class="detail-item">
+                            <i class="fas fa-calculator"></i>
+                            <span>Actual Feed Delivered: <b>{{ "%.2f"|format(batch.get_actual_feed_delivered()) }}</b> packets</span>
                         </div>
                         {% if session.get('user_type') == 'senior_supervisor' and batch.manager %}
                         <div class="detail-item">
