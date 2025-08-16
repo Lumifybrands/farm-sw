@@ -3058,7 +3058,7 @@ def manager_harvest_batch(batch_id):
                 
                 # Update batch's available birds
                 batch.available_birds -= quantity
-                batch.check_and_update_status()
+                # batch.check_and_update_status()
                 
                 db.session.add(harvest)
                 db.session.commit()
@@ -4091,7 +4091,7 @@ def add_harvest(batch_id):
             
             # Update batch's available birds
             batch.available_birds -= quantity
-            batch.check_and_update_status()
+            # batch.check_and_update_status()
             
             db.session.add(harvest)
             db.session.commit()
@@ -4102,7 +4102,7 @@ def add_harvest(batch_id):
             db.session.rollback()
             flash('Error adding harvest record: ' + str(e), 'error')
     
-    return render_template('add_harvest.html', batch=batch)
+    return render_template('add_harvest.html', batch=batch, today=datetime.now().date())
 
 @app.route('/harvests/<int:harvest_id>/delete', methods=['POST'])
 @login_required
@@ -4166,7 +4166,7 @@ def edit_harvest(harvest_id):
             
             # Update batch's available birds
             batch.available_birds -= quantity_diff
-            batch.check_and_update_status()
+            # batch.check_and_update_status()
             
             db.session.commit()
             flash('Harvest record updated successfully', 'success')
