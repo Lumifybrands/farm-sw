@@ -4149,7 +4149,8 @@ def manager_update_batch(batch_id):
 
             # Update batch statistics
             batch.total_mortality += mortality_count
-            batch.available_birds = batch.total_birds - batch.total_mortality
+            # batch.available_birds = batch.total_birds - batch.total_mortality
+            batch.available_birds -= mortality_count
             batch.feed_usage += feed_used
             total_quantity = 0
 
