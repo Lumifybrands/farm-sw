@@ -4928,6 +4928,13 @@ def farm_report():
         }
     return render_template('farmreport.html', farms=farms, selected_farm=selected_farm, report=report)
 
+@app.route('/supervisor_report')
+@login_required
+@admin_required
+def supervisor_report_page():
+    """Main supervisor report page - shows the modal interface"""
+    return render_template('supervisor_report.html')
+
 @app.route('/update-remark-priority/<int:batch_id>', methods=['POST'])
 @login_required
 def update_remark_priority(batch_id):
@@ -4962,6 +4969,262 @@ def update_remark_priority(batch_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error updating priority: {str(e)}'})
+
+# Supervisor Report API Endpoints
+@app.route('/api/supervisor-report')
+@login_required
+def supervisor_report():
+    """Get supervisor report summary for a specific date"""
+    try:
+        if session.get('user_type') not in ['admin']:
+            return jsonify({'success': False, 'message': 'Access denied'}), 403
+        
+        date_str = request.args.get('date')
+        if not date_str:
+            return jsonify({'success': False, 'message': 'Date parameter is required'}), 400
+        
+        try:
+            report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+        
+        # Get all supervisors (users with supervisor roles)
+        supervisors = User.query.filter(
+            User.user_type.in_(['assistant_supervisor', 'senior_supervisor'])
+        ).all()
+        
+        report_data = []
+        
+        for supervisor in supervisors:
+            # Get only ongoing and closing batches assigned to this supervisor
+            assigned_batches = Batch.query.filter(
+                Batch.manager_id == supervisor.id,
+                Batch.status.in_(['ongoing', 'closing'])
+            ).all()
+            batch_ids = [batch.id for batch in assigned_batches]
+            
+            if not batch_ids:
+                continue
+            
+            # Get batch updates for this supervisor on the specified date (by update date)
+            batch_updates = BatchUpdate.query.filter(
+                BatchUpdate.batch_id.in_(batch_ids),
+                BatchUpdate.date == report_date
+            ).all()
+
+            update_ids = [u.id for u in batch_updates]
+            
+            # Get unique batches visited on this date
+            visited_batch_ids = list(set(update.batch_id for update in batch_updates))
+            batches_visited = len(visited_batch_ids)
+            total_batches = len(assigned_batches)
+            
+            # Calculate total feed allocated in kg from batch_update_feeds
+            total_feed_kg = 0.0
+            if update_ids:
+                total_feed_kg = db.session.query(
+                    func.sum(batch_update_feeds.c.quantity * batch_update_feeds.c.quantity_per_unit_at_time)
+                ).filter(
+                    batch_update_feeds.c.batch_update_id.in_(update_ids)
+                ).scalar() or 0.0
+            
+            # Calculate total vaccines used from BatchUpdateItem
+            total_vaccines_used = 0.0
+            if update_ids:
+                total_vaccines_used = db.session.query(
+                    func.sum(BatchUpdateItem.quantity)
+                ).filter(
+                    BatchUpdateItem.batch_update_id.in_(update_ids),
+                    BatchUpdateItem.item_type == 'vaccine'
+                ).scalar() or 0.0
+            
+            # Prefer employee name if available
+            supervisor_display_name = supervisor.employee.name if getattr(supervisor, 'employee', None) and supervisor.employee and supervisor.employee.name else supervisor.username
+            
+            report_data.append({
+                'id': supervisor.id,
+                'username': supervisor.username,
+                'name': supervisor_display_name,
+                'totalFeedAllocated': round(float(total_feed_kg), 2),
+                'totalVaccinesUsed': round(float(total_vaccines_used), 2),
+                'batchesVisited': batches_visited,
+                'totalBatches': total_batches
+            })
+        
+        return jsonify(report_data)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/supervisor-details')
+@login_required
+def supervisor_details():
+    """Get detailed batch information for a specific supervisor on a specific date"""
+    try:
+        if session.get('user_type') not in ['admin']:
+            return jsonify({'success': False, 'message': 'Access denied'}), 403
+        
+        supervisor_id = request.args.get('supervisor_id', type=int)
+        supervisor_name = request.args.get('supervisor')
+        date_str = request.args.get('date')
+        
+        if not date_str:
+            return jsonify({'success': False, 'message': 'Date parameter is required'}), 400
+        
+        try:
+            report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+        
+        # Find the supervisor (prefer id if present)
+        supervisor = None
+        if supervisor_id:
+            supervisor = User.query.get(supervisor_id)
+        elif supervisor_name:
+            supervisor = User.query.filter_by(username=supervisor_name).first()
+        
+        if not supervisor:
+            return jsonify({'success': False, 'message': 'Supervisor not found'}), 404
+        
+        # Get only ongoing and closing batches assigned to this supervisor
+        assigned_batches = Batch.query.filter(
+            Batch.manager_id == supervisor.id,
+            Batch.status.in_(['ongoing', 'closing'])
+        ).all()
+        batch_ids = [batch.id for batch in assigned_batches]
+        
+        if not batch_ids:
+            return jsonify([])
+        
+        # Get batch updates for this supervisor on the specified date (by update date)
+        batch_updates = BatchUpdate.query.filter(
+            BatchUpdate.batch_id.in_(batch_ids),
+            BatchUpdate.date == report_date
+        ).order_by(BatchUpdate.created_at).all()
+        
+        update_ids = [u.id for u in batch_updates]
+        
+        details_data = []
+        
+        # Pre-fetch feed allocations and vaccine items for efficiency
+        feed_quantities_by_update = {}
+        vaccine_quantities_by_update = {}
+        if update_ids:
+            feed_rows = db.session.query(
+                batch_update_feeds.c.batch_update_id,
+                func.sum(batch_update_feeds.c.quantity * batch_update_feeds.c.quantity_per_unit_at_time)
+            ).filter(
+                batch_update_feeds.c.batch_update_id.in_(update_ids)
+            ).group_by(batch_update_feeds.c.batch_update_id).all()
+            feed_quantities_by_update = {row[0]: float(row[1] or 0.0) for row in feed_rows}
+            
+            vaccine_rows = db.session.query(
+                BatchUpdateItem.batch_update_id,
+                func.sum(BatchUpdateItem.quantity)
+            ).filter(
+                BatchUpdateItem.batch_update_id.in_(update_ids),
+                BatchUpdateItem.item_type == 'vaccine'
+            ).group_by(BatchUpdateItem.batch_update_id).all()
+            vaccine_quantities_by_update = {row[0]: float(row[1] or 0.0) for row in vaccine_rows}
+        
+        for update in batch_updates:
+            batch = update.batch
+            farm = batch.farm
+
+            # Build feed allocations
+            feeds = []
+            for feed in update.feeds:
+                quantity_packets = float(update.get_feed_quantity(feed.id) or 0)
+                quantity_per_unit = float(update.get_feed_quantity_per_unit(feed.id) or 0)
+                price_at_time = float(update.get_feed_price(feed.id) or 0)
+                total_cost = quantity_packets * price_at_time
+                feeds.append({
+                    'brand': feed.brand,
+                    'category': feed.category,
+                    'quantity_packets': round(quantity_packets, 2),
+                    'quantity_per_unit_kg': round(quantity_per_unit, 2),
+                    'price_at_time': round(price_at_time, 2),
+                    'total_cost': round(total_cost, 2)
+                })
+
+            # Build items by type
+            medicines = []
+            vaccines = []
+            health_materials = []
+            for item in update.items:
+                item_obj = item.get_item()
+                base = {
+                    'name': item_obj.name if item_obj else 'Unknown',
+                    'quantity': round(float(item.quantity or 0), 2),
+                    'quantity_per_unit': round(float(item.quantity_per_unit_at_time or 0), 2),
+                    'unit_type': item.unit_type,
+                    'price_at_time': round(float(item.price_at_time or 0), 2),
+                    'total_cost': round(float(item.total_cost or 0), 2),
+                    'scheduled': bool(item.schedule_id)
+                }
+                if item.item_type == 'medicine':
+                    medicines.append(base)
+                elif item.item_type == 'vaccine':
+                    base.update({'dose_number': item.dose_number})
+                    vaccines.append(base)
+                elif item.item_type == 'health_material':
+                    health_materials.append(base)
+
+            # Miscellaneous items
+            misc_items = []
+            for m in update.miscellaneous_items:
+                misc_items.append({
+                    'name': m.name,
+                    'quantity_per_unit': round(float(m.quantity_per_unit or 0), 2),
+                    'unit_type': m.unit_type,
+                    'price_per_unit': round(float(m.price_per_unit or 0), 2),
+                    'units_used': round(float(m.units_used or 0), 2),
+                    'total_cost': round(float(m.total_cost or 0), 2)
+                })
+
+            # Returns
+            feeder_returns = []
+            for ret in update.feeder_returns:
+                feeder_returns.append({
+                    'feed_name': f"{ret.feed.brand} - {ret.feed.category}",
+                    'quantity_packets': round(float(ret.quantity or 0), 2)
+                })
+
+            feed_returns = []
+            for ret in update.feed_returns:
+                feed_returns.append({
+                    'feed_name': f"{ret.feed.brand} - {ret.feed.category}",
+                    'quantity_packets': round(float(ret.quantity or 0), 2)
+                })
+
+            details_data.append({
+                'batchNumber': batch.batch_number,
+                'farmName': farm.name if farm else 'Unknown Farm',
+                'farmBatchNumber': getattr(batch, 'farm_batch_number', None),
+                'date': update.date.strftime('%Y-%m-%d'),
+                'visitTime': update.created_at.strftime('%I:%M %p'),
+                'basic': {
+                    'mortality_count': update.mortality_count or 0,
+                    'feed_used_packets': round(float(update.feed_used or 0), 2),
+                    'avg_weight_kg': round(float(update.avg_weight or 0), 2),
+                    'male_weight_kg': round(float(update.male_weight or 0), 2),
+                    'female_weight_kg': round(float(update.female_weight or 0), 2),
+                    'remarks': update.remarks or '',
+                    'remarks_priority': update.remarks_priority or ''
+                },
+                'feeds': feeds,
+                'medicines': medicines,
+                'health_materials': health_materials,
+                'vaccines': vaccines,
+                'misc_items': misc_items,
+                'feeder_returns': feeder_returns,
+                'feed_returns': feed_returns
+            })
+        
+        return jsonify(details_data)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
