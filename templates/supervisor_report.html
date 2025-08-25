@@ -8,7 +8,6 @@
         <div class="col-12">
             <div class="page-header">
                 <h1><i class="fas fa-user-check"></i> Supervisor Report</h1>
-                <p class="text-muted">Monitor supervisor activities and batch updates by date</p>
             </div>
             
             <div class="card">
@@ -78,6 +77,10 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2><i class="fas fa-list"></i> Batch Details for <span id="supervisorName"></span></h2>
+            <div class="export-actions">
+                <button id="exportPngBtn" class="btn btn-sm" title="Export as image">Export PNG</button>
+                <button id="exportPdfBtn" class="btn btn-sm" title="Export as PDF">Export PDF</button>
+            </div>
             <span class="close">&times;</span>
         </div>
         <div class="modal-body">
@@ -251,12 +254,25 @@
     border-radius: 12px 12px 0 0;
 }
 
+.export-actions { display: flex; gap: 8px; align-items: center; }
+
 .modal-header h2 {
     margin: 0;
     font-size: 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex: 1;
+}
+
+.export-actions .btn {
+    background: #ffffff;
+    color: #1557b0;
+    border: none;
+}
+
+.export-actions .btn:hover {
+    background: #e6eefc;
 }
 
 .close {
@@ -538,6 +554,52 @@
     .table td {
         padding: 0.75rem 0.5rem;
     }
+
+    .update-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .title-right {
+        font-size: 0.8rem;
+    }
+
+    .section-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .details-table {
+        font-size: 0.85rem;
+    }
+
+    .details-table th,
+    .details-table td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .summary-table {
+        font-size: 0.8rem;
+    }
+
+    .summary-table th,
+    .summary-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .toggle-details {
+        min-width: 80px;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .items-total {
+        font-size: 1rem;
+    }
+
+    .items-breakdown small {
+        font-size: 0.7rem;
+    }
 }
 
 /* Additional Utility Styles */
@@ -560,6 +622,189 @@
 .table td.text-muted {
     color: #6c757d;
     font-style: italic;
+}
+
+/* Update Section Styles */
+.update-section {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.update-title {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.title-left {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.title-right {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.section-subtitle {
+    color: #1e73e8;
+    font-weight: 600;
+    margin: 1.5rem 0 1rem 0;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-subtitle i {
+    font-size: 1.1em;
+}
+
+.details-table {
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.details-table th {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    color: #495057;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.details-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.details-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.details-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Summary Table Styles */
+.summary-table-container {
+    margin-bottom: 2rem;
+}
+
+.summary-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary-table th {
+    background: linear-gradient(135deg, #1a73e8, #1557b0);
+    color: white;
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.summary-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.summary-table tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.summary-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.summary-row:hover {
+    background-color: #e3f2fd !important;
+}
+
+/* Details Section Styles */
+.details-section {
+    background: #f8f9fa;
+}
+
+.details-cell {
+    padding: 0 !important;
+    border: none !important;
+}
+
+.details-cell .update-section {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+}
+
+/* Toggle Button Styles */
+.toggle-details {
+    transition: all 0.2s ease;
+    min-width: 100px;
+}
+
+.toggle-details:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+/* Items Breakdown Styles */
+.items-total {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #1a73e8;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.items-breakdown {
+    line-height: 1.2;
+}
+
+.items-breakdown small {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.items-breakdown .text-muted {
+    color: #6c757d !important;
 }
 .update-card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
 .update-card-header { padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
@@ -693,40 +938,159 @@ document.addEventListener('DOMContentLoaded', function() {
         const supervisorNameSpan = document.getElementById('supervisorName');
         const supervisorDateSpan = document.getElementById('supervisorDate');
         const totalBatchesSpan = document.getElementById('totalBatches');
+        const modalBody = document.querySelector('.modal-body');
 
         supervisorNameSpan.textContent = supervisorName;
         supervisorDateSpan.textContent = new Date(date).toLocaleDateString();
+
+        // Show modal immediately with a loading state
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="details-info">
+                    <p><strong>Date:</strong> <span id="supervisorDate">${new Date(date).toLocaleDateString()}</span></p>
+                    <p><strong>Total Batches:</strong> <span id="totalBatches">Loading...</span></p>
+                </div>
+                <div class="text-center" style="padding: 1rem;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading details...
+                </div>
+            `;
+        }
+        supervisorDetailsModal.style.display = 'block';
         
         // Fetch supervisor details
         fetch(`/api/supervisor-details?supervisor_id=${supervisorId}&date=${date}`)
             .then(response => response.json())
             .then(data => {
-                if (data.success === false) {
-                    throw new Error(data.message || 'Failed to fetch supervisor details');
+                try {
+                    if (data && data.success === false) {
+                        throw new Error(data.message || 'Failed to fetch supervisor details');
+                    }
+                    displaySupervisorDetails(Array.isArray(data) ? data : []);
+                    const refreshedTotal = document.getElementById('totalBatches');
+                    if (refreshedTotal) refreshedTotal.textContent = Array.isArray(data) ? data.length : 0;
+                } catch (err) {
+                    console.error('Error rendering supervisor details:', err);
+                    displaySupervisorDetails([]);
+                    const refreshedTotal = document.getElementById('totalBatches');
+                    if (refreshedTotal) refreshedTotal.textContent = 0;
                 }
-                displaySupervisorDetails(data);
-                totalBatchesSpan.textContent = data.length;
-                supervisorDetailsModal.style.display = 'block';
             })
             .catch(error => {
                 console.error('Error fetching supervisor details:', error);
-                displaySupervisorDetails([]);
+                try {
+                    displaySupervisorDetails([]);
+                } catch (_) {}
                 totalBatchesSpan.textContent = 0;
-                supervisorDetailsModal.style.display = 'block';
             });
     };
 
     // Display supervisor details
-    function displaySupervisorDetails(data) {
-        const tbody = document.getElementById('supervisorDetailsFlatBody');
-        tbody.innerHTML = '';
+    let lastSupervisorDetailsData = [];
 
-        if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted">No batch updates found for this supervisor on the selected date</td></tr>';
+    function displaySupervisorDetails(data) {
+        const modalBody = document.querySelector('.modal-body');
+        
+        // Keep a copy for export
+        lastSupervisorDetailsData = Array.isArray(data) ? data : [];
+        
+        // Clear previous sections from modal body (keep the details-info div if present)
+        const existingDetailsInfo = modalBody.querySelector('.details-info');
+        modalBody.innerHTML = '';
+        if (existingDetailsInfo) {
+            modalBody.appendChild(existingDetailsInfo);
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'text-center text-muted';
+            emptyMsg.style.padding = '1rem';
+            emptyMsg.textContent = 'No batch updates found for this supervisor on the selected date';
+            modalBody.appendChild(emptyMsg);
             return;
         }
 
-        data.forEach(update => {
+        // Create summary table with expandable rows
+        const summaryTable = document.createElement('div');
+        summaryTable.className = 'summary-table-container';
+        summaryTable.innerHTML = `
+            <h6 class="section-subtitle"><i class="fas fa-table"></i> Batch Updates Summary</h6>
+            <div class="table-responsive">
+                <table class="table summary-table">
+                    <thead>
+                        <tr>
+                            <th>Batch</th>
+                            <th>Farm & Batch #</th>
+                            <th>Time</th>
+                            <th>Mortality</th>
+                            <th>Feed Used (pkts)</th>
+                            <th>Feed Alloc (pkts)</th>
+                            <th>Items Used</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                    </tbody>
+                </table>
+            </div>
+        `;
+        modalBody.appendChild(summaryTable);
+
+        data.forEach((update, index) => {
+            // Create summary row
+            const summaryRow = document.createElement('tr');
+            summaryRow.className = 'summary-row';
+            summaryRow.setAttribute('data-update-index', index);
+            
+            // Compute totals with robust numeric handling
+            const feedAllocPkts = (update.feeds || []).reduce((sum, f) => sum + (parseFloat(f.quantity_packets) || 0), 0);
+            const vaccinesUnits = (update.vaccines || []).reduce((sum, v) => sum + (parseFloat(v.quantity) || 0), 0);
+            const medicinesUnits = (update.medicines || []).reduce((sum, m) => sum + (parseFloat(m.quantity) || 0), 0);
+            const healthUnits = (update.health_materials || []).reduce((sum, h) => sum + (parseFloat(h.quantity) || 0), 0);
+            const miscUnits = (update.misc_items || []).reduce((sum, mi) => sum + (parseFloat(mi.units_used) || 0), 0);
+
+            // Combine farm name and farm batch number
+            const farmDisplay = update.farmBatchNumber && update.farmBatchNumber !== 0 
+                ? `${update.farmName} (${update.farmBatchNumber})`
+                : update.farmName;
+            
+            // Calculate total items used
+            const totalItemsUsed = vaccinesUnits + medicinesUnits + healthUnits + miscUnits;
+            
+            summaryRow.innerHTML = `
+                <td><strong>${update.batchNumber}</strong></td>
+                <td>${farmDisplay}</td>
+                <td>${update.visitTime}</td>
+                <td>${(update.basic && update.basic.mortality_count) || 0}</td>
+                <td>${((update.basic && update.basic.feed_used_packets) || 0).toFixed(2)}</td>
+                <td>${feedAllocPkts.toFixed(2)}</td>
+                <td>
+                    <span class="items-total">${totalItemsUsed.toFixed(2)}</span>
+                    <div class="items-breakdown">
+                        <small class="text-muted">
+                            V: ${vaccinesUnits.toFixed(2)} | M: ${medicinesUnits.toFixed(2)} | H: ${healthUnits.toFixed(2)} | Misc: ${miscUnits.toFixed(2)}
+                        </small>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary toggle-details" onclick="toggleUpdateDetails(${index})">
+                        <i class="fas fa-chevron-down"></i> Details
+                    </button>
+                </td>
+            `;
+            
+            document.getElementById('summaryTableBody').appendChild(summaryRow);
+
+            // Create expandable details section
+            const detailsSection = document.createElement('tr');
+            detailsSection.className = 'details-section';
+            detailsSection.id = `details-${index}`;
+            detailsSection.style.display = 'none';
+            
+            const detailsCell = document.createElement('td');
+            detailsCell.colSpan = 8;
+            detailsCell.className = 'details-cell';
+            
+            // Create the detailed content
             const section = document.createElement('div');
             section.className = 'update-section';
 
@@ -854,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Misc Items Table
             const miscTable = (update.misc_items && update.misc_items.length) ? `
-                <h6 class="section-subtitle"><i class="fas fa-tools"></i> Miscellaneous</h6>
+                <h6 class="section-subtitle"><i class="fas fa-tools"></i> Miscellaneous Items</h6>
                 <table class="table details-table">
                     <thead><tr>
                         <th>Name</th><th>Units Used</th><th>Qty/Unit</th><th>Unit</th><th>Price</th><th>Total Cost</th>
@@ -875,56 +1239,185 @@ document.addEventListener('DOMContentLoaded', function() {
             ` : '';
 
             // Returns Table
-            const returnsTable = ((update.feed_returns && update.feed_returns.length) || (update.feeder_returns && update.feeder_returns.length)) ? `
+            const returnsTable = (((update.feed_returns && update.feed_returns.length) || 0) || ((update.feeder_returns && update.feeder_returns.length) || 0)) ? `
                 <h6 class="section-subtitle"><i class="fas fa-undo"></i> Returns</h6>
                 <table class="table details-table">
                     <thead><tr>
                         <th>Type</th><th>Feed</th><th>Quantity (packets)</th>
                     </tr></thead>
                     <tbody>
-                        ${update.feeder_returns.map(r => `
+                        ${(update.feeder_returns || []).map(r => `
                             <tr><td>Feeder Return</td><td>${r.feed_name}</td><td>-${r.quantity_packets.toFixed(2)}</td></tr>
                         `).join('')}
-                        ${update.feed_returns.map(r => `
+                        ${(update.feed_returns || []).map(r => `
                             <tr><td>Feed Stock Return</td><td>${r.feed_name}</td><td>+${r.quantity_packets.toFixed(2)}</td></tr>
                         `).join('')}
                     </tbody>
                 </table>
             ` : '';
 
-            // Compute totals for row values
-            const feedAllocPkts = (update.feeds || []).reduce((sum, f) => sum + (Number(f.quantity_packets) || 0), 0);
-            const vaccinesUnits = (update.vaccines || []).reduce((sum, v) => sum + (Number(v.quantity) || 0), 0);
-            const medicinesUnits = (update.medicines || []).reduce((sum, m) => sum + (Number(m.quantity) || 0), 0);
-            const healthUnits = (update.health_materials || []).reduce((sum, h) => sum + (Number(h.quantity) || 0), 0);
-            const feederRetPkts = (update.feeder_returns || []).reduce((sum, r) => sum + (Number(r.quantity_packets) || 0), 0);
-            const feedRetPkts = (update.feed_returns || []).reduce((sum, r) => sum + (Number(r.quantity_packets) || 0), 0);
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${update.date}</td>
-                <td>${update.batchNumber}</td>
-                <td>${update.farmName}</td>
-                <td>${update.farmBatchNumber && update.farmBatchNumber !== 0 ? update.farmBatchNumber : ''}</td>
-                <td>${update.basic.mortality_count}</td>
-                <td>${update.basic.feed_used_packets.toFixed(2)}</td>
-                <td>${update.basic.avg_weight_kg.toFixed(2)}</td>
-                <td>${update.basic.male_weight_kg.toFixed(2)}</td>
-                <td>${update.basic.female_weight_kg.toFixed(2)}</td>
-                <td>${feedAllocPkts.toFixed(2)}</td>
-                <td>${vaccinesUnits.toFixed(2)}</td>
-                <td>${medicinesUnits.toFixed(2)}</td>
-                <td>${healthUnits.toFixed(2)}</td>
-                <td>${feederRetPkts.toFixed(2)}</td>
-                <td>${feedRetPkts.toFixed(2)}</td>
+            // Combine all tables into the section
+            section.innerHTML = `
+                ${headerHtml}
+                ${basicTable}
+                ${feedsTable}
+                ${medicinesTable}
+                ${healthTable}
+                ${vaccinesTable}
+                ${miscTable}
+                ${returnsTable}
             `;
-            tbody.appendChild(tr);
+
+            detailsCell.appendChild(section);
+            detailsSection.appendChild(detailsCell);
+            
+            // Insert details section after the summary row
+            summaryRow.parentNode.insertBefore(detailsSection, summaryRow.nextSibling);
         });
 
         supervisorDetailsModal.style.display = 'block';
     }
 
+    // Toggle update details
+    window.toggleUpdateDetails = function(index) {
+        const detailsSection = document.getElementById(`details-${index}`);
+        let button = (typeof event !== 'undefined' && event && event.target) ? event.target.closest('.toggle-details') : null;
+        if (!button) {
+            // Fallback: find the toggle button in the previous summary row
+            const summaryRow = document.getElementById(`details-${index}`)?.previousSibling;
+            button = summaryRow ? summaryRow.querySelector('.toggle-details') : null;
+        }
+        const icon = button ? button.querySelector('i') : null;
+        
+        if (detailsSection.style.display === 'none') {
+            detailsSection.style.display = 'table-row';
+            if (icon) icon.className = 'fas fa-chevron-up';
+            if (button) {
+                button.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Details';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-outline-secondary');
+            }
+        } else {
+            detailsSection.style.display = 'none';
+            if (icon) icon.className = 'fas fa-chevron-down';
+            if (button) {
+                button.innerHTML = '<i class="fas fa-chevron-down"></i> Details';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-outline-primary');
+            }
+        }
+    };
+
     // Remove sample data; rely on API only
+    // Build export tables from lastSupervisorDetailsData
+    function buildExportHtml(supervisorName, reportDateStr) {
+        const data = Array.isArray(lastSupervisorDetailsData) ? lastSupervisorDetailsData : [];
+
+        // Daily info table rows
+        const dailyRows = data.map(u => {
+            const feedAllocPkts = (u.feeds || []).reduce((sum, f) => sum + (parseFloat(f.quantity_packets) || 0), 0);
+
+            // Per-category items used, show only updated, with units
+            const vTotal = (u.vaccines || []).reduce((s, v) => s + (parseFloat(v.quantity) || 0), 0);
+            const mTotal = (u.medicines || []).reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
+            const hTotal = (u.health_materials || []).reduce((s, h) => s + (parseFloat(h.quantity) || 0), 0);
+            const miscTotal = (u.misc_items || []).reduce((s, mi) => s + (parseFloat(mi.units_used) || 0), 0);
+
+            // Determine preferred units per category from first item where available
+            const vUnit = (u.vaccines && u.vaccines.find(v => v && v.unit_type)?.unit_type) || 'ml';
+            const mUnit = (u.medicines && u.medicines.find(m => m && m.unit_type)?.unit_type) || '';
+            const hUnit = (u.health_materials && u.health_materials.find(h => h && h.unit_type)?.unit_type) || '';
+            const miscUnit = (u.misc_items && u.misc_items.find(mi => mi && mi.unit_type)?.unit_type) || '';
+
+            const itemsLines = [];
+            if (vTotal > 0) itemsLines.push(`<div>Vaccine: ${vTotal.toFixed(2)} ${vUnit}</div>`);
+            if (mTotal > 0) itemsLines.push(`<div>Medicine: ${mTotal.toFixed(2)} ${mUnit}</div>`);
+            if (hTotal > 0) itemsLines.push(`<div>Health Materials: ${hTotal.toFixed(2)} ${hUnit}</div>`);
+            if (miscTotal > 0) itemsLines.push(`<div>Misc: ${miscTotal.toFixed(2)} ${miscUnit}</div>`);
+            const itemsCell = itemsLines.length ? itemsLines.join('') : '<div class="text-muted">-</div>';
+
+            return `
+                <tr>
+                    <td>${u.batchNumber || ''}</td>
+                    <td>${u.farmName || ''}</td>
+                    <td style="text-align:right">${((u.basic && u.basic.mortality_count) || 0)}</td>
+                    <td style="text-align:right">${(((u.basic && u.basic.feed_used_packets) || 0).toFixed(2))}</td>
+                    <td style="text-align:right">${feedAllocPkts.toFixed(2)}</td>
+                    <td>${itemsCell}</td>
+                </tr>`;
+        }).join('');
+
+        // Weight updates table rows (only for entries having avg/male/female weight > 0)
+        const weightRows = data
+            .filter(u => (u.basic && ((u.basic.avg_weight_kg||0) > 0 || (u.basic.male_weight_kg||0) > 0 || (u.basic.female_weight_kg||0) > 0)))
+            .map(u => `
+                <tr>
+                    <td>${u.batchNumber || ''}</td>
+                    <td>${u.farmName || ''}</td>
+                    <td style="text-align:right">${(u.basic.avg_weight_kg||0).toFixed(2)}</td>
+                    <td style="text-align:right">${(u.basic.male_weight_kg||0).toFixed(2)}</td>
+                    <td style="text-align:right">${(u.basic.female_weight_kg||0).toFixed(2)}</td>
+                </tr>`).join('');
+
+        const hasWeight = weightRows.length > 0;
+
+        // Minimal print styles for export clarity
+        const styles = `
+            <style>
+                .export-wrap { font-family: Arial, sans-serif; color: #111827; }
+                .export-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+                .export-title { font-size: 18px; font-weight: 700; }
+                .export-meta { font-size: 12px; color:#6b7280; }
+                table { width:100%; border-collapse: collapse; margin-top: 8px; }
+                th, td { border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 12px; }
+                th { background: #f3f4f6; text-align: left; }
+                .section { margin-top: 16px; }
+            </style>`;
+
+        return `
+            <div class="export-wrap">
+                ${styles}
+                <div class="export-header">
+                    <div class="export-title">Supervisor Daily Report</div>
+                    <div class="export-meta">Supervisor: ${supervisorName || ''} | Date: ${reportDateStr || ''}</div>
+                </div>
+
+                <div class="section">
+                    <div style="font-weight:600; margin-bottom:6px;">Daily Info</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Batch</th>
+                                <th>Farm</th>
+                                <th>Mortality</th>
+                                <th>Feed Used (pkts)</th>
+                                <th>Feed Alloc (pkts)</th>
+                                <th>Items Used</th>
+                            </tr>
+                        </thead>
+                        <tbody>${dailyRows || ''}</tbody>
+                    </table>
+                </div>
+                ${hasWeight ? `
+                <div class="section">
+                    <div style="font-weight:600; margin-bottom:6px;">Weight Updates</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Batch</th>
+                                <th>Farm</th>
+                                <th>Avg Wt (kg)</th>
+                                <th>Male Wt (kg)</th>
+                                <th>Female Wt (kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${weightRows}</tbody>
+                    </table>
+                </div>` : ''}
+            </div>
+        `;
+    }
+
     /* function getSampleData() {
         return [
             {
@@ -977,6 +1470,125 @@ document.addEventListener('DOMContentLoaded', function() {
         ];
     }
     */
+    // Export handlers
+    function wireExportButtons() {
+        const pngBtn = document.getElementById('exportPngBtn');
+        const pdfBtn = document.getElementById('exportPdfBtn');
+        const supervisor = document.getElementById('supervisorName')?.textContent || '';
+        const dateText = document.getElementById('supervisorDate')?.textContent || '';
+
+        if (!pngBtn || !pdfBtn) return;
+
+        pngBtn.onclick = async function() {
+            try {
+                const html = buildExportHtml(supervisor, dateText);
+                const container = document.createElement('div');
+                container.style.position = 'fixed';
+                container.style.left = '-99999px';
+                container.style.top = '0';
+                container.style.background = '#ffffff';
+                container.style.padding = '24px';
+                container.style.boxSizing = 'border-box';
+                container.innerHTML = html;
+                document.body.appendChild(container);
+
+                const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff' });
+                const dataUrl = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `Supervisor_Report_${supervisor}_${dateText}.png`;
+                a.click();
+                document.body.removeChild(container);
+            } catch (e) {
+                console.error('PNG export failed', e);
+                alert('Failed to export PNG');
+            }
+        };
+
+        pdfBtn.onclick = async function() {
+            try {
+                const html = buildExportHtml(supervisor, dateText);
+                const container = document.createElement('div');
+                container.style.position = 'fixed';
+                container.style.left = '-99999px';
+                container.style.top = '0';
+                container.style.width = '800px';
+                container.innerHTML = html;
+                document.body.appendChild(container);
+
+                const canvas = await html2canvas(container, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('p', 'pt', 'a4');
+
+                // Fit image width to page, keep aspect ratio
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pageWidth - 40; // 20pt margins
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+
+                let y = 20;
+                let x = 20;
+                if (imgHeight < pageHeight - 40) {
+                    pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+                } else {
+                    // Multi-page if needed
+                    let heightLeft = imgHeight;
+                    let position = y;
+                    pdf.addImage(imgData, 'PNG', x, position, imgWidth, imgHeight);
+                    heightLeft -= (pageHeight - 40);
+                    while (heightLeft > 0) {
+                        pdf.addPage();
+                        position = 20 - heightLeft;
+                        pdf.addImage(imgData, 'PNG', x, position, imgWidth, imgHeight);
+                        heightLeft -= (pageHeight - 40);
+                    }
+                }
+
+                pdf.save(`Supervisor_Report_${supervisor}_${dateText}.pdf`);
+                document.body.removeChild(container);
+            } catch (e) {
+                console.error('PDF export failed', e);
+                alert('Failed to export PDF');
+            }
+        };
+    }
+
+    // Load export libs and wire buttons after first open
+    function ensureExportLibs() {
+        return new Promise((resolve, reject) => {
+            const hasH2C = window.html2canvas;
+            const hasJSPDF = window.jspdf || window.jsPDF || window.jspdf?.jsPDF;
+            const tasks = [];
+            if (!hasH2C) {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                s.onload = () => resolve();
+                s.onerror = reject;
+                document.body.appendChild(s);
+                tasks.push(s);
+            }
+            if (!hasJSPDF) {
+                const s2 = document.createElement('script');
+                s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                s2.onload = () => resolve();
+                s2.onerror = reject;
+                document.body.appendChild(s2);
+                tasks.push(s2);
+            }
+            if (hasH2C && hasJSPDF) resolve();
+        });
+    }
+
+    // After modal is shown, ensure libs and wire
+    const modalEl = document.getElementById('supervisorDetailsModal');
+    const observer = new MutationObserver(() => {
+        if (modalEl && modalEl.style.display === 'block') {
+            ensureExportLibs().then(() => wireExportButtons());
+        }
+    });
+    if (modalEl) {
+        observer.observe(modalEl, { attributes: true, attributeFilter: ['style'] });
+    }
 });
 </script>
 {% endblock %} 
